@@ -1,0 +1,80 @@
+==========================================
+README 1.0 
+==========================================
+LIBRARY FOR RAPL functionality.
+==========================================
+Authors:
+Barry Rountree
+Tapasya Patki
+Peter Bailey
+==========================================
+Lawrence Livermore National Laboratory
+and
+The University of Arizona
+==========================================
+
+To build the library:
+
+The NUM_PACKAGES and NUM_CORES_PER_PACKAGE need to be set in msr_core.h correctly. You can find this information in /proc/cpuinfo.
+
+Type "make" in the libmsr folder, and then "make rapl-gnu" in the libmsr/mpi/ folder.
+
+
+This should create libmsr.so and librapl.so in the libmsr/lib folder.
+
+
+==========================================
+
+To use this with MPI: 
+
+For MPI programs, ensure that the MSR_RANK_MOD environment variable is exported. This variable
+determines which rank on the node will take control of writing to the MSRs in the situation 
+where there are multiple tasks running on the node. 
+
+To use this with OpenMP or Sequential Code:
+ 
+As of now, we do not support OpenMP. However, you can create a dummy program that calls MPI_Init, and MPI_Finalize
+and uses the "execvp" sytem call to execute your OpenMP binary. Take a look at the test-exec.c in the examples/ folder.
+===========================================
+
+To link to the library:
+
+(1) You can set the LD_LIBRARY_PATH to point to the lib/ folder in the libmsr folder, or,  
+
+(2) You can use dynamic liknking rpath with gcc/mpicc in your Makefile as follows: 
+
+ mpicc -o <exec-name> <file-name.c> -Xlinker -rpath=<path-to-libmsr>/libmsr/lib -L<path-to-libmsr>/libmsr/lib -lrapl
+===========================================
+
+Modes:
+
+There are three modes in which the library can be used. 
+
+The default is the DRY_RUN mode, which does not read from or write to any
+MSRs. This creates an empty file as output. The reason this mode exists is that if a user wants to test whether or not s/he is linking
+to the library correctly and does not have the right permissions to access MSRs on that node/machine, s/he can use this. This is also
+the default mode because we don't want any user who does not have enough clarity to access the registers. We expect
+them to read this README file before progressing any further.
+
+In the READ_ONLY mode, you can read the MSRs and a file with the power data would be created. 
+
+In the READ_WRITE mode, you can clamp the PKG_LIMIT, PP0_LIMIT and DRAM_LIMIT to the power values that you are interested in.
+
+To be able to use these modes, you need to export either the READ_ONLY environment variable, or the READ_WRITE environment variable 
+appropriately and set it to 1. Note that if both the READ_ONLY and the READ_WRITE environment variables are exported, 
+the library defaults to the READ_ONLY mode. 
+
+In the READ_WRITE mode, you need to export the MSR_PKG_POWER_LIMIT, MSR_PP0_POWER_LIMIT and the MSR_DRAM_POWER_LIMIT environment variables
+to use RAPL for clamping. More information on setting these can be found in the Intel Manual, Chapter 14. Note that the default for MSR_PKG_POWER_LIMIT is 0x6845000148398 and not 0x0. Setting this to 0x0 affects turbo boost.  
+
+On a successful run, the READ_ONLY and READ_WRITE modes should create an output file (which begins with the hostname for the system) for each node (the MSR_RANK_MOD determines which rank in the MPI program creates this file). This file will contain node level power data. In case of the DRY_RUN mode, an empty file is created. 
+
+===========================================
+
+Error messages:
+
+If you do not have the right permissions, the program should exit with a "Initialization failed. Exiting" error message. Also, check that
+the cpuid and the msr modules are loaded. This can be done by using "lsmod." If not, ask your system administrator to give you the right permissions
+for accessing the registers/relevant modules.
+
+

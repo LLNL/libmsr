@@ -1,0 +1,8 @@
+gcc -fPIC -Wall -DARCH_SANDY_BRIDGE -DPKG_PERF_STATUS_AVAILABLE -DARCH_062D -O2    -c -o msr_core.o msr_core.c
+gcc -fPIC -Wall -DARCH_SANDY_BRIDGE -DPKG_PERF_STATUS_AVAILABLE -DARCH_062D -O2    -c -o msr_rapl.o msr_rapl.c
+gcc -fPIC -Wall -DARCH_SANDY_BRIDGE -DPKG_PERF_STATUS_AVAILABLE -DARCH_062D -O2    -c -o blr_util.o blr_util.c
+gcc -fPIC -Wall -DARCH_SANDY_BRIDGE -DPKG_PERF_STATUS_AVAILABLE -DARCH_062D -O2    -c -o msr_turbo.o msr_turbo.c
+gcc -fPIC -Wall -DARCH_SANDY_BRIDGE -DPKG_PERF_STATUS_AVAILABLE -DARCH_062D -O2    -c -o msr_pebs.o msr_pebs.c
+gcc -fPIC -Wall -DARCH_SANDY_BRIDGE -DPKG_PERF_STATUS_AVAILABLE -DARCH_062D -O2    -c -o msr_opt.o msr_opt.c
+gcc -fPIC -Wall -DARCH_SANDY_BRIDGE -DPKG_PERF_STATUS_AVAILABLE -DARCH_062D -O2    -c -o msr_clocks.o msr_clocks.c
+gcc -fPIC -shared -Wl,-soname,libmsr.so -o ./lib/libmsr.so msr_rapl.o blr_util.o msr_core.o msr_turbo.o msr_pebs.o msr_opt.o msr_clocks.o

@@ -1,0 +1,85 @@
+srun: Job is in held state, pending scheduler release
+srun: job 1062336 queued and waiting for resources
+srun: job 1062336 has been allocated resources
+rank   0 on      zin64
+>>> hostname=     zin64
+
+ALL_DOMAINS get_rapl_power_unit
+msr_core.c::76 read msr=0x606 val=0xa1003
+msr_rapl.c::63  multipliers: p=0x3 e=0x10 t=0xa
+msr_rapl.c::64  One tick equals    0.1250000000 watts.
+msr_rapl.c::65  One tick equals    0.0000152588 joules.
+msr_rapl.c::66  One tick equals    0.0009765625 seconds.
+
+PKG_DOMAIN  get_power_info
+msr_core.c::76 read msr=0x614 val=0x2f05a001980398
+msr_rapl.c::153 (PKG) Raw power info:  0x2f05a001980398
+msr_rapl.c::155 (PKG) max time window (     2f)    0.04590 seconds.
+msr_rapl.c::159 (PKG) max power       (    5a0)  180.00000 watts.
+msr_rapl.c::163 (PKG) min power       (    198)   51.00000 watts.
+msr_rapl.c::167 (PKG) thermal spec    (    398)  115.00000 watts.
+
+DRAM_DOMAIN get_power_info
+msr_core.c::76 read msr=0x61c val=0x28025800780118
+msr_rapl.c::153 (DRAM) Raw power info:  0x28025800780118
+msr_rapl.c::155 (DRAM) max time window (     28)    0.03906 seconds.
+msr_rapl.c::159 (DRAM) max power       (    258)   75.00000 watts.
+msr_rapl.c::163 (DRAM) min power       (     78)   15.00000 watts.
+msr_rapl.c::167 (DRAM) thermal spec    (    118)   35.00000 watts.
+
+PKG_DOMAIN  get_power_limit
+msr_core.c::76 read msr=0x610 val=0x6845000148398
+msr_rapl.c::303 power limit time window 2 = 0x3
+msr_rapl.c::305 power limit power limit 2 = 0x450
+msr_rapl.c::307 power limit clamp 2       = 0x0
+msr_rapl.c::309 power limit enable 2      = 0x1
+msr_rapl.c::311 time multiplier 2         = 0x0
+msr_rapl.c::313 time_window_2_sec         =    0.0029296875
+msr_rapl.c::315 power_limit_2_watts        =  138.0000000000
+msr_rapl.c::317 time_multiplier_float_2    =    1.0000000000
+msr_rapl.c::321 power limit lock          = 0x0
+msr_rapl.c::323 power limit time window 1 = 0xa
+msr_rapl.c::325 power limit power limit 1 = 0x398
+msr_rapl.c::327 power limit clamp 1       = 0x0
+msr_rapl.c::329 power limit enable 1      = 0x1
+msr_rapl.c::332 time multiplier 1         = 0x0
+msr_rapl.c::335 time_window_1_sec         =    0.0097656250
+msr_rapl.c::337 power_limit_1_watts        =  115.0000000000
+msr_rapl.c::339 time_multiplier_float_1    =    1.0000000000
+
+PP0_DOMAIN  get_power_limit
+msr_core.c::76 read msr=0x638 val=0x0
+msr_rapl.c::321 power limit lock          = 0x0
+msr_rapl.c::323 power limit time window 1 = 0x0
+msr_rapl.c::325 power limit power limit 1 = 0x0
+msr_rapl.c::327 power limit clamp 1       = 0x0
+msr_rapl.c::329 power limit enable 1      = 0x0
+msr_rapl.c::332 time multiplier 1         = 0x0
+msr_rapl.c::335 time_window_1_sec         =    0.0000000000
+msr_rapl.c::337 power_limit_1_watts        =    0.0000000000
+msr_rapl.c::339 time_multiplier_float_1    =    1.0000000000
+
+DRAM_DOMAIN get_power_limit
+msr_core.c::76 read msr=0x618 val=0x0
+msr_rapl.c::321 power limit lock          = 0x0
+msr_rapl.c::323 power limit time window 1 = 0x0
+msr_rapl.c::325 power limit power limit 1 = 0x0
+msr_rapl.c::327 power limit clamp 1       = 0x0
+msr_rapl.c::329 power limit enable 1      = 0x0
+msr_rapl.c::332 time multiplier 1         = 0x0
+msr_rapl.c::335 time_window_1_sec         =    0.0000000000
+msr_rapl.c::337 power_limit_1_watts        =    0.0000000000
+msr_rapl.c::339 time_multiplier_float_1    =    1.0000000000
+
+PKG_DOMAIN  get_perf_status
+msr_core.c::76 read msr=0x613 val=0x0
+msr_rapl.c::369 (PKG) status = 0x0 (   0.0000000000 seconds)
+
+DRAM_DOMAIN get_perf_status
+msr_core.c::76 read msr=0x61b val=0x0
+msr_rapl.c::369 (DRAM) status = 0x0 (   0.0000000000 seconds)
+
+PP0_DOMAIN  get_policy
+msr_core.c::76 read msr=0x63a val=0x0
+msr_rapl.c::406 (PP0) policy = 0x0 (0)
+<<< hostname=     zin64
