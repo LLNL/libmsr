@@ -15,7 +15,7 @@ endif
 CFLAGS=-fPIC -Wall ${DEFINES} ${COMPILER_SPECIFIC_FLAGS}
 CC=gcc
 
-all: msr_rapl.o blr_util.o msr_core.o msr_turbo.o msr_pebs.o msr_opt.o msr_clocks.o msr_signal.o
+all: blr_util.o msr_core.o msr_turbo.o msr_pebs.o msr_clocks.o 
 	$(CC) -fPIC -shared -Wl,-soname,$(library) -o ./lib/$(library) $^
 
 msr_core.o:   Makefile                       msr_core.c   msr_core.h 
