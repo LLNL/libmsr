@@ -17,24 +17,8 @@ To build the library:
 
 The NUM_PACKAGES and NUM_CORES_PER_PACKAGE need to be set in msr_core.h correctly. You can find this information in /proc/cpuinfo.
 
-Type "make" in the libmsr folder, and then "make rapl-gnu" in the libmsr/mpi/ folder.
-
-
 This should create libmsr.so and librapl.so in the libmsr/lib folder.
 
-
-==========================================
-
-To use this with MPI: 
-
-For MPI programs, ensure that the MSR_RANK_MOD environment variable is exported. This variable
-determines which rank on the node will take control of writing to the MSRs in the situation 
-where there are multiple tasks running on the node. 
-
-To use this with OpenMP or Sequential Code:
- 
-As of now, we do not support OpenMP. However, you can create a dummy program that calls MPI_Init, and MPI_Finalize
-and uses the "execvp" sytem call to execute your OpenMP binary. Take a look at the test-exec.c in the examples/ folder.
 ===========================================
 
 To link to the library:
