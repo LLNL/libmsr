@@ -1,6 +1,6 @@
 /* msr_common.h
  *
- * Data structures used across multiple modules.
+ * Macros used across multiple modules.
  */
 #include <stdint.h>
 #ifndef MSR_COMMON_H
