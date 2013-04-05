@@ -16,7 +16,7 @@ CFLAGS=-fPIC -Wall ${DEFINES} ${COMPILER_SPECIFIC_FLAGS}
 CC=gcc
 
 all: blr_util.o msr_core.o msr_turbo.o msr_pebs.o msr_clocks.o 
-	$(CC) -fPIC -shared -Wl,-soname,$(library) -o ./lib/$(library) $^
+	$(CC) -fPIC -shared -Wl,-soname,$(library) -o ./$(library) $^
 
 msr_core.o:   Makefile                       msr_core.c   msr_core.h 
 msr_pebs.o:   Makefile msr_core.o            msr_pebs.c   msr_pebs.h 
