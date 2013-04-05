@@ -22,7 +22,6 @@ msr_core.o:   Makefile                       msr_core.c   msr_core.h
 msr_pebs.o:   Makefile msr_core.o            msr_pebs.c   msr_pebs.h 
 msr_turbo.o:  Makefile msr_core.o            msr_turbo.c  msr_turbo.h 
 msr_clocks.o: Makefile msr_core.o            msr_clocks.c msr_clocks.h
-msr_signal.o: Makefile			     msr_signal.c msr_signal.h
 blr_util.o:   Makefile                       blr_util.c   blr_util.h 
 
 clean:
