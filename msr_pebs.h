@@ -12,7 +12,6 @@
 
 // These are the PEBS-enabled counters.		  	//  xxyy 
 /*
-static const uint16_t UNUSED_COUNTER			= 0x0000;
 static const uint16_t INSTR_RETIRED__ANY_P		= 0x00c0;
 static const uint16_t X87_OPS_RETIRED__ANY		= 0xfec1;
 static const uint16_t BR_INST_RETIRED__MISPRED		= 0x00c5;
@@ -23,7 +22,10 @@ static const uint16_t MEM_LOAD_RETIRED__L2_MISS		= 0x04cb;
 static const uint16_t MEM_LOAD_RETIRED__L2_LINE_MISS	= 0x08cb;
 static const uint16_t MEM_LOAD_RETIRED__DTLB_MISS	= 0x10cb;
 */
-struct pebs{
+
+// Taken from table 18-12:  PEBS record format for Intel
+// 			    Core i7 Processor Family
+struct pebs_record{
 	uint64_t eflags;// 0x00
 	uint64_t eip;	// 0x08
 	uint64_t eax;	// 0x10
@@ -49,20 +51,25 @@ struct pebs{
 			// 0xb0
 };
 
+
+// Taken from figure 18-16:  PEBS programming environment.
+// The value in IA32_DS_AREA should point to this.
 struct ds_area{
-	uint64_t bts_buffer_base;		// 0x00 
-	uint64_t bts_index;			// 0x08
-	uint64_t bts_absolute_maximum;		// 0x10
-	uint64_t bts_interrupt_threshold;	// 0x18
-	struct pebs *pebs_buffer_base;		// 0x20
-	struct pebs *pebs_index;		// 0x28
-	struct pebs *pebs_absolute_maximum;	// 0x30
-	struct pebs *pebs_interrupt_threshold;	// 0x38
-	uint64_t pebs_counter0_reset;		// 0x40
-	uint64_t pebs_counter1_reset;		// 0x48
-	uint64_t pebs_counter2_reset;		// 0x50
-	uint64_t pebs_counter3_reset;		// 0x58
-	uint64_t reserved;			// 0x60
+	uint64_t bts_buffer_base;			// 0x00 
+	uint64_t bts_index;				// 0x08
+	uint64_t bts_absolute_maximum;			// 0x10
+	uint64_t bts_interrupt_threshold;		// 0x18
+	struct pebs_record *pebs_buffer_base;		// 0x20	linear address of the first byte of the PEBS buffer
+	struct pebs_record *pebs_index;			// 0x28	same value as the PEBS Buffer Base (updated by processor)
+	struct pebs_record *pebs_absolute_maximum;	// 0x30 absolute address of the maximum length of the allocated PEBS 
+							//	buffer plus the starting address of the PEBS buffer.
+	struct pebs_record *pebs_interrupt_threshold;	// 0x38	linear address of the first byte of the PEBS record within 
+							//	the PEBS buffer that represents the threshold record.
+	uint64_t pebs_counter0_reset;			// 0x40
+	uint64_t pebs_counter1_reset;			// 0x48
+	uint64_t pebs_counter2_reset;			// 0x50
+	uint64_t pebs_counter3_reset;			// 0x58
+	uint64_t reserved;				// 0x60
 };
 
 void pebs_init(int nRecords, uint64_t *counter, uint64_t *reset_val);
