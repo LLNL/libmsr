@@ -48,6 +48,51 @@ stomp(){
 	}
 }
 
+static void 
+dump_ds_area(){
+	fprintf(stdout,"ds_area->bts_buffer_base		%lx\n",ds_area->bts_buffer_base);
+	fprintf(stdout,"ds_area->bts_index			%lx\n",ds_area->bts_index);
+	fprintf(stdout,"ds_area->bts_absolute_maximum		%lx\n",ds_area->bts_absolute_maximum);
+	fprintf(stdout,"ds_area->bts_interrupt_threshold	%lx\n",ds_area->bts_interrupt_threshold);
+	fprintf(stdout,"ds_area->pebs_buffer_base		%p\n",ds_area->pebs_buffer_base);
+	fprintf(stdout,"ds_area->pebs_index			%p\n",ds_area->pebs_index);
+	fprintf(stdout,"ds_area->pebs_absolute_maximum		%p\n",ds_area->pebs_absolute_maximum);
+	fprintf(stdout,"ds_area->pebs_interrupt_threshold	%p\n",ds_area->pebs_interrupt_threshold);
+	fprintf(stdout,"ds_area->pebs_counter0_reset		%lx\n",ds_area->pebs_counter0_reset);
+	fprintf(stdout,"ds_area->pebs_counter1_reset		%lx\n",ds_area->pebs_counter1_reset);
+	fprintf(stdout,"ds_area->pebs_counter2_reset		%lx\n",ds_area->pebs_counter2_reset);
+	fprintf(stdout,"ds_area->pebs_counter3_reset		%lx\n",ds_area->pebs_counter3_reset);
+	fprintf(stdout,"ds_area->reserved			%lx\n",ds_area->reserved);
+}
+
+static void
+dump_useful_msrs(){
+	uint64_t tmp;
+	read_msr(0, IA32_PMC0, &tmp);
+	fprintf(stdout,"IA32_PMC0				%lx\n", tmp);
+	read_msr(0, IA32_PMC1, &tmp);
+	fprintf(stdout,"IA32_PMC1				%lx\n", tmp);
+	read_msr(0, IA32_PMC2, &tmp);
+	fprintf(stdout,"IA32_PMC2				%lx\n", tmp);
+	read_msr(0, IA32_PMC3, &tmp);
+	fprintf(stdout,"IA32_PMC3				%lx\n", tmp);
+	read_msr(0, IA32_PERFEVTSEL0, &tmp);
+	fprintf(stdout,"IA32_PERFEVTSEL0			%lx\n", tmp);
+	read_msr(0, IA32_PERFEVTSEL1, &tmp);
+	fprintf(stdout,"IA32_PERFEVTSEL1			%lx\n", tmp);
+	read_msr(0, IA32_PERFEVTSEL2, &tmp);
+	fprintf(stdout,"IA32_PERFEVTSEL2			%lx\n", tmp);
+	read_msr(0, IA32_PERFEVTSEL3, &tmp);
+	fprintf(stdout,"IA32_PERFEVTSEL3			%lx\n", tmp);
+	read_msr(0, IA32_PERF_GLOBAL_CTRL, &tmp);
+	fprintf(stdout,"IA32_PERF_GLOBAL_CTRL			%lx\n",	tmp);
+	read_msr(0, IA32_PEBS_ENABLE, &tmp);
+	fprintf(stdout,"IA32_PEBS_ENABLE			%lx\n", tmp);
+	read_msr(0, IA32_DS_AREA, &tmp);
+	fprintf(stdout,"IA32_DS_AREA				%lx\n", tmp);
+	read_msr(0, IA32_PMC0, &tmp);
+}
+
 void 
 dump_pebs(){
 	static int initialized = 0;
@@ -64,6 +109,7 @@ dump_pebs(){
 	struct pebs_record *p = ds_area->pebs_buffer_base;
 	while(p != ds_area->pebs_index){
 		write( fd, p, sizeof(struct pebs_record) );
+		p++;
 	}
 	close(fd);
 }
@@ -111,6 +157,9 @@ pebs_init(){
 		assert(0);
 	}
 
+	dump_useful_msrs();
+	dump_ds_area();
+
 	// pebs records start one page after ds_area
 	struct pebs_record *ppebs = (struct pebs_record*) ( (uint64_t)ds_area + pagesize );
 
@@ -144,15 +193,25 @@ pebs_init(){
 	//write_msr(0, IA32_PERFEVTSEL2, 0x410000 | counter[2]);
 	//write_msr(0, IA32_PERFEVTSEL3, 0x410000 | counter[3]);
 
-	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0xf);
+	if(0){
+		write_msr(0, IA32_PERF_GLOBAL_CTRL, 0xf);
 
-	stomp();
+		stomp();
 
+		write_msr(0, IA32_PERF_GLOBAL_CTRL, 0x0);
+	}
+
+	dump_useful_msrs();
+	dump_ds_area();
+	
+	//Cleanup
 	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0x0);
+	write_msr(0, IA32_PMC0, 0);
+	write_msr(0, IA32_PERFEVTSEL0, 0);
+	write_msr(0, IA32_DS_AREA, 0);
 }
 
 
 
 	
-
 

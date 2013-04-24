@@ -8,7 +8,7 @@ int main( int argc, char **argv ){
 	fprintf(stdout,"AAA\n");
 	pebs_init();
 	fprintf(stdout,"BBB\n");
-	dump_pebs();
+	//dump_pebs();
 	fprintf(stdout,"CCC\n");
 	return 0;
 }
