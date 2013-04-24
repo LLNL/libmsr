@@ -68,8 +68,9 @@ dump_pebs(){
 	close(fd);
 }
 
+//pebs_init(int nRecords, uint64_t *counter, uint64_t *reset_val ){
 void
-pebs_init(int nRecords, uint64_t *counter, uint64_t *reset_val ){
+pebs_init(){
 	// 1. Set up the precise event buffering utilities.
 	// 	a.  Place values in the
 	// 		i.   precise event buffer base,
@@ -121,25 +122,27 @@ pebs_init(int nRecords, uint64_t *counter, uint64_t *reset_val ){
 	ds_area->pebs_index			= ppebs;
 	ds_area->pebs_absolute_maximum		= (struct pebs_record*)( (uint64_t) ppebs + pagesize );
 	ds_area->pebs_interrupt_threshold	= (struct pebs_record*)( (uint64_t) ppebs + pagesize );
-	ds_area->pebs_counter0_reset		= reset_val[0];
-	ds_area->pebs_counter1_reset		= reset_val[1];
-	ds_area->pebs_counter2_reset		= reset_val[2];
-	ds_area->pebs_counter3_reset		= reset_val[3];
+	ds_area->pebs_counter0_reset		= -1000;	//reset_val[0];
+	ds_area->pebs_counter1_reset		= 0;		//reset_val[1];
+	ds_area->pebs_counter2_reset		= 0;		//reset_val[2];
+	ds_area->pebs_counter3_reset		= 0;		//reset_val[3];
 	ds_area->reserved			= 0;
 
 	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0);			// known good state.
 	write_msr(0, IA32_DS_AREA, (uint64_t)ds_area);
 	write_msr(0, IA32_PEBS_ENABLE, 0xf | ((uint64_t)0xf << 32) );	// Figure 18-14.
 
-	write_msr(0, IA32_PMC0, reset_val[0]);
-	write_msr(1, IA32_PMC1, reset_val[1]);
-	write_msr(2, IA32_PMC2, reset_val[2]);
-	write_msr(3, IA32_PMC3, reset_val[3]);
+	write_msr(0, IA32_PMC0, -1000);
+	//write_msr(0, IA32_PMC0, reset_val[0]);
+	//write_msr(1, IA32_PMC1, reset_val[1]);
+	//write_msr(2, IA32_PMC2, reset_val[2]);
+	//write_msr(3, IA32_PMC3, reset_val[3]);
 
-	write_msr(0, IA32_PERFEVTSEL0, 0x410000 | counter[0]);
-	write_msr(0, IA32_PERFEVTSEL1, 0x410000 | counter[1]);
-	write_msr(0, IA32_PERFEVTSEL2, 0x410000 | counter[2]);
-	write_msr(0, IA32_PERFEVTSEL3, 0x410000 | counter[3]);
+	write_msr(0, IA32_PERFEVTSEL0, 0x410000 | 0xc0 );	// Retired instructions.
+	//write_msr(0, IA32_PERFEVTSEL0, 0x410000 | counter[0]);
+	//write_msr(0, IA32_PERFEVTSEL1, 0x410000 | counter[1]);
+	//write_msr(0, IA32_PERFEVTSEL2, 0x410000 | counter[2]);
+	//write_msr(0, IA32_PERFEVTSEL3, 0x410000 | counter[3]);
 
 	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0xf);
 

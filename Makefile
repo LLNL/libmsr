@@ -15,14 +15,18 @@ endif
 CFLAGS=-fPIC -Wall ${DEFINES} ${COMPILER_SPECIFIC_FLAGS}
 CC=gcc
 
-all: blr_util.o msr_core.o msr_turbo.o msr_pebs.o msr_clocks.o 
+all: blr_util.o msr_core.o msr_turbo.o msr_pebs.o msr_clocks.o pebs_harness.c
 	$(CC) -fPIC -shared -Wl,-soname,$(library) -o ./$(library) $^
+	$(CC) -Wall -o pebs pebs_harness.c -Wl,-rpath=/${HOME}/local/research/libmsr -L${HOME}/local/research/libmsr -lmsr 
 
 msr_core.o:   Makefile                       msr_core.c   msr_core.h 
 msr_pebs.o:   Makefile msr_core.o            msr_pebs.c   msr_pebs.h 
 msr_turbo.o:  Makefile msr_core.o            msr_turbo.c  msr_turbo.h 
 msr_clocks.o: Makefile msr_core.o            msr_clocks.c msr_clocks.h
 blr_util.o:   Makefile                       blr_util.c   blr_util.h 
+	
 
 clean:
 	rm -f *.o $(library)
+
+

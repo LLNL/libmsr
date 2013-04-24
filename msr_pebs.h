@@ -72,7 +72,8 @@ struct ds_area{
 	uint64_t reserved;				// 0x60
 };
 
-void pebs_init(int nRecords, uint64_t *counter, uint64_t *reset_val);
+//void pebs_init(int nRecords, uint64_t *counter, uint64_t *reset_val);
+void pebs_init();
 void dump_pebs();
 
 #endif // MSR_PEBS_H
