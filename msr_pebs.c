@@ -147,7 +147,7 @@ pebs_init(){
 	init_stomp();	
 	ds_area = mmap(
 			NULL,						// let kernel choose address
-			pagesize * 3,					// length in bytes
+			pagesize * 5,					// length in bytes
 			PROT_READ | PROT_WRITE, 			// make memory r/w
 			MAP_ANONYMOUS | MAP_LOCKED | MAP_PRIVATE,	// no file | no swap | not visible
 			-1,						// dummy file descriptor
