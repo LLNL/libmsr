@@ -95,24 +95,32 @@ dump_useful_msrs(){
 
 void 
 dump_pebs(){
-	static int initialized = 0;
-	static int fd = 0;
-	if(!initialized){
-		initialized = 1;
-		fd = open("./pebs.out", O_WRONLY | O_APPEND | O_CREAT );
-		if(fd == -1){
-			fprintf(stderr, "%s::%d file error.\n", __FILE__, __LINE__ );
-			perror("Bye!\n");
-			exit(-1);
-		}
-	}
 	struct pebs_record *p = ds_area->pebs_buffer_base;
-	while(p != ds_area->pebs_index){
-		write( fd, p, sizeof(struct pebs_record) );
-		p++;
+	while(p++ != ds_area->pebs_index){
+		fprintf(stdout, "eflags	%lx\n",p->eflags);
+		fprintf(stdout, "eip	%lx\n",   p->eip); 
+		fprintf(stdout, "eax	%lx\n",   p->eax); 
+		fprintf(stdout, "ebx	%lx\n",   p->ebx); 
+		fprintf(stdout, "ecx	%lx\n",   p->ecx); 
+		fprintf(stdout, "edx	%lx\n",   p->edx); 
+		fprintf(stdout, "esi	%lx\n",   p->esi); 
+		fprintf(stdout, "edi	%lx\n",   p->edi); 
+		fprintf(stdout, "ebp	%lx\n",   p->ebp); 
+		fprintf(stdout, "esp	%lx\n",   p->esp); 
+		fprintf(stdout, "r8	%lx\n",    p->r8);  
+		fprintf(stdout, "r9	%lx\n",    p->r9);  
+		fprintf(stdout, "r10	%lx\n",   p->r10); 
+		fprintf(stdout, "r11	%lx\n",   p->r11); 
+		fprintf(stdout, "r12	%lx\n",   p->r12); 
+		fprintf(stdout, "r13	%lx\n",   p->r13); 
+		fprintf(stdout, "r14	%lx\n",   p->r14); 
+		fprintf(stdout, "r15	%lx\n",   p->r15); 
+		fprintf(stdout, "stat	%lx\n",  p->stat);
+		fprintf(stdout, "add	%lx\n",   p->add); 
+		fprintf(stdout, "enc	%lx\n",   p->enc); 
+		fprintf(stdout, "lat	%lx\n",   p->lat); 
 	}
-	close(fd);
-}
+};
 
 //pebs_init(int nRecords, uint64_t *counter, uint64_t *reset_val ){
 void
@@ -196,6 +204,7 @@ pebs_init(){
 	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0xf);
 	stomp();
 	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0x0);
+	dump_pebs();
 
 	dump_useful_msrs();
 	dump_ds_area();
