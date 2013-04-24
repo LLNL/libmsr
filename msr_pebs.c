@@ -43,7 +43,7 @@ stomp(){
 	
 	for(j=0; j<1024; j++){
 		for(i=stomp_sz-4097; i>0; i=i-4097){
-			stomp_buf[i+j] += i+j;
+			stomp_buf[0]++;
 		}
 	}
 }
@@ -193,13 +193,9 @@ pebs_init(){
 	//write_msr(0, IA32_PERFEVTSEL2, 0x410000 | counter[2]);
 	//write_msr(0, IA32_PERFEVTSEL3, 0x410000 | counter[3]);
 
-	if(0){
-		write_msr(0, IA32_PERF_GLOBAL_CTRL, 0xf);
-
-		stomp();
-
-		write_msr(0, IA32_PERF_GLOBAL_CTRL, 0x0);
-	}
+	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0xf);
+	stomp();
+	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0x0);
 
 	dump_useful_msrs();
 	dump_ds_area();
