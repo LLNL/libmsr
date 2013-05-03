@@ -132,7 +132,6 @@ pebs_init(){
 	// ds_area on the first page and the pebs records on the second
 	// and successive pages.
 
-	init_stomp();	
 	ds_area = mmap(
 			NULL,						// let kernel choose address
 			pagesize * 5,					// length in bytes
