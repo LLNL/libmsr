@@ -9,28 +9,27 @@
 #        Sandy Bridge Xeon is -DARCH_062D
 #
 LIBDIR=${HOME}/local/research/libmsr
-CFLAGS=-fPIC -Wall ${COMPILER_SPECIFIC_FLAGS}
+CFLAGS=-fPIC -Wall 
 CC=gcc
 
-libmsr: blr_util.o msr_core.o msr_turbo.o msr_pebs.o msr_clocks.o 
-	$(CC) -fPIC -shared -Wl,-soname,libmsr.so -o libmsr.so $^
+all: app 
 
-libpebs: pebs.o 
-	$(CC) -fPIC -shared -Wl,-soname,libpebs.so -Wl,-rpath=${LIBDIR} -L{LIBDIR} -o libpebs.so $^ -lmsr
+libmsr: blr_util.o msr_core.o msr_turbo.o msr_clocks.o 
+	$(CC) -fPIC -shared -Wl,-soname,libmsr.so -Wl,-rpath=$(LIBDIR) -L$(LIBDIR) -o libmsr.so $^
+
+libpebs: libmsr msr_pebs.o 
+	$(CC) -fPIC -shared -Wl,-soname,libpebs.so -Wl,-rpath=$(LIBDIR) -L$(LIBDIR) -o libpebs.so msr_pebs.o -lmsr
 	
-app: app.o 
-	$(CC) $(CFLAGS) -O0 -Wall -o $@ $^ -Wl,-rpath=${LIBDIR} -L{LIBDIR} -lpebs 
+app: libpebs app.o
+	$(CC) $(CFLAGS) -O0 -Wall -o $@ app.o -Wl,-rpath=$(LIBDIR) -L${LIBDIR} -lpebs 
 
-
-	$(CC) -Wall -o pebs pebs_harness.c -Wl,-rpath=${LIBDIR} -L${LIBDIR} -lmsr
-msr_core.o:   	Makefile                       msr_core.c   msr_core.h 
-msr_turbo.o:  	Makefile msr_core.o            msr_turbo.c  msr_turbo.h 
-msr_clocks.o: 	Makefile msr_core.o            msr_clocks.c msr_clocks.h
-blr_util.o:   	Makefile                       blr_util.c   blr_util.h 
+msr_core.o:   	Makefile msr_core.c msr_core.h 
+msr_turbo.o:  	Makefile msr_core.o msr_turbo.c  msr_turbo.h 
+msr_clocks.o: 	Makefile msr_core.o msr_clocks.c msr_clocks.h
+blr_util.o:   	Makefile blr_util.c blr_util.h 
+msr_pebs.o:   	Makefile msr_core.o msr_pebs.c msr_pebs.h 
 app.o:		Makefile app.c
-pebs.o:   	Makefile msr_core.o            msr_pebs.c   msr_pebs.h 
-	
 clean:
-	rm -f *.o $(library)
+	rm -f *.o *.so
 
 
