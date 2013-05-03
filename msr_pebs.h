@@ -74,6 +74,9 @@ struct ds_area{
 
 //void pebs_init(int nRecords, uint64_t *counter, uint64_t *reset_val);
 void pebs_init();
+void pebs_start();
+void pebs_stop();
+void pebs_finalize();
 void dump_pebs();
 
 #endif // MSR_PEBS_H

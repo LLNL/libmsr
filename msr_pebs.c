@@ -201,14 +201,22 @@ pebs_init(){
 	//write_msr(0, IA32_PERFEVTSEL2, 0x410000 | counter[2]);
 	//write_msr(0, IA32_PERFEVTSEL3, 0x410000 | counter[3]);
 
+}
+
+void pebs_start(){
 	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0xf);
+}
 	stomp();
+
+
+void pebs_stop(){
 	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0x0);
 	dump_pebs();
-
 	dump_useful_msrs();
 	dump_ds_area();
-	
+}
+
+void pebs_finalize(){	
 	//Cleanup
 	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0x0);
 	write_msr(0, IA32_PMC0, 0);
