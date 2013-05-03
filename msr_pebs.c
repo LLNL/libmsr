@@ -27,26 +27,6 @@ static const off_t IA32_PERFEVTSEL1		= 0x187;
 static const off_t IA32_PERFEVTSEL2		= 0x188;
 static const off_t IA32_PERFEVTSEL3		= 0x189;
 
-static uint64_t *stomp_buf;
-static const uint64_t stomp_sz		= (uint64_t)1024 * 1024 * 64;
-
-static void
-init_stomp(){
-	// 512MB
-	stomp_buf = calloc( (size_t)stomp_sz, sizeof(uint64_t) );
-	assert(stomp_buf);
-}
-
-static void
-stomp(){
-	uint64_t i,j;
-	
-	for(j=0; j<1024; j++){
-		for(i=stomp_sz-4097; i>0; i=i-4097){
-			stomp_buf[0]++;
-		}
-	}
-}
 
 static void 
 dump_ds_area(){
@@ -206,7 +186,7 @@ pebs_init(){
 void pebs_start(){
 	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0xf);
 }
-	stomp();
+	//stomp();
 
 
 void pebs_stop(){
