@@ -8,75 +8,52 @@
 #define USE_062A 0	
 #define USE_063E 0
 
-
-// Section 35.7
-// Table 35-11.  MSRs supported by Intel processors based on Intel 
-// microarchitecture code name Sandy Bridge.
-// Model/family 06_2A, 06_2D.
-#if (USE_062A || USE_062D)
-#define MSR_RAPL_POWER_UNIT 		(0x606)
-#define MSR_PKG_POWER_LIMIT 		(0x610)
-#define MSR_PKG_ENERY_STATUS 		(0x611)
-#define MSR_PKG_POWER_INFO 		(0x614)
-#define MSR_PP0_POWER_LIMIT 		(0x638)
-#define MSR_PP0_ENERY_STATUS 		(0x639)
-#define MSR_PP0_POLICY 			(0x63A)
-#define MSR_PP0_PERF_STATUS 		(0x63B)
-#endif
-
-// Section 35.7.1
-// Table 35-12. MSRs supported by second generation Intel Core processors 
-// (Intel microarchitecture Code Name Sandy Bridge)
-// Model/family 06_2AH
-#if (USE_062A)
-#define MSR_PP1_POWER_LIMIT 		(0x640)
-#define MSR_PP1_ENERGY_STATUS 		(0x641)	// sic; MSR_PP1_ENERY_STATUS
-#define MSR_PP1_POLICY 			(0x642)
-#endif
-
-// Section 35.7.2
-// Table 35-13. Selected MSRs supported by Intel Xeon processors E5 Family 
-// (based on Intel Microarchitecture code name Sandy Bridge) 
-// Model/family 06_2DH
-#if (USE_062D)
-#define MSR_PKG_PERF_STATUS 		(0x613)
-#define MSR_DRAM_POWER_LIMIT 		(0x618)
-#define MSR_DRAM_ENERGY_STATUS 		(0x619)	// sic; MSR_DRAM_ENERY_STATUS
-#define MSR_DRAM_ENERY_STATUS 		(0x61B)
-#define MSR_DRAM_POWER_INFO 		(0x61C)
-#endif
-
-// Section 35.8.1
-// Table 35-15. Selected MSRs supported by Intel Xeon processors E5 Family v2 
-// (based on Intel microarchitecture code name Ivy Bridge) 
-// Model/family 06_3EH.  
-// The Intel documentation only lists this table of msrs; this may be an error.
-#if (USE_063E)
-#define MSR_PKG_PERF_STATUS 		(0x613)
-#define MSR_DRAM_POWER_LIMIT 		(0x618)
-#define MSR_DRAM_ENERGY_STATUS 		(0x619)	// sic; MSR_DRAM_ENERY_STATUS
-#define MSR_DRAM_PERF_STATUS 		(0x61B)
-#define MSR_DRAM_POWER_INFO 		(0x61C)
-#endif
-
-
-
+// Watts and seconds are actual watts and actual seconds, not
+// scaled values.  The bit vector is the 64-bit values that is
+// read from/written to the msr.
 
 struct rapl_limit{
-	double watts;		// User-friendly interface.
-	double seconds;
+	double 		watts;		// User-friendly interface.
+	double	 	seconds;
+	uint64_t 	bit_vector;	// User-unfriendly interface.
+	uint64_t	error;		// Error types TBD
+};
 
-	uint64_t _watts;	// User-unfriendly interface.
-	uint64_t _seconds;
-}
 
-struct rapl_info{
+// We're going to overload this interface a bit...
+//
+// rapl_set_limit()
+//
+//	a) If a pointer is null, do nothing.
+//
+//	b) If the bit_vector is nonzero, translate the bit_vector to watts and seconds 
+//	and write the bit vector to the msr.
+//
+//	c) If the bit_vector is zero, translate the watts and seconds to the appropriate
+//	bit_vector and write the bit_vector to the msr.
+//
+// rapl_get_limit()
+//
+//	a) If a pointer is null, do nothing.
+//
+//	b) If the bit_vector is nonzero, translate the bit_vector to watts and seconds.
+//
+//	c) If the bit_vector is zero, read the msr value into the bit_vector and 
+//	translate into watts and seconds.
+//
+int rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
+int rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
 
-}
+struct delta{
+	double		dram_watts;		// Average watts over the delta
+	double		dram_joules;		// Average joules over the delta
+	double		pkg_watts;
+	double		pkg_joules;
+	double		seconds;		// Length of time over the delta
+};
 
-int rapl_set_package_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2 );
-int rapl_set_dram_limit( int package, struct rapl_limit* limit );
-int rapl_set_pp0_limit( int package, struct rapl_lmit* limit );
+// If delta is NULL just update internal bookkeeping.
+void take_delta( int package, struct delta* delta );
 
 
 
