@@ -53,7 +53,7 @@ struct delta{
 };
 
 // If delta is NULL just update internal bookkeeping.
-void take_delta( int package, struct delta* delta );
+//void take_delta( int package, struct delta* delta );
 
 
 
