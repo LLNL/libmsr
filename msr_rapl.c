@@ -85,7 +85,11 @@ translate( int package, uint64_t* bits, double* units, int type ){
 		initialized=1;
 		for(i=0; i<NUM_PACKAGES; i++){
 			// See figure 14-16 for bit fields.
+#ifdef MSR_DEBUG
+			ru[i].msr_rapl_power_unit = 0xA1003;
+#else
 			read_msr( i, MSR_RAPL_POWER_UNIT, &(ru[i].msr_rapl_power_unit) );
+#endif
 			// default is 1010b or 976 microseconds
 			ru[i].seconds = 1.0/(double)( 2^(MASK_VAL( ru[i].msr_rapl_power_unit, 19, 16 )));
 			// default is 10000b or 15.3 microjoules
@@ -127,8 +131,13 @@ struct rapl_power_info{
 static void
 rapl_get_power_info(int package, struct rapl_power_info *info){
 	uint64_t val = 0;
+#ifdef MSR_DEBUG
+	info->msr_pkg_power_info  = 0x6845000148398;
+	info->msr_dram_power_info = 0x682d0001482d0;
+#else
 	read_msr( package, MSR_PKG_POWER_INFO, &(info->msr_pkg_power_info) );
 	read_msr( package, MSR_DRAM_POWER_INFO, &(info->msr_dram_power_info) );
+#endif
 
 	// Note that the same units are used in both the PKG and DRAM domains.
 	// Also note that "package", "socket" and "cpu" are being used interchangably.  This needs to be fixed.
@@ -204,5 +213,15 @@ take_delta( int package, struct delta* new_delta){
 */
 
 
-
-
+#ifdef MSR_DEBUG
+/* To compile this use 
+	gcc -DMSR_DEBUG -Wall msr_rapl.c
+   and run
+	./a.out
+*/
+int main(){
+	struct rapl_power_info r;
+	rapl_get_power_info(1, &r);
+	return 0;		
+}
+#endif	
