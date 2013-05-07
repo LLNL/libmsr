@@ -9,6 +9,7 @@
 static uint64_t *stomp_buf;
 static const uint64_t stomp_sz          = (uint64_t)1024 * 1024 * 64;
 int iters = 1024;
+//int iters = 1;
 int pagesize = 0;
 
 static void
@@ -23,11 +24,11 @@ init_stomp(){
 
 static void
 stomp(){
-        uint64_t i,j;
+        int64_t i,j;
 
         for(j=0; j<iters; j++){
                 for(i=stomp_sz-(pagesize+1); i>0; i=i-(pagesize+1)){
-                        stomp_buf[0]++;
+                        stomp_buf[i]++;
                 }
         }
 }

@@ -10,7 +10,8 @@
 #
 LIBDIR=./
 INCDIR=./
-CFLAGS=-fPIC -Wall 
+APPCFLAGS= -g
+CFLAGS=-fPIC -Wall -g
 CC=gcc
 
 all: app 
@@ -22,7 +23,7 @@ libpebs: libmsr msr_pebs.o
 	$(CC) -I$(INCDIR) -fPIC -shared -Wl,-soname,libpebs.so -Wl,-rpath=$(LIBDIR) -L$(LIBDIR) -o libpebs.so msr_pebs.o -lmsr
 	
 app: libpebs app.o
-	$(CC) $(CFLAGS) -O0 -Wall -o $@ app.o -Wl,-rpath=$(LIBDIR) -L${LIBDIR} -lmsr -lpebs 
+	$(CC) $(APPCFLAGS) -O0 -Wall -o $@ app.o -L${LIBDIR} -lmsr -lpebs 
 
 msr_core.o:   	Makefile msr_core.c msr_core.h 
 msr_turbo.o:  	Makefile msr_core.o msr_turbo.c  msr_turbo.h 
@@ -31,7 +32,7 @@ blr_util.o:   	Makefile blr_util.c blr_util.h
 msr_pebs.o:   	Makefile msr_core.o msr_pebs.c msr_pebs.h 
 
 app.o:		app.c Makefile
-	$(CC) -c -I$(INCDIR) -o $@ $< 
+	$(CC) $(APPCFLAGS) -c -I$(INCDIR) -o $@ $< 
   
 clean:
 	rm -f *.o *.so

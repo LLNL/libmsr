@@ -144,6 +144,12 @@ pebs_init(){
 		assert(0);
 	}
 
+        int ret = init_msr();
+        if (ret < 0){
+            printf("init of libmsr failed\n");
+            return;
+        }
+           
 	dump_useful_msrs();
 	dump_ds_area();
 
@@ -201,6 +207,7 @@ void pebs_finalize(){
 	write_msr(0, IA32_PMC0, 0);
 	write_msr(0, IA32_PERFEVTSEL0, 0);
 	write_msr(0, IA32_DS_AREA, 0);
+        finalize_msr();
 }
 
 
