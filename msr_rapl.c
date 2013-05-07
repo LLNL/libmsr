@@ -57,6 +57,79 @@
 #define MSR_DRAM_POWER_INFO 		(0x61C) //
 #endif
 
+enum{
+	BITS_TO_WATTS,
+	WATTS_TO_BITS,
+	BITS_TO_SECONDS,
+	SECONDS_TO_BITS,
+	BITS_TO_JOULES,
+	JOULES_TO_BITS,
+	NUM_XLATE
+};
+
+struct rapl_units{
+	uint64_t msr_rapl_power_unit;	// raw msr value
+	double seconds;
+	double joules;
+	double power;
+};
+
+static void
+translate( int package, uint64_t* bits, double* units, int type ){
+	static int initialized=0;
+	static struct rapl_units units[NUM_PACKAGES];
+	int i;
+	if(!initialized){
+		initialized=1;
+		for(i=0; i<NUM_PACKAGES; i++){
+			// See figure 14-16 for bit fields.
+			read_msr( i, MSR_RAPL_POWER_UNIT, &(units[i].msr_rapl_power_unit) );
+			// default is 1010b or 976 microseconds
+			units[i].seconds = 1.0/(double)( 2^(MASK_VAL( units[i].msr_rapl_power_unit, 19, 16 )))
+			// default is 10000b or 15.3 microjoules
+			units[i].joules  = 1.0/(double)( 2^(MASK_VAL( units[i].msr_rapl_power_unit, 12,  8 )))
+			// default is 0011b or 1/8 Watts
+			units[i].watts   = 1.0/(double)( 2^(MASK_VAL( units[i].msr_rapl_power_unit,  3,  0 )))
+		}	
+	}
+	
+}
+
+struct rapl_power_info{
+	uint64_t msr_pkg_power_info;	// raw msr values
+	uint64_t msr_dram_power_info;
+
+	double pkg_max_power;		// watts
+	double pkg_min_power;
+	double pkg_max_window;		// seconds
+	double pkg_therm_power;		// watts
+
+	double dram_max_power;		// watts
+	double dram_min_power;
+	double dram_max_window;		// seconds
+	double dram_therm_power;	// watts
+};
+
+static int
+rapl_get_power_info(int package, struct rapl_power_info *info){
+
+	read_msr( package, MSR_PKG_POWER_INFO, &(info->msr_pkg_power_info) );
+	read_msr( package, MSR_DRAM_POWER_INFO, &(info->msr_DRAM_power_info) );
+
+	// Note that the same units are used in both the PKG and DRAM domains.
+	// Also note that "package", "socket" and "cpu" are being used interchangably.  This needs to be fixed.
+	info->pkg_max_window  = translate( package, MASK_VAL( info->msr_pkg_power_info,  53, 48 ), BITS_TO_SECONDS );
+	info->pkg_max_power   = translate( package, MASK_VAL( info->msr_pkg_power_info,  46, 32 ), BITS_TO_WATTS   );
+	info->pkg_min_power   = translate( package, MASK_VAL( info->msr_pkg_power_info,  30, 16 ), BITS_TO_WATTS   );
+	info->pkg_therm_power = translate( package, MASK_VAL( info->msr_pkg_power_info,  14,  0 ), BITS_TO_WATTS   );
+
+	info->dram_max_window = translate( package, MASK_VAL( info->msr_dram_power_info, 53, 48 ), BITS_TO_SECONDS );
+	info->dram_max_power  = translate( package, MASK_VAL( info->msr_dram_power_info, 46, 32 ), BITS_TO_WATTS   );
+	info->dram_min_power  = translate( package, MASK_VAL( info->msr_dram_power_info, 30, 16 ), BITS_TO_WATTS   );
+	info->dram_therm_power= translate( package, MASK_VAL( info->msr_dram_power_info, 14,  0 ), BITS_TO_WATTS   );
+	
+}
+
 int 
 rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 
