@@ -76,7 +76,8 @@ dump_useful_msrs(){
 void 
 dump_pebs(){
 	struct pebs_record *p = ds_area->pebs_buffer_base;
-	while(p++ != ds_area->pebs_index){
+	//while(p++ != ds_area->pebs_index){
+	while(p != ds_area->pebs_index){
 		fprintf(stdout, "eflags	%lx\n",p->eflags);
 		fprintf(stdout, "eip	%lx\n",   p->eip); 
 		fprintf(stdout, "eax	%lx\n",   p->eax); 
@@ -99,7 +100,9 @@ dump_pebs(){
 		fprintf(stdout, "add	%lx\n",   p->add); 
 		fprintf(stdout, "enc	%lx\n",   p->enc); 
 		fprintf(stdout, "lat	%lx\n",   p->lat); 
+                ++p;
 	}
+
 };
 
 //pebs_init(int nRecords, uint64_t *counter, uint64_t *reset_val ){
@@ -127,6 +130,8 @@ pebs_init(){
 	// Each PEBS record is 0xB0 byes long.
 	int pagesize = getpagesize();
 	
+        int reset_value = 1000;
+        float buff_frac = 0.75;
 	
 	// I think we can only have one mapping per process, so put the 
 	// ds_area on the first page and the pebs records on the second
@@ -134,7 +139,8 @@ pebs_init(){
 
 	ds_area = mmap(
 			NULL,						// let kernel choose address
-			pagesize * 5,					// length in bytes
+			//pagesize * 5,					// length in bytes
+			sizeof(struct pebs_record) * reset_value,	// length in bytes
 			PROT_READ | PROT_WRITE, 			// make memory r/w
 			MAP_ANONYMOUS | MAP_LOCKED | MAP_PRIVATE,	// no file | no swap | not visible
 			-1,						// dummy file descriptor
@@ -156,15 +162,21 @@ pebs_init(){
 	// pebs records start one page after ds_area
 	struct pebs_record *ppebs = (struct pebs_record*) ( (uint64_t)ds_area + pagesize );
 
+
+        printf("sizeof pebs_record %lu\n", sizeof(struct pebs_record));
 	ds_area->bts_buffer_base 		= 0;
 	ds_area->bts_index			= 0;
 	ds_area->bts_absolute_maximum		= 0;
 	ds_area->bts_interrupt_threshold	= 0;
 	ds_area->pebs_buffer_base		= ppebs;
 	ds_area->pebs_index			= ppebs;
-	ds_area->pebs_absolute_maximum		= (struct pebs_record*)( (uint64_t) ppebs + pagesize );
-	ds_area->pebs_interrupt_threshold	= (struct pebs_record*)( (uint64_t) ppebs + pagesize );
-	ds_area->pebs_counter0_reset		= -1000;	//reset_val[0];
+	//ds_area->pebs_absolute_maximum		= (struct pebs_record*)( (uint64_t) ppebs + pagesize );
+	ds_area->pebs_absolute_maximum		= (struct pebs_record*)( (uint64_t) ppebs + reset_value * sizeof(struct pebs_record)); //points to byte after last pebs record
+	//ds_area->pebs_interrupt_threshold	= (struct pebs_record*)( (uint64_t) ppebs + pagesize );
+        size_t size = buff_frac * reset_value * sizeof(struct pebs_record);
+	//ds_area->pebs_interrupt_threshold	= (struct pebs_record*)( (uint64_t) ppebs + buff_frac * reset_value * sizeof(struct pebs_record)); //have the interrupt trigger at fraction of buffer size
+	ds_area->pebs_interrupt_threshold	= (struct pebs_record*)( (uint64_t) ppebs + size);
+	ds_area->pebs_counter0_reset		= -reset_value;	//reset_val[0];
 	ds_area->pebs_counter1_reset		= 0;		//reset_val[1];
 	ds_area->pebs_counter2_reset		= 0;		//reset_val[2];
 	ds_area->pebs_counter3_reset		= 0;		//reset_val[3];
@@ -180,7 +192,7 @@ pebs_init(){
 	//write_msr(2, IA32_PMC2, reset_val[2]);
 	//write_msr(3, IA32_PMC3, reset_val[3]);
 
-	write_msr(0, IA32_PERFEVTSEL0, 0x410000 | 0xc0 );	// Retired instructions.
+	write_msr(0, IA32_PERFEVTSEL0, 0x410000 | 0x1c0 );	// Retired instructions.
 	//write_msr(0, IA32_PERFEVTSEL0, 0x410000 | counter[0]);
 	//write_msr(0, IA32_PERFEVTSEL1, 0x410000 | counter[1]);
 	//write_msr(0, IA32_PERFEVTSEL2, 0x410000 | counter[2]);
@@ -191,7 +203,6 @@ pebs_init(){
 void pebs_start(){
 	write_msr(0, IA32_PERF_GLOBAL_CTRL, 0xf);
 }
-	//stomp();
 
 
 void pebs_stop(){
@@ -199,6 +210,9 @@ void pebs_stop(){
 	dump_pebs();
 	dump_useful_msrs();
 	dump_ds_area();
+        //TODO
+        // do we need to reset the index here?
+	//ds_area->pebs_index			= ppebs;
 }
 
 void pebs_finalize(){	

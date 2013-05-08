@@ -14,7 +14,7 @@ APPCFLAGS= -g
 CFLAGS=-fPIC -Wall -g
 CC=gcc
 
-all: app 
+all: app  cleanup
 
 libmsr: blr_util.o msr_core.o msr_turbo.o msr_clocks.o 
 	$(CC) -I$(INCDIR) -fPIC -shared -Wl,-soname,libmsr.so -Wl,-rpath=$(LIBDIR) -L$(LIBDIR) -o libmsr.so $^
@@ -24,6 +24,8 @@ libpebs: libmsr msr_pebs.o
 	
 app: libpebs app.o
 	$(CC) $(APPCFLAGS) -O0 -Wall -o $@ app.o -L${LIBDIR} -lmsr -lpebs 
+cleanup: libpebs cleanup.o
+	$(CC) $(APPCFLAGS) -O0 -Wall -o $@ cleanup.o -L${LIBDIR} -lmsr -lpebs 
 
 msr_core.o:   	Makefile msr_core.c msr_core.h 
 msr_turbo.o:  	Makefile msr_core.o msr_turbo.c  msr_turbo.h 
@@ -32,6 +34,8 @@ blr_util.o:   	Makefile blr_util.c blr_util.h
 msr_pebs.o:   	Makefile msr_core.o msr_pebs.c msr_pebs.h 
 
 app.o:		app.c Makefile
+	$(CC) $(APPCFLAGS) -c -I$(INCDIR) -o $@ $< 
+cleanup.o:		cleanup.c Makefile
 	$(CC) $(APPCFLAGS) -c -I$(INCDIR) -o $@ $< 
   
 clean:
