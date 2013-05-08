@@ -174,11 +174,10 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 	uint64_t pkg_limit=0;
 	uint64_t dram_limit=0;
 	uint64_t watts_bits=0, seconds_bits=0;
-	double watts_val=0.0, seconds_val=0.0;
 	int i;
 	if(!initialized){
 		initialized=1;
-		for(i=0; i<NUM_PACAKGES; i++){
+		for(i=0; i<NUM_PACKAGES; i++){
 			rapl_get_power_info(i, &(rpi[i]));
 		}
 	}
@@ -198,10 +197,10 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 			// these into bit values.
 			translate( package, &watts_bits,   &limit1->watts,   WATTS_TO_BITS   );
 			translate( package, &seconds_bits, &limit1->seconds, SECONDS_TO_BITS );
-			limit1->bits |= watts_bits   << 0
-			limit1->bits |= seconds_bits << 17
+			limit1->bits |= watts_bits   << 0;
+			limit1->bits |= seconds_bits << 17;
 		}
-		pkg_limit |= limit1->bits | (1 << 15) | (1 << 16);	// enable clamping
+		pkg_limit |= limit1->bits | (1LL << 15) | (1LL << 16);	// enable clamping
 	}	
 	if(limit2){
 		if (limit2->bits){
@@ -214,10 +213,10 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 		}else{
 			translate( package, &watts_bits,   &limit1->watts,   WATTS_TO_BITS   );
 			translate( package, &seconds_bits, &limit1->seconds, SECONDS_TO_BITS );
-			limit1->bits |= watts_bits   << 32
-			limit1->bits |= seconds_bits << 49
+			limit1->bits |= watts_bits   << 32;
+			limit1->bits |= seconds_bits << 49;
 		}
-		pkg_limit |= limit1->bits | (1 << 47) | (1 << 48);	// enable clamping
+		pkg_limit |= limit1->bits | (1LL << 47) | (1LL << 48);	// enable clamping
 	}
 	if(dram){
 		if (dram->bits){
@@ -235,10 +234,10 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 			// these into bit values.
 			translate( package, &watts_bits,   &dram->watts,   WATTS_TO_BITS   );
 			translate( package, &seconds_bits, &dram->seconds, SECONDS_TO_BITS );
-			dram->bits |= watts_bits   << 0
-			dram->bits |= seconds_bits << 17
+			dram->bits |= watts_bits   << 0;
+			dram->bits |= seconds_bits << 17;
 		}
-		dram_limit |= dram->bits | (1 << 15) | (1 << 16);	// enable clamping
+		dram_limit |= dram->bits | (1LL << 15) | (1LL << 16);	// enable clamping
 	}
 
 	if(limit1 || limit2){
