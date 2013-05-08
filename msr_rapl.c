@@ -91,13 +91,10 @@ translate( int package, uint64_t* bits, double* units, int type ){
 			read_msr( i, MSR_RAPL_POWER_UNIT, &(ru[i].msr_rapl_power_unit) );
 #endif
 			// default is 1010b or 976 microseconds
-			//ru[i].seconds = 1.0/(double)( 2^(MASK_VAL( ru[i].msr_rapl_power_unit, 19, 16 )));
 			ru[i].seconds = 1.0/(double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit, 19, 16 )));
 			// default is 10000b or 15.3 microjoules
-			//ru[i].joules  = 1.0/(double)( 2^(MASK_VAL( ru[i].msr_rapl_power_unit, 12,  8 )));
 			ru[i].joules  = 1.0/(double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit, 12,  8 )));
 			// default is 0011b or 1/8 Watts
-			//ru[i].watts   = ((1.0)/((double)( 2^(MASK_VAL( ru[i].msr_rapl_power_unit,  3,  0 )))));
 			ru[i].watts   = ((1.0)/((double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit,  3,  0 )))));
 		}	
 	}
@@ -146,9 +143,7 @@ rapl_get_power_info(int package, struct rapl_power_info *info){
 	// Also note that "package", "socket" and "cpu" are being used interchangably.  This needs to be fixed.
 	
 	val = MASK_VAL( info->msr_pkg_power_info,  53, 48 );
-	//printf("%s:%d val = %lx\n",__FILE__,__LINE__,val);
 	translate( package, &val, &(info->pkg_max_window), BITS_TO_SECONDS );
-	//printf("\n%s:%d val = %lx,info->pkg_max_window = %lf\n",__FILE__,__LINE__,val,info->pkg_max_window);
 	
 	val = MASK_VAL( info->msr_pkg_power_info,  46, 32 );
 	translate( package, &val, &(info->pkg_max_power), BITS_TO_WATTS );
@@ -245,10 +240,11 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 		}
 		dram_limit |= dram->bits | (1 << 15) | (1 << 16);	// enable clamping
 	}
-	if(pkg_limit){
+
+	if(limit1 || limit2){
 		write_msr( package, MSR_PKG_POWER_LIMIT, pkg_limit );
 	}
-	if(dram_limit){
+	if(dram){
 		write_msr( package, MSR_DRAM_POWER_LIMIT, pkg_limit );
 	}
 		
