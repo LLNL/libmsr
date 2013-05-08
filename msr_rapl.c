@@ -85,11 +85,15 @@ translate( int package, uint64_t* bits, double* units, int type ){
 		initialized=1;
 		for(i=0; i<NUM_PACKAGES; i++){
 			// See figure 14-16 for bit fields.
-#ifdef MSR_DEBUG
-			ru[i].msr_rapl_power_unit = 0xA1003;
-#else
+			//  1  1 1  1 1 
+			//  9  6 5  2 1  8 7  4 3  0
+			//
+			//  1010 0001 0000 0000 0011
+			//
+			//     A    1    0    0    3
+			//ru[i].msr_rapl_power_unit = 0xA1003;
+
 			read_msr( i, MSR_RAPL_POWER_UNIT, &(ru[i].msr_rapl_power_unit) );
-#endif
 			// default is 1010b or 976 microseconds
 			ru[i].seconds = 1.0/(double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit, 19, 16 )));
 			// default is 10000b or 15.3 microjoules
@@ -131,13 +135,11 @@ struct rapl_power_info{
 static void
 rapl_get_power_info(int package, struct rapl_power_info *info){
 	uint64_t val = 0;
-#ifdef MSR_DEBUG
-	info->msr_pkg_power_info  = 0x6845000148398;
-	info->msr_dram_power_info = 0x682d0001482d0;
-#else
+	//info->msr_pkg_power_info  = 0x6845000148398;
+	//info->msr_dram_power_info = 0x682d0001482d0;
+
 	read_msr( package, MSR_PKG_POWER_INFO, &(info->msr_pkg_power_info) );
 	read_msr( package, MSR_DRAM_POWER_INFO, &(info->msr_dram_power_info) );
-#endif
 
 	// Note that the same units are used in both the PKG and DRAM domains.
 	// Also note that "package", "socket" and "cpu" are being used interchangably.  This needs to be fixed.
@@ -236,6 +238,13 @@ rapl_limit_calc(int package, struct rapl_limit* limit1, struct rapl_limit* limit
 	}
 }
 
+void
+rapl_dump_limit( struct rapl_limit* L ){
+	fprintf(stdout, "bits    = %llx\n", L->bits);
+	fprintf(stdout, "seconds = %lf\n", L->seconds);
+	fprintf(stdout, "watts   = %lf\n", L->watts);
+}
+
 int 
 rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	// Fill in whatever values are necessary.
@@ -261,9 +270,15 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 
 int 
 rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
-	read_msr( package, MSR_PKG_POWER_LIMIT, &(limit1->bits) );
-	limit2->bits = limit1->bits;	// single msr holds both limits.
-	read_msr( package, MSR_DRAM_POWER_LIMIT, &(dram->bits) );
+	if(limit1){
+		read_msr( package, MSR_PKG_POWER_LIMIT, &(limit1->bits) );
+	}
+	if(limit2){
+		read_msr( package, MSR_PKG_POWER_LIMIT, &(limit2->bits) );
+	}
+	if(dram){
+		read_msr( package, MSR_DRAM_POWER_LIMIT, &(dram->bits) );
+	}
 	// Fill in whatever values are necessary.
 	rapl_limit_calc( package, limit1, limit2, dram );
 	return 0;
@@ -297,30 +312,37 @@ take_delta( int package, struct delta* new_delta){
 */
 
 
-#ifdef MSR_DEBUG
-/* To compile this use 
-	gcc -DMSR_DEBUG -Wall msr_rapl.c
-   and run
-	./a.out
-*/
 int main(){
 	struct rapl_power_info r;
+	struct rapl_limit L;
+
 	rapl_get_power_info(1, &r);
 	
 	//MSR_PKG_POWER_INFO Fields
-	printf("Power Info: 0x%lx\n",r.msr_pkg_power_info);
+	printf("Power Info: 0x%llx\n",r.msr_pkg_power_info);
 	printf("Maximum Power: %lfW\n",r.pkg_max_power);
 	printf("Minimum Power: %lfW\n",r.pkg_min_power);
 	printf("Thermal Power: %lfW\n",r.pkg_therm_power);
 	printf("Maximum Time Window: %lfs\n",r.pkg_max_window);
 	
 	//MSR_DRAM_POWER_INFO Fields
-	printf("\nPower Info: 0x%lx\n",r.msr_dram_power_info);
+	printf("\nPower Info: 0x%llx\n",r.msr_dram_power_info);
 	printf("Maximum Power: %lfW\n",r.dram_max_power);
 	printf("Minimum Power: %lfW\n",r.dram_min_power);
 	printf("Thermal Power: %lfW\n",r.dram_therm_power);
 	printf("Maximum Time Window: %lfs\n",r.dram_max_window);
+
+	rapl_get_limit(1, &L, NULL, NULL);
+	fprintf(stdout, "PKG limit 1\n");
+	rapl_dump_limit( &L );
+
+	rapl_get_limit(1, NULL, &L, NULL);
+	fprintf(stdout, "PKG limit 2\n");
+	rapl_dump_limit( &L );
+
+	rapl_get_limit(1, NULL, NULL, &L);
+	fprintf(stdout, "DRAM limit\n");
+	rapl_dump_limit( &L );
 	
 	return 0;		
 }
-#endif	
