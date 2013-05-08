@@ -91,20 +91,23 @@ translate( int package, uint64_t* bits, double* units, int type ){
 			read_msr( i, MSR_RAPL_POWER_UNIT, &(ru[i].msr_rapl_power_unit) );
 #endif
 			// default is 1010b or 976 microseconds
-			ru[i].seconds = 1.0/(double)( 2^(MASK_VAL( ru[i].msr_rapl_power_unit, 19, 16 )));
+			//ru[i].seconds = 1.0/(double)( 2^(MASK_VAL( ru[i].msr_rapl_power_unit, 19, 16 )));
+			ru[i].seconds = 1.0/(double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit, 19, 16 )));
 			// default is 10000b or 15.3 microjoules
-			ru[i].joules  = 1.0/(double)( 2^(MASK_VAL( ru[i].msr_rapl_power_unit, 12,  8 )));
+			//ru[i].joules  = 1.0/(double)( 2^(MASK_VAL( ru[i].msr_rapl_power_unit, 12,  8 )));
+			ru[i].joules  = 1.0/(double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit, 12,  8 )));
 			// default is 0011b or 1/8 Watts
-			ru[i].watts   = 1.0/(double)( 2^(MASK_VAL( ru[i].msr_rapl_power_unit,  3,  0 )));
+			//ru[i].watts   = ((1.0)/((double)( 2^(MASK_VAL( ru[i].msr_rapl_power_unit,  3,  0 )))));
+			ru[i].watts   = ((1.0)/((double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit,  3,  0 )))));
 		}	
 	}
 	switch(type){
-		case BITS_TO_WATTS: 	*units = (double)(*bits)  * ru[i].watts; 	break;
-		case BITS_TO_SECONDS:	*units = (double)(*bits)  * ru[i].seconds; 	break;
-		case BITS_TO_JOULES:	*units = (double)(*bits)  * ru[i].joules; 	break;
-		case WATTS_TO_BITS:	*bits  = (double)(*units) * ru[i].watts; 	break;
-		case SECONDS_TO_BITS:	*bits  = (double)(*units) * ru[i].seconds; 	break;
-		case JOULES_TO_BITS:	*bits  = (double)(*units) * ru[i].joules; 	break;
+		case BITS_TO_WATTS: 	*units = (double)(*bits)  * ru[package].watts; 		break;
+		case BITS_TO_SECONDS:	*units = (double)(*bits)  * ru[package].seconds; 	break;
+		case BITS_TO_JOULES:	*units = (double)(*bits)  * ru[package].joules; 	break;
+		case WATTS_TO_BITS:	*bits  = (double)(*units) * ru[package].watts; 		break;
+		case SECONDS_TO_BITS:	*bits  = (double)(*units) * ru[package].seconds; 	break;
+		case JOULES_TO_BITS:	*bits  = (double)(*units) * ru[package].joules; 	break;
 		default: 
 			fprintf(stderr, "%s:%d  Unknown value %d.  This is bad.\n", __FILE__, __LINE__, type);  
 			*bits = -1;
@@ -143,8 +146,10 @@ rapl_get_power_info(int package, struct rapl_power_info *info){
 	// Also note that "package", "socket" and "cpu" are being used interchangably.  This needs to be fixed.
 	
 	val = MASK_VAL( info->msr_pkg_power_info,  53, 48 );
+	//printf("%s:%d val = %lx\n",__FILE__,__LINE__,val);
 	translate( package, &val, &(info->pkg_max_window), BITS_TO_SECONDS );
-
+	//printf("\n%s:%d val = %lx,info->pkg_max_window = %lf\n",__FILE__,__LINE__,val,info->pkg_max_window);
+	
 	val = MASK_VAL( info->msr_pkg_power_info,  46, 32 );
 	translate( package, &val, &(info->pkg_max_power), BITS_TO_WATTS );
 
@@ -296,6 +301,21 @@ take_delta( int package, struct delta* new_delta){
 int main(){
 	struct rapl_power_info r;
 	rapl_get_power_info(1, &r);
+	
+	//MSR_PKG_POWER_INFO Fields
+	printf("Power Info: 0x%lx\n",r.msr_pkg_power_info);
+	printf("Maximum Power: %lfW\n",r.pkg_max_power);
+	printf("Minimum Power: %lfW\n",r.pkg_min_power);
+	printf("Thermal Power: %lfW\n",r.pkg_therm_power);
+	printf("Maximum Time Window: %lfs\n",r.pkg_max_window);
+	
+	//MSR_DRAM_POWER_INFO Fields
+	printf("\nPower Info: 0x%lx\n",r.msr_dram_power_info);
+	printf("Maximum Power: %lfW\n",r.dram_max_power);
+	printf("Minimum Power: %lfW\n",r.dram_min_power);
+	printf("Thermal Power: %lfW\n",r.dram_therm_power);
+	printf("Maximum Time Window: %lfs\n",r.dram_max_window);
+	
 	return 0;		
 }
 #endif	
