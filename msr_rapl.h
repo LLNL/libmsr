@@ -15,8 +15,7 @@
 struct rapl_limit{
 	double 		watts;		// User-friendly interface.
 	double	 	seconds;
-	uint64_t 	bit_vector;	// User-unfriendly interface.
-	uint64_t	error;		// Error types TBD
+	uint64_t 	bits;		// User-unfriendly interface.
 };
 
 
