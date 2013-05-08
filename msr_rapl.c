@@ -102,16 +102,15 @@ translate( int package, uint64_t* bits, double* units, int type ){
 			ru[i].watts   = ((1.0)/((double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit,  3,  0 )))));
 		}	
 	}
-	if(type == WATTS_TO_BITS){
-		fprintf(stdout, "%s:%d watts = %lf\n", __FILE__, __LINE__, *units);
-		fprintf(stdout, "%s:%d ru[package].watts = %lf\n", __FILE__, __LINE__, ru[package].watts);
-		fprintf(stdout, "%s:%d dividend is %lf\n", __FILE__, __LINE__, *units / ru[package].watts);
-		fprintf(stdout, "%s:%d dividend cast to uint64_t is 0x%lx\n", __FILE__, __LINE__, (uint64_t)(*units / ru[package].watts));
+	if(type == BITS_TO_JOULES){
+		fprintf(stdout, "%s:%d joules = %lf\n", __FILE__, __LINE__, *units);
+		fprintf(stdout, "%s:%d ru[package].joules = %lf\n", __FILE__, __LINE__, ru[package].joules);
+		fprintf(stdout, "%s:%d product is %lf\n", __FILE__, __LINE__, *units * ru[package].joules);
 	}
 	switch(type){
-		case BITS_TO_WATTS: 	*units = (double)(*bits)  * ru[package].watts; 		break;
-		case BITS_TO_SECONDS:	*units = (double)(*bits)  * ru[package].seconds; 	break;
-		case BITS_TO_JOULES:	*units = (double)(*bits)  * ru[package].joules; 	break;
+		case BITS_TO_WATTS: 	*units = (double)(*bits)  * ru[package].watts; 			break;
+		case BITS_TO_SECONDS:	*units = (double)(*bits)  * ru[package].seconds; 		break;
+		case BITS_TO_JOULES:	*units = (double)(*bits)  * ru[package].joules; 		break;
 		case WATTS_TO_BITS:	*bits  = (uint64_t)(  (*units) / ru[package].watts    ); 	break;
 		case SECONDS_TO_BITS:	*bits  = (uint64_t)(  (*units) / ru[package].seconds  ); 	break;
 		case JOULES_TO_BITS:	*bits  = (uint64_t)(  (*units) / ru[package].joules   ); 	break;
@@ -291,7 +290,9 @@ rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 
 void 
 rapl_dump_data( struct rapl_data *r ){
-	fprintf(stdout, "%lf %lf %lf %lf %lf\n", 
+	fprintf(stdout, "%lx %lx %lf %lf %lf %lf %lf\n", 
+			r->pkg_bits,
+			r->dram_bits,
 			r->pkg_joules,
 			r->dram_joules,
 			r->pkg_watts,
@@ -319,15 +320,15 @@ rapl_read_data( int package, struct rapl_data *r ){
 			     (stop[package].tv_usec - start[package].tv_usec)/1000000.0;
 
 		// Get raw joules
-		read_msr( package, MSR_PKG_ENERGY_STATUS, &pkg_bits );
-		read_msr( package, MSR_DRAM_ENERGY_STATUS, &dram_bits );
+		read_msr( package, MSR_PKG_ENERGY_STATUS,  &(r->pkg_bits)  );
+		read_msr( package, MSR_DRAM_ENERGY_STATUS, &(r->dram_bits) );
 
 		// get normalized joules
-		translate( package, &pkg_bits, &(r->pkg_joules), BITS_TO_JOULES );
+		translate( package, &pkg_bits,  &(r->pkg_joules),  BITS_TO_JOULES );
 		translate( package, &dram_bits, &(r->dram_joules), BITS_TO_JOULES );
 
 		// record normalized joules
-		r->pkg_watts = r->pkg_joules / r->elapsed;
+		r->pkg_watts  = r->pkg_joules  / r->elapsed;
 		r->dram_watts = r->dram_joules / r->elapsed;
 	}
 }

@@ -12,6 +12,8 @@
 // scaled values.  The bit vector is the 64-bit values that is
 // read from/written to the msr.
 struct rapl_data{
+	uint64_t pkg_bits;
+	uint64_t dram_bits;
 	double pkg_joules;
 	double dram_joules;
 	double pkg_watts;

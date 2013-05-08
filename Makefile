@@ -29,7 +29,7 @@ msr_rapl.o:   Makefile		             msr_rapl.c   msr_rapl.h
 clean:
 	rm -f *.o $(library)
 
-libwg.so: 
+libwg.so: wrap.py Wgremlin.w Makefile
 	./wrap.py -f -g -o Wgremlin.c Wgremlin.w
 	mpicc -c -fPIC Wgremlin.c
 	mpicc -fPIC -g -shared -Wl,-rpath,$(MYLIBDIR) -Wl,-soname,libwg.so -o libwg.so Wgremlin.o
