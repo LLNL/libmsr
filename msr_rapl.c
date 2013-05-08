@@ -102,13 +102,19 @@ translate( int package, uint64_t* bits, double* units, int type ){
 			ru[i].watts   = ((1.0)/((double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit,  3,  0 )))));
 		}	
 	}
+	if(type == WATTS_TO_BITS){
+		fprintf(stdout, "%s:%d watts = %lf\n", __FILE__, __LINE__, *units);
+		fprintf(stdout, "%s:%d ru[package].watts = %lf\n", __FILE__, __LINE__, ru[package].watts);
+		fprintf(stdout, "%s:%d dividend is %lf\n", __FILE__, __LINE__, *units / ru[package].watts);
+		fprintf(stdout, "%s:%d dividend cast to uint64_t is 0x%lx\n", __FILE__, __LINE__, (uint64_t)(*units / ru[package].watts));
+	}
 	switch(type){
 		case BITS_TO_WATTS: 	*units = (double)(*bits)  * ru[package].watts; 		break;
 		case BITS_TO_SECONDS:	*units = (double)(*bits)  * ru[package].seconds; 	break;
 		case BITS_TO_JOULES:	*units = (double)(*bits)  * ru[package].joules; 	break;
-		case WATTS_TO_BITS:	*bits  = (double)(*units) * ru[package].watts; 		break;
-		case SECONDS_TO_BITS:	*bits  = (double)(*units) * ru[package].seconds; 	break;
-		case JOULES_TO_BITS:	*bits  = (double)(*units) * ru[package].joules; 	break;
+		case WATTS_TO_BITS:	*bits  = (uint64_t)(  (*units) / ru[package].watts    ); 	break;
+		case SECONDS_TO_BITS:	*bits  = (uint64_t)(  (*units) / ru[package].seconds  ); 	break;
+		case JOULES_TO_BITS:	*bits  = (uint64_t)(  (*units) / ru[package].joules   ); 	break;
 		default: 
 			fprintf(stderr, "%s:%d  Unknown value %d.  This is bad.\n", __FILE__, __LINE__, type);  
 			*bits = -1;
@@ -210,10 +216,10 @@ rapl_limit_calc(int package, struct rapl_limit* limit1, struct rapl_limit* limit
 			translate( package, &seconds_bits, &limit2->seconds, BITS_TO_SECONDS );
 
 		}else{
-			translate( package, &watts_bits,   &limit1->watts,   WATTS_TO_BITS   );
-			translate( package, &seconds_bits, &limit1->seconds, SECONDS_TO_BITS );
-			limit1->bits |= watts_bits   << 32;
-			limit1->bits |= seconds_bits << 49;
+			translate( package, &watts_bits,   &limit2->watts,   WATTS_TO_BITS   );
+			translate( package, &seconds_bits, &limit2->seconds, SECONDS_TO_BITS );
+			limit2->bits |= watts_bits   << 32;
+			limit2->bits |= seconds_bits << 49;
 		}
 	}
 	if(dram){
@@ -240,9 +246,10 @@ rapl_limit_calc(int package, struct rapl_limit* limit1, struct rapl_limit* limit
 
 void
 rapl_dump_limit( struct rapl_limit* L ){
-	fprintf(stdout, "bits    = %llx\n", L->bits);
+	fprintf(stdout, "bits    = %lx\n", L->bits);
 	fprintf(stdout, "seconds = %lf\n", L->seconds);
 	fprintf(stdout, "watts   = %lf\n", L->watts);
+	fprintf(stdout, "\n");
 }
 
 int 
@@ -258,12 +265,12 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 	if(limit2){
 		pkg_limit |= limit2->bits | (1LL << 47) | (1LL << 48);	// enable clamping
 	}
-	if(limit1 || limit2){
-		write_msr( package, MSR_PKG_POWER_LIMIT, pkg_limit );
-	}
+//	if(limit1 || limit2){
+//		write_msr( package, MSR_PKG_POWER_LIMIT, pkg_limit );
+//	}
 	if(dram){
 		dram_limit |= dram->bits | (1LL << 15) | (1LL << 16);	// enable clamping
-		write_msr( package, MSR_DRAM_POWER_LIMIT, dram_limit );
+//		write_msr( package, MSR_DRAM_POWER_LIMIT, dram_limit );
 	}
 	return 0;
 }
@@ -316,33 +323,77 @@ int main(){
 	struct rapl_power_info r;
 	struct rapl_limit L;
 
+	init_msr();
 	rapl_get_power_info(1, &r);
 	
 	//MSR_PKG_POWER_INFO Fields
-	printf("Power Info: 0x%llx\n",r.msr_pkg_power_info);
+	printf("PKG Power Info: 0x%lx\n",r.msr_pkg_power_info);
 	printf("Maximum Power: %lfW\n",r.pkg_max_power);
 	printf("Minimum Power: %lfW\n",r.pkg_min_power);
 	printf("Thermal Power: %lfW\n",r.pkg_therm_power);
 	printf("Maximum Time Window: %lfs\n",r.pkg_max_window);
 	
 	//MSR_DRAM_POWER_INFO Fields
-	printf("\nPower Info: 0x%llx\n",r.msr_dram_power_info);
+	printf("\nDRAM Power Info: 0x%lx\n",r.msr_dram_power_info);
 	printf("Maximum Power: %lfW\n",r.dram_max_power);
 	printf("Minimum Power: %lfW\n",r.dram_min_power);
 	printf("Thermal Power: %lfW\n",r.dram_therm_power);
 	printf("Maximum Time Window: %lfs\n",r.dram_max_window);
 
+	//
+	//Get limits.
+	//
+	
+	//PKG limit 1
+	//bits    = 6845000148398
+	//seconds = 0.009766
+	//watts   = 115.000000
 	rapl_get_limit(1, &L, NULL, NULL);
 	fprintf(stdout, "PKG limit 1\n");
 	rapl_dump_limit( &L );
 
+	//PKG limit 2
+	//bits    = 6845000148398
+	//seconds = 0.002930
+	//watts   = 138.000000
 	rapl_get_limit(1, NULL, &L, NULL);
 	fprintf(stdout, "PKG limit 2\n");
 	rapl_dump_limit( &L );
 
+	//DRAM limit
+	//bits    = 80000000
+	//seconds = 0.000000
+	//watts   = 0.000000
 	rapl_get_limit(1, NULL, NULL, &L);
 	fprintf(stdout, "DRAM limit\n");
 	rapl_dump_limit( &L );
-	
+
+	//
+	//Set limits.
+	//
+	L.bits    = 0;
+	L.watts   = 115.0;
+	L.seconds = 0.009766;
+	rapl_set_limit(1, &L, NULL, NULL);
+	fprintf(stdout, "PKG limit 1\n");
+	rapl_dump_limit( &L );
+
+	L.bits    = 0;
+	L.watts   = 138.0;
+	L.seconds = 0.002930;
+	rapl_set_limit(1, NULL, &L, NULL);
+	fprintf(stdout, "PKG limit 2\n");
+	rapl_dump_limit( &L );
+
+	L.bits    = 0;
+	L.watts   = 51.0;
+	L.seconds = 0.001;
+	rapl_set_limit(1, NULL, &L, NULL);
+	fprintf(stdout, "PKG limit X\n");
+	rapl_dump_limit( &L );
+
+
+
+	finalize_msr();
 	return 0;		
 }
