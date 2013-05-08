@@ -167,12 +167,10 @@ rapl_get_power_info(int package, struct rapl_power_info *info){
 	translate( package, &val, &(info->dram_therm_power), BITS_TO_WATTS );
 }
 
-int 
-rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
+static void
+rapl_limit_calc(int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	static struct rapl_power_info rpi[NUM_PACKAGES];
 	static int initialized=0;
-	uint64_t pkg_limit=0;
-	uint64_t dram_limit=0;
 	uint64_t watts_bits=0, seconds_bits=0;
 	int i;
 	if(!initialized){
@@ -200,7 +198,6 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 			limit1->bits |= watts_bits   << 0;
 			limit1->bits |= seconds_bits << 17;
 		}
-		pkg_limit |= limit1->bits | (1LL << 15) | (1LL << 16);	// enable clamping
 	}	
 	if(limit2){
 		if (limit2->bits){
@@ -216,7 +213,6 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 			limit1->bits |= watts_bits   << 32;
 			limit1->bits |= seconds_bits << 49;
 		}
-		pkg_limit |= limit1->bits | (1LL << 47) | (1LL << 48);	// enable clamping
 	}
 	if(dram){
 		if (dram->bits){
@@ -237,25 +233,39 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 			dram->bits |= watts_bits   << 0;
 			dram->bits |= seconds_bits << 17;
 		}
-		dram_limit |= dram->bits | (1LL << 15) | (1LL << 16);	// enable clamping
 	}
+}
 
+int 
+rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
+	// Fill in whatever values are necessary.
+	uint64_t pkg_limit=0;
+	uint64_t dram_limit=0;
+	rapl_limit_calc( package, limit1, limit2, dram );
+
+	if(limit1){
+		pkg_limit |= limit1->bits | (1LL << 15) | (1LL << 16);	// enable clamping
+	}
+	if(limit2){
+		pkg_limit |= limit2->bits | (1LL << 47) | (1LL << 48);	// enable clamping
+	}
 	if(limit1 || limit2){
 		write_msr( package, MSR_PKG_POWER_LIMIT, pkg_limit );
 	}
 	if(dram){
-		write_msr( package, MSR_DRAM_POWER_LIMIT, pkg_limit );
+		dram_limit |= dram->bits | (1LL << 15) | (1LL << 16);	// enable clamping
+		write_msr( package, MSR_DRAM_POWER_LIMIT, dram_limit );
 	}
-		
 	return 0;
 }
 
 int 
 rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
-	package=package;
-	limit1=limit1;
-	limit2=limit2;
-	dram=dram;
+	read_msr( package, MSR_PKG_POWER_LIMIT, &(limit1->bits) );
+	limit2->bits = limit1->bits;	// single msr holds both limits.
+	read_msr( package, MSR_DRAM_POWER_LIMIT, &(dram->bits) );
+	// Fill in whatever values are necessary.
+	rapl_limit_calc( package, limit1, limit2, dram );
 	return 0;
 }
 /*
