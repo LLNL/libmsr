@@ -1,2 +1,5 @@
 .*.swp
 
+app
+Wgremlin.c
+*.so

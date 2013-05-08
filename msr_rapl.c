@@ -244,7 +244,7 @@ rapl_limit_calc(int package, struct rapl_limit* limit1, struct rapl_limit* limit
 	}
 }
 
-static void
+void
 rapl_dump_limit( struct rapl_limit* L ){
 	fprintf(stdout, "bits    = %lx\n", L->bits);
 	fprintf(stdout, "seconds = %lf\n", L->seconds);
@@ -289,6 +289,16 @@ rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 	rapl_limit_calc( package, limit1, limit2, dram );
 }
 
+void 
+rapl_dump_data( struct rapl_data *r ){
+	fprintf(stdout, "%lf %lf %lf %lf %lf\n", 
+			r->pkg_joules,
+			r->dram_joules,
+			r->pkg_watts,
+			r->dram_watts,
+			r->elapsed);
+}
+
 void
 rapl_read_data( int package, struct rapl_data *r ){
 	uint64_t pkg_bits, dram_bits;
@@ -302,19 +312,24 @@ rapl_read_data( int package, struct rapl_data *r ){
 	// Get current timestamp
 	gettimeofday( &(stop[package]), NULL );
 
-	// Get delta in seconds
-	r->elapsed = (stop[package].tv_sec - start[package].tv_sec) 
-		     +
-		     (stop[package].tv_usec - start[package].tv_usec)/1000000.0;
+	if(r){
+		// Get delta in seconds
+		r->elapsed = (stop[package].tv_sec - start[package].tv_sec) 
+			     +
+			     (stop[package].tv_usec - start[package].tv_usec)/1000000.0;
 
-	read_msr( package, MSR_PKG_ENERGY_STATUS, &pkg_bits );
-	read_msr( package, MSR_DRAM_ENERGY_STATUS, &dram_bits );
+		// Get raw joules
+		read_msr( package, MSR_PKG_ENERGY_STATUS, &pkg_bits );
+		read_msr( package, MSR_DRAM_ENERGY_STATUS, &dram_bits );
 
-	translate( package, &pkg_bits, &(r->pkg_joules), BITS_TO_JOULES );
-	translate( package, &dram_bits, &(r->dram_joules), BITS_TO_JOULES );
+		// get normalized joules
+		translate( package, &pkg_bits, &(r->pkg_joules), BITS_TO_JOULES );
+		translate( package, &dram_bits, &(r->dram_joules), BITS_TO_JOULES );
 
-	r->pkg_watts = r->pkg_joules / r->elapsed;
-	r->dram_watts = r->dram_joules / r->elapsed;
+		// record normalized joules
+		r->pkg_watts = r->pkg_joules / r->elapsed;
+		r->dram_watts = r->dram_joules / r->elapsed;
+	}
 }
 
 

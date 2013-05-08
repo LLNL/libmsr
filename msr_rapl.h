@@ -11,6 +11,14 @@
 // Watts and seconds are actual watts and actual seconds, not
 // scaled values.  The bit vector is the 64-bit values that is
 // read from/written to the msr.
+struct rapl_data{
+	double pkg_joules;
+	double dram_joules;
+	double pkg_watts;
+	double dram_watts;
+	double elapsed;
+};
+
 
 struct rapl_limit{
 	double 		watts;		// User-friendly interface.
@@ -40,18 +48,17 @@ struct rapl_limit{
 //	c) If the bit_vector is zero, read the msr value into the bit_vector and 
 //	translate into watts and seconds.
 //
+#ifdef __cplusplus 
+extern "C" {
+#endif
 void rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
 void rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
-
-struct rapl_data{
-	double pkg_joules;
-	double dram_joules;
-	double pkg_watts;
-	double dram_watts;
-	double elapsed;
-};
+void rapl_dump_limit( struct rapl_limit *L );
 
 void rapl_read_data( int package, struct rapl_data *r );
-
+void rapl_dump_data( struct rapl_data *r );
+#ifdef __cplusplus 
+}
+#endif
 
 
