@@ -26,6 +26,10 @@ msr_turbo.o:  Makefile msr_core.o            msr_turbo.c  msr_turbo.h
 msr_clocks.o: Makefile msr_core.o            msr_clocks.c msr_clocks.h
 blr_util.o:   Makefile                       blr_util.c   blr_util.h 
 msr_rapl.o:   Makefile		             msr_rapl.c   msr_rapl.h
+app.o:	      Makefile                       app.c
 clean:
 	rm -f *.o $(library)
+
+app: libmsr app.o 
+	$(CC) -L. -o app app.o -lmsr
 
