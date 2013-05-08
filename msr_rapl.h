@@ -40,20 +40,18 @@ struct rapl_limit{
 //	c) If the bit_vector is zero, read the msr value into the bit_vector and 
 //	translate into watts and seconds.
 //
-int rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
-int rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
+void rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
+void rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
 
-struct delta{
-	double		dram_watts;		// Average watts over the delta
-	double		dram_joules;		// Average joules over the delta
-	double		pkg_watts;
-	double		pkg_joules;
-	double		seconds;		// Length of time over the delta
+struct rapl_data{
+	double pkg_joules;
+	double dram_joules;
+	double pkg_watts;
+	double dram_watts;
+	double elapsed;
 };
 
-// If delta is NULL just update internal bookkeeping.
-//void take_delta( int package, struct delta* delta );
-
+void rapl_read_data( int package, struct rapl_data *r );
 
 
 

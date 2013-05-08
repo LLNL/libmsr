@@ -16,7 +16,7 @@
 #if (USE_062A || USE_062D)
 #define MSR_RAPL_POWER_UNIT 		(0x606)	// ro
 #define MSR_PKG_POWER_LIMIT 		(0x610) // rw
-#define MSR_PKG_ENERY_STATUS 		(0x611) // ro
+#define MSR_PKG_ENERGY_STATUS 		(0x611) // ro sic;  MSR_PKG_ENERY_STATUS
 #define MSR_PKG_POWER_INFO 		(0x614) // rw (text states ro)
 #define MSR_PP0_POWER_LIMIT 		(0x638) // rw
 #define MSR_PP0_ENERY_STATUS 		(0x639) // ro
@@ -244,7 +244,7 @@ rapl_limit_calc(int package, struct rapl_limit* limit1, struct rapl_limit* limit
 	}
 }
 
-void
+static void
 rapl_dump_limit( struct rapl_limit* L ){
 	fprintf(stdout, "bits    = %lx\n", L->bits);
 	fprintf(stdout, "seconds = %lf\n", L->seconds);
@@ -252,7 +252,7 @@ rapl_dump_limit( struct rapl_limit* L ){
 	fprintf(stdout, "\n");
 }
 
-int 
+void 
 rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	// Fill in whatever values are necessary.
 	uint64_t pkg_limit=0;
@@ -265,17 +265,16 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 	if(limit2){
 		pkg_limit |= limit2->bits | (1LL << 47) | (1LL << 48);	// enable clamping
 	}
-//	if(limit1 || limit2){
-//		write_msr( package, MSR_PKG_POWER_LIMIT, pkg_limit );
-//	}
+	if(limit1 || limit2){
+		write_msr( package, MSR_PKG_POWER_LIMIT, pkg_limit );
+	}
 	if(dram){
 		dram_limit |= dram->bits | (1LL << 15) | (1LL << 16);	// enable clamping
-//		write_msr( package, MSR_DRAM_POWER_LIMIT, dram_limit );
+		write_msr( package, MSR_DRAM_POWER_LIMIT, dram_limit );
 	}
-	return 0;
 }
 
-int 
+void 
 rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	if(limit1){
 		read_msr( package, MSR_PKG_POWER_LIMIT, &(limit1->bits) );
@@ -288,112 +287,34 @@ rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 	}
 	// Fill in whatever values are necessary.
 	rapl_limit_calc( package, limit1, limit2, dram );
-	return 0;
 }
-/*
+
 void
-take_delta( int package, struct delta* new_delta){
-	static struct timeval then, now;
-	static struct delta old_delta[NUM_PACKAGES];
-	static int initialized;	
-	int i;
+rapl_read_data( int package, struct rapl_data *r ){
+	uint64_t pkg_bits, dram_bits;
+	static struct timeval start[NUM_PACKAGES];
+	static struct timeval stop[NUM_PACKAGES];
 
-	if(!initialized){
-		initialized=1;
-		gettimeofday(&then, NULL);
-		// initialize the delta for each package.
-		for(i=0; i<NUM_PACKAGES; i++){
-			old_delta[i].seconds	= 0.0;
-			old_delta[i].dram_watts	= 0.0;
-			old_delta[i].dram_joules= 0.0;
-			old_delta[i].pkg_watts	= 0.0;
-			old_delta[i].pkg_joules	= 0.0;
-		}
-		new_delta->seconds 	= 0.0;
-		new_delta->dram_watts	= 0.0;
-		new_delta->dram_joules	= 0.0;
-		new_delta->pkg_watts	= 0.0;
-		new_delta->pkg_joules	= 0.0;
-	}
+	// Copy previous stop to start.
+	start[package].tv_sec = stop[package].tv_sec;
+	start[package].tv_usec = stop[package].tv_usec;
+
+	// Get current timestamp
+	gettimeofday( &(stop[package]), NULL );
+
+	// Get delta in seconds
+	r->elapsed = (stop[package].tv_sec - start[package].tv_sec) 
+		     +
+		     (stop[package].tv_usec - start[package].tv_usec)/1000000.0;
+
+	read_msr( package, MSR_PKG_ENERGY_STATUS, &pkg_bits );
+	read_msr( package, MSR_DRAM_ENERGY_STATUS, &dram_bits );
+
+	translate( package, &pkg_bits, &(r->pkg_joules), BITS_TO_JOULES );
+	translate( package, &dram_bits, &(r->dram_joules), BITS_TO_JOULES );
+
+	r->pkg_watts = r->pkg_joules / r->elapsed;
+	r->dram_watts = r->dram_joules / r->elapsed;
 }
-*/
 
 
-int main(){
-	struct rapl_power_info r;
-	struct rapl_limit L;
-
-	init_msr();
-	rapl_get_power_info(1, &r);
-	
-	//MSR_PKG_POWER_INFO Fields
-	printf("PKG Power Info: 0x%lx\n",r.msr_pkg_power_info);
-	printf("Maximum Power: %lfW\n",r.pkg_max_power);
-	printf("Minimum Power: %lfW\n",r.pkg_min_power);
-	printf("Thermal Power: %lfW\n",r.pkg_therm_power);
-	printf("Maximum Time Window: %lfs\n",r.pkg_max_window);
-	
-	//MSR_DRAM_POWER_INFO Fields
-	printf("\nDRAM Power Info: 0x%lx\n",r.msr_dram_power_info);
-	printf("Maximum Power: %lfW\n",r.dram_max_power);
-	printf("Minimum Power: %lfW\n",r.dram_min_power);
-	printf("Thermal Power: %lfW\n",r.dram_therm_power);
-	printf("Maximum Time Window: %lfs\n",r.dram_max_window);
-
-	//
-	//Get limits.
-	//
-	
-	//PKG limit 1
-	//bits    = 6845000148398
-	//seconds = 0.009766
-	//watts   = 115.000000
-	rapl_get_limit(1, &L, NULL, NULL);
-	fprintf(stdout, "PKG limit 1\n");
-	rapl_dump_limit( &L );
-
-	//PKG limit 2
-	//bits    = 6845000148398
-	//seconds = 0.002930
-	//watts   = 138.000000
-	rapl_get_limit(1, NULL, &L, NULL);
-	fprintf(stdout, "PKG limit 2\n");
-	rapl_dump_limit( &L );
-
-	//DRAM limit
-	//bits    = 80000000
-	//seconds = 0.000000
-	//watts   = 0.000000
-	rapl_get_limit(1, NULL, NULL, &L);
-	fprintf(stdout, "DRAM limit\n");
-	rapl_dump_limit( &L );
-
-	//
-	//Set limits.
-	//
-	L.bits    = 0;
-	L.watts   = 115.0;
-	L.seconds = 0.009766;
-	rapl_set_limit(1, &L, NULL, NULL);
-	fprintf(stdout, "PKG limit 1\n");
-	rapl_dump_limit( &L );
-
-	L.bits    = 0;
-	L.watts   = 138.0;
-	L.seconds = 0.002930;
-	rapl_set_limit(1, NULL, &L, NULL);
-	fprintf(stdout, "PKG limit 2\n");
-	rapl_dump_limit( &L );
-
-	L.bits    = 0;
-	L.watts   = 51.0;
-	L.seconds = 0.001;
-	rapl_set_limit(1, NULL, &L, NULL);
-	fprintf(stdout, "PKG limit X\n");
-	rapl_dump_limit( &L );
-
-
-
-	finalize_msr();
-	return 0;		
-}
