@@ -102,11 +102,6 @@ translate( int package, uint64_t* bits, double* units, int type ){
 			ru[i].watts   = ((1.0)/((double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit,  3,  0 )))));
 		}	
 	}
-	if(type == BITS_TO_JOULES){
-		fprintf(stdout, "%s:%d joules = %lf\n", __FILE__, __LINE__, *units);
-		fprintf(stdout, "%s:%d ru[package].joules = %lf\n", __FILE__, __LINE__, ru[package].joules);
-		fprintf(stdout, "%s:%d product is %lf\n", __FILE__, __LINE__, *units * ru[package].joules);
-	}
 	switch(type){
 		case BITS_TO_WATTS: 	*units = (double)(*bits)  * ru[package].watts; 			break;
 		case BITS_TO_SECONDS:	*units = (double)(*bits)  * ru[package].seconds; 		break;
@@ -256,6 +251,7 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 	// Fill in whatever values are necessary.
 	uint64_t pkg_limit=0;
 	uint64_t dram_limit=0;
+
 	rapl_limit_calc( package, limit1, limit2, dram );
 
 	if(limit1){
@@ -290,47 +286,77 @@ rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 
 void 
 rapl_dump_data( struct rapl_data *r ){
-	fprintf(stdout, "%lx %lx %lf %lf %lf %lf %lf\n", 
+	fprintf(stdout, "pkg 0x%lx 0x%lx %lf %lf dram 0x%lx 0x%lx %lf %lf elapsed %lf\n", 
+			r->old_pkg_bits,
 			r->pkg_bits,
-			r->dram_bits,
 			r->pkg_joules,
-			r->dram_joules,
 			r->pkg_watts,
+			r->old_dram_bits,
+			r->dram_bits,
+			r->dram_joules,
 			r->dram_watts,
 			r->elapsed);
 }
 
 void
 rapl_read_data( int package, struct rapl_data *r ){
-	uint64_t pkg_bits, dram_bits;
-	static struct timeval start[NUM_PACKAGES];
-	static struct timeval stop[NUM_PACKAGES];
+	static double pkg_joules[NUM_PACKAGES] = {0.0};  
+	static double old_pkg_joules[NUM_PACKAGES] = {0.0}; 
+	static double dram_joules[NUM_PACKAGES] = {0.0}; 
+	static double old_dram_joules[NUM_PACKAGES] = {0.0};
+	static uint64_t pkg_bits[NUM_PACKAGES]; 
+	static uint64_t dram_bits[NUM_PACKAGES];
+	static uint64_t old_pkg_bits[NUM_PACKAGES]; 
+	static uint64_t old_dram_bits[NUM_PACKAGES];
+	static struct timeval old_now[NUM_PACKAGES];
+	static struct timeval now[NUM_PACKAGES];
 
-	// Copy previous stop to start.
-	start[package].tv_sec = stop[package].tv_sec;
-	start[package].tv_usec = stop[package].tv_usec;
+	// Copy previous now timestamp to old_now.
+	old_now[package].tv_sec  = now[package].tv_sec;
+	old_now[package].tv_usec = now[package].tv_usec;
+
+	// Copy previous raw msr values into the old buckets.	
+	old_pkg_joules[package]  = pkg_joules[package];
+	old_dram_joules[package] = dram_joules[package];
+
+	// Copy off old bits (only need this for debugging)
+	old_pkg_bits[package] = pkg_bits[package];
+	old_dram_bits[package] = dram_bits[package];
 
 	// Get current timestamp
-	gettimeofday( &(stop[package]), NULL );
+	gettimeofday( &(now[package]), NULL );
 
+	// Get raw joules
+	read_msr( package, MSR_PKG_ENERGY_STATUS,  &pkg_bits[package]  );
+	read_msr( package, MSR_DRAM_ENERGY_STATUS, &dram_bits[package] );
+	
+	// get normalized joules
+	translate( package, &pkg_bits[package],  &(pkg_joules[package]),  BITS_TO_JOULES );
+	translate( package, &dram_bits[package], &(dram_joules[package]), BITS_TO_JOULES );
+	
+	// Fill in the struct if present.
 	if(r){
 		// Get delta in seconds
-		r->elapsed = (stop[package].tv_sec - start[package].tv_sec) 
+		r->elapsed = (now[package].tv_sec - old_now[package].tv_sec) 
 			     +
-			     (stop[package].tv_usec - start[package].tv_usec)/1000000.0;
+			     (now[package].tv_usec - old_now[package].tv_usec)/1000000.0;
 
-		// Get raw joules
-		read_msr( package, MSR_PKG_ENERGY_STATUS,  &(r->pkg_bits)  );
-		read_msr( package, MSR_DRAM_ENERGY_STATUS, &(r->dram_bits) );
+		// Get delta joules.
+		// Does not handle wraparound.
+		r->pkg_joules  = pkg_joules[package]  - old_pkg_joules[package];		
+		r->dram_joules = dram_joules[package] - old_dram_joules[package];		
 
-		// get normalized joules
-		translate( package, &pkg_bits,  &(r->pkg_joules),  BITS_TO_JOULES );
-		translate( package, &dram_bits, &(r->dram_joules), BITS_TO_JOULES );
-
-		// record normalized joules
+		// Get watts.
+		// Does not check for div by 0.
 		r->pkg_watts  = r->pkg_joules  / r->elapsed;
 		r->dram_watts = r->dram_joules / r->elapsed;
+
+		// Save off bits for debugging.
+		r->old_pkg_bits = old_pkg_bits[package];
+		r->old_dram_bits = old_dram_bits[package];
+
+		r->pkg_bits = pkg_bits[package];
+		r->dram_bits = dram_bits[package];
 	}
 }
-
 
