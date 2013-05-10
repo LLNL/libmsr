@@ -286,16 +286,19 @@ rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 
 void 
 rapl_dump_data( struct rapl_data *r ){
-	fprintf(stdout, "pkg 0x%lx 0x%lx %lf %lf dram 0x%lx 0x%lx %lf %lf elapsed %lf\n", 
-			r->old_pkg_bits,
-			r->pkg_bits,
-			r->pkg_joules,
-			r->pkg_watts,
-			r->old_dram_bits,
-			r->dram_bits,
-			r->dram_joules,
-			r->dram_watts,
-			r->elapsed);
+	// Don't bother printing if joules < 0.01 or elapsed < 0.001.
+	if(r->pkg_joules > 0.01 && r->elapsed > 0.001){
+		fprintf(stdout, "pkg 0x%lx 0x%lx %lf %lf dram 0x%lx 0x%lx %lf %lf elapsed %lf\n", 
+				r->old_pkg_bits,
+				r->pkg_bits,
+				r->pkg_joules,
+				r->pkg_watts,
+				r->old_dram_bits,
+				r->dram_bits,
+				r->dram_joules,
+				r->dram_watts,
+				r->elapsed);
+	}
 }
 
 void
