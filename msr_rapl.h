@@ -21,6 +21,9 @@ struct rapl_data{
 	double pkg_watts;
 	double dram_watts;
 	double elapsed;
+#ifdef USE_MPI
+	int mpi_rank;
+#endif
 };
 
 

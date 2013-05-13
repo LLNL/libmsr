@@ -7,15 +7,16 @@ MYLIBDIR=$(HOME)/local/research/libmsr
 -include localConfig.d/tlcc2Config
 
 ifneq ($(dbg),)
-DEFINES +=-D_DEBUG=$(dbg) -g -pg
+DEFINES +=-D_DEBUG=$(dbg) -g -pg 
 else
 DEFINES +=-O2
 endif
+DEFINES +=-DUSE_MPI
 
 CFLAGS=-fPIC -Wall ${DEFINES} ${COMPILER_SPECIFIC_FLAGS}
-CC=gcc
+CC=mpicc
 
-all: libmsr
+all: libmsr libwg app
 
 libmsr: blr_util.o msr_core.o msr_turbo.o msr_pebs.o msr_clocks.o msr_rapl.o
 	$(CC) -fPIC -g -shared -Wl,-rpath,$(MYLIBDIR) -Wl,-soname,libmsr.so -o libmsr.so $^
@@ -29,12 +30,12 @@ msr_rapl.o:   Makefile		             msr_rapl.c   msr_rapl.h
 clean:
 	rm -f *.o $(library)
 
-libwg.so: wrap.py Wgremlin.w Makefile
+libwg: wrap.py Wgremlin.w Makefile
 	./wrap.py -f -g -o Wgremlin.c Wgremlin.w
 	mpicc -c -fPIC Wgremlin.c
 	mpicc -fPIC -g -shared -Wl,-rpath,$(MYLIBDIR) -Wl,-soname,libwg.so -o libwg.so Wgremlin.o
 
 app: libmsr libwg.so app.c 
-	mpicc -c -Wall app.c	
+	mpicc -DUSE_MPI -c -Wall app.c	
 	mpicc -L$(MYLIBDIR) -o app app.o -lmsr -lwg 
 

@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <stddef.h>
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
 #include "msr_common.h"
 #include "msr_core.h"
 #include "msr_rapl.h"
@@ -287,17 +290,23 @@ rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 void 
 rapl_dump_data( struct rapl_data *r ){
 	// Don't bother printing if joules < 0.01 or elapsed < 0.001.
-	if(r->pkg_joules > 0.01 && r->elapsed > 0.001){
-		fprintf(stdout, "pkg 0x%lx 0x%lx %lf %lf dram 0x%lx 0x%lx %lf %lf elapsed %lf\n", 
-				r->old_pkg_bits,
-				r->pkg_bits,
-				r->pkg_joules,
+	static int initialized=0;
+	static struct timeval start;
+	struct timeval now;
+	if(!initialized){
+		initialized=1;
+		gettimeofday( &start, NULL );
+	}
+	gettimeofday( &now, NULL );
+	if(r->pkg_joules > 0.01 && r->elapsed > 0.0050){
+#ifdef USE_MPI
+		fprintf(stdout, "rank %04d ", r->mpi_rank);
+#endif
+		fprintf(stdout, "pkg_watts=%8.4lf   elapsed=%8.5lf   timestamp=%9.6lf\n", 
 				r->pkg_watts,
-				r->old_dram_bits,
-				r->dram_bits,
-				r->dram_joules,
-				r->dram_watts,
-				r->elapsed);
+				r->elapsed,
+				now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
+				);
 	}
 }
 
@@ -313,6 +322,17 @@ rapl_read_data( int package, struct rapl_data *r ){
 	static uint64_t old_dram_bits[NUM_PACKAGES];
 	static struct timeval old_now[NUM_PACKAGES];
 	static struct timeval now[NUM_PACKAGES];
+	//Need to find a more general solution for this.
+#ifdef USE_MPI
+	static int mpi_rank;
+	static int initialized=0;
+
+	if(!initialized){
+	       initialized=1;
+       		PMPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+ 	}		
+	r->mpi_rank = mpi_rank;
+#endif
 
 	// Copy previous now timestamp to old_now.
 	old_now[package].tv_sec  = now[package].tv_sec;
@@ -361,5 +381,13 @@ rapl_read_data( int package, struct rapl_data *r ){
 		r->pkg_bits = pkg_bits[package];
 		r->dram_bits = dram_bits[package];
 	}
+}
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int
+main(){
+	return fprintf(stdout, "%lf\n", strtod( getenv("PKG0_WATT_LIMIT"), NULL) );
 }
 
