@@ -8,26 +8,13 @@
 # Note:  Sandy Bridge Core is -DARCH_062A
 #        Sandy Bridge Xeon is -DARCH_062D
 #
-LIBDIR=./
-INCDIR=./
-APPCFLAGS= -g
-CFLAGS=-fPIC -Wall -g
+CFLAGS=-fPIC -Wall -O3
 CC=gcc
 
 DEFINES=-DARCH_SANDY_BRIDGE -DPKG_PERF_STATUS_AVAILABLE 
 MYLIBDIR=$(HOME)/local/research/libmsr
-# Machine- and compiler-specific information goes here:
--include localConfig.d/tlcc2Config
 
-ifneq ($(dbg),)
-DEFINES +=-D_DEBUG=$(dbg) -g -pg 
-else
-DEFINES +=-O2
-endif
-
-CFLAGS=-fPIC -Wall ${DEFINES} ${COMPILER_SPECIFIC_FLAGS}
-
-all: libmsr libwg app cleanup
+all: libmsr 
 
 libmsr: blr_util.o msr_core.o msr_turbo.o msr_pebs.o msr_clocks.o msr_rapl.o
 	$(CC) -fPIC -g -shared -Wl,-rpath,$(MYLIBDIR) -Wl,-soname,libmsr.so -o libmsr.so $^
@@ -41,19 +28,9 @@ msr_rapl.o:   Makefile		             msr_rapl.c   msr_rapl.h
 clean:
 	rm -f *.o *.so
 
-app_pebs: libpebs app.o
-	$(CC) $(APPCFLAGS) -O0 -Wall -o $@ app.o -L${LIBDIR} -lmsr -lpebs 
 
-libpebs: libmsr msr_pebs.o 
-	$(CC) -I$(INCDIR) -fPIC -shared -Wl,-soname,libpebs.so -Wl,-rpath=$(LIBDIR) -L$(LIBDIR) -o libpebs.so msr_pebs.o -lmsr
 	
-cleanup: libpebs cleanup.o
-	$(CC) $(APPCFLAGS) -O0 -Wall -o $@ cleanup.o -L${LIBDIR} -lmsr -lpebs 
 
-app.o:		app.c Makefile
-	$(CC) $(APPCFLAGS) -c -I$(INCDIR) -o $@ $< 
-cleanup.o:		cleanup.c Makefile
-	$(CC) $(APPCFLAGS) -c -I$(INCDIR) -o $@ $< 
   
 
 
