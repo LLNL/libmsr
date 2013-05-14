@@ -72,11 +72,11 @@ struct ds_area{
 	uint64_t reserved;				// 0x60
 };
 
-#ifdef __cplusplus 
-extern "C" {
-#endif
-
-void pebs_init(int nRecords, uint64_t *counter, uint64_t *reset_val);
+//void pebs_init(int nRecords, uint64_t *counter, uint64_t *reset_val);
+void pebs_init();
+void pebs_start();
+void pebs_stop();
+void pebs_finalize();
 void dump_pebs();
 
 #ifdef __cplusplus 

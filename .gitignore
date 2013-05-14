@@ -4,4 +4,6 @@ app
 Wgremlin.c
 *.so
 cab*
+pebs
+
 
