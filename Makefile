@@ -41,7 +41,7 @@ msr_clocks.o: Makefile msr_core.o            msr_clocks.c msr_clocks.h
 blr_util.o:   Makefile                       blr_util.c   blr_util.h 
 msr_rapl.o:   Makefile		             msr_rapl.c   msr_rapl.h
 clean:
-	rm -f *.o $(library)
+	rm -f *.o *.so
 
 libwg: wrap.py Wgremlin.w Makefile
 	./wrap.py -f -g -o Wgremlin.c Wgremlin.w

@@ -14,7 +14,6 @@
 #include <stdint.h>	// uint64_t
 #include <errno.h>
 #include "msr_core.h"
-#include "msr_common.h"
 
 int msr_debug;
 static int core_fd[NUM_PACKAGES][NUM_CORES_PER_PACKAGE];

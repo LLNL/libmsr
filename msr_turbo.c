@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
-#include "msr_common.h"
 #include "msr_core.h"
 #include "msr_turbo.h"
 
