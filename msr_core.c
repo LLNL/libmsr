@@ -140,6 +140,10 @@ write_msr_single_core(int cpu, int core, off_t msr, uint64_t val){
 }
 
 void
+blr_read_msr(int cpu, off_t msr, uint64_t *val){
+	read_msr_single_core(cpu, 0, msr, val);
+}
+void
 read_msr(int cpu, off_t msr, uint64_t *val){
 	read_msr_single_core(cpu, 0, msr, val);
 }
@@ -162,6 +166,75 @@ read_msr_single_core(int cpu, int core, off_t msr, uint64_t *val){
 		snprintf( error_msg, 1024, "%s::%d  pread returned %d.  core_fd[%d][%d]=%d, cpu=%d, core=%d cpu+core=%d msr=%ld (0x%lx).  errno=%d\n", 
 				__FILE__, __LINE__, rc, cpu, core, core_fd[cpu][core], cpu, core, core_fd_idx, msr, msr, errno );
 		perror(error_msg);
+	}
+}
+
+int
+blr_init_msr(){
+	int i,j;
+	char filename[1025];
+	struct stat statbuf;
+	static int initialized = 0;
+	int retVal;
+
+	if( initialized ){
+		return 0;
+	}
+	for (i=0; i<NUM_PACKAGES; i++){
+		for (j=0; j<NUM_CORES_PER_PACKAGE; j++){
+			// Open the rest of the cores for core-level msrs.  
+			snprintf(filename, 1024, "/dev/cpu/%d/msr", i*NUM_CORES_PER_PACKAGE+j);
+
+			retVal = stat(filename, &statbuf);
+
+			if (retVal == -1) {
+			      snprintf(filename, 1024, "%s::%d  Error: stat failed on /dev/cpu/%d/msr, check if msr module is loaded\n", __FILE__, __LINE__, i*NUM_CORES_PER_PACKAGE+j);
+					
+				return -1; 
+			}	
+		
+			if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR)){
+				snprintf(filename, 1024, "%s::%d  Read/write permissions denied on /dev/cpu/%d/msr\n", __FILE__, __LINE__, i*NUM_CORES_PER_PACKAGE+j);
+		
+				return -1;
+			}
+ 
+
+			core_fd[i][j] = open( filename, O_RDWR );
+
+			if(core_fd[i][j] == -1){
+				snprintf(filename, 1024, "%s::%d  Error opening /dev/cpu/%d/msr, check if msr module is loaded. \n", __FILE__, __LINE__, i*NUM_CORES_PER_PACKAGE+j);
+				perror(filename);
+		
+				return -1;
+			}
+
+		}
+		
+	}
+
+	initialized = 1;
+
+	return 0;
+}
+
+void 
+blr_finalize_msr(){
+	int i, j, rc;
+	char filename[1025];
+	for( i=0; i<NUM_PACKAGES; i++){
+		for(j=0; j<NUM_CORES_PER_PACKAGE; j++){
+			if(core_fd[i][j]){
+				rc = close(core_fd[i][j]);
+				if( rc != 0 ){
+					snprintf(filename, 1024, "%s::%d  Error closing file /dev/cpu/%d/msr\n", 
+							__FILE__, __LINE__, i*NUM_CORES_PER_PACKAGE+j);
+					perror(filename);
+				}
+			}else{
+				core_fd[i][j] = 0;
+			}
+		}
 	}
 }
 

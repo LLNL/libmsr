@@ -1,4 +1,7 @@
 .*.swp
 *.o
+app
+Wgremlin.c
 *.so
+cab*
 
