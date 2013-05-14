@@ -24,10 +24,8 @@ DEFINES +=-D_DEBUG=$(dbg) -g -pg
 else
 DEFINES +=-O2
 endif
-DEFINES +=-DUSE_MPI
 
 CFLAGS=-fPIC -Wall ${DEFINES} ${COMPILER_SPECIFIC_FLAGS}
-CC=mpicc
 
 all: libmsr libwg app cleanup
 
@@ -43,9 +41,6 @@ msr_rapl.o:   Makefile		             msr_rapl.c   msr_rapl.h
 clean:
 	rm -f *.o *.so
 
-app_blr: libmsr libwg.so app.c 
-	mpicc -DUSE_MPI -c -Wall app.c	
-	mpicc -L$(MYLIBDIR) -o app app.o -lmsr -lwg 
 app_pebs: libpebs app.o
 	$(CC) $(APPCFLAGS) -O0 -Wall -o $@ app.o -L${LIBDIR} -lmsr -lpebs 
 

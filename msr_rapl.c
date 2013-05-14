@@ -5,9 +5,6 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <stddef.h>
-#ifdef USE_MPI
-#include <mpi.h>
-#endif
 #include "msr_core.h"
 #include "msr_rapl.h"
 
@@ -335,9 +332,6 @@ rapl_dump_data( struct rapl_data *r ){
 	}
 	gettimeofday( &now, NULL );
 	if(r->pkg_joules > 0.01 && r->elapsed > 0.0050){
-#ifdef USE_MPI
-		fprintf(stdout, "rank %04d ", r->mpi_rank);
-#endif
 		fprintf(stdout, "pkg_watts=%8.4lf   elapsed=%8.5lf   timestamp=%9.6lf\n", 
 				r->pkg_watts,
 				r->elapsed,
@@ -358,17 +352,6 @@ rapl_read_data( int package, struct rapl_data *r ){
 	static uint64_t old_dram_bits[NUM_PACKAGES];
 	static struct timeval old_now[NUM_PACKAGES];
 	static struct timeval now[NUM_PACKAGES];
-	//Need to find a more general solution for this.
-#ifdef USE_MPI
-	static int mpi_rank;
-	static int initialized=0;
-
-	if(!initialized){
-	       initialized=1;
-       		PMPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
- 	}		
-	r->mpi_rank = mpi_rank;
-#endif
 
 	// Copy previous now timestamp to old_now.
 	old_now[package].tv_sec  = now[package].tv_sec;
