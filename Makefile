@@ -14,7 +14,6 @@ APPCFLAGS= -g
 CFLAGS=-fPIC -Wall -g
 CC=gcc
 
-<<<<<<< HEAD
 DEFINES=-DARCH_SANDY_BRIDGE -DPKG_PERF_STATUS_AVAILABLE 
 MYLIBDIR=$(HOME)/local/research/libmsr
 # Machine- and compiler-specific information goes here:
