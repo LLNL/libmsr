@@ -54,12 +54,12 @@ void
 dump_turbo(){
 	int socket, core;
 	uint64_t val;
-	fprintf("Per-socket, per-core turbo state (1=DISengaged)\n");
+	fprintf(stdout,"Per-socket, per-core turbo state (1=DISengaged)\n");
 	for(socket = 0; socket<NUM_SOCKETS; socket++){
 		fprintf(stdout, "Socket %d:  ", socket);
 		for(core=0; core<NUM_CORES_PER_SOCKET; core++){
 			read_msr_single_core( socket, core, IA32_PERF_CTL, &val );
-			fprintf(stdout, "%d", val & (((uint64_t)1)<<32));
+			fprintf(stdout, "%lu", val & (((uint64_t)1)<<32));
 		}
 	}
 }
