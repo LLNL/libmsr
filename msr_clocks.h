@@ -5,11 +5,11 @@
 extern "C" {
 #endif
 
-void read_aperf(int package, uint64_t *aperf); 
-void read_mperf(int package, uint64_t *mperf); 
-void read_tsc  (int package, uint64_t *tsc); 
-double get_effective_frequency(int package);
-void dump_clocks();
+void read_aperf(int socket, uint64_t *aperf); 
+void read_mperf(int socket, uint64_t *mperf); 
+void read_tsc  (int socket, uint64_t *tsc); 
+double get_effective_frequency(int socket);
+void dump_clocks(int socket);
 
 #ifdef __cplusplus 
 }
