@@ -31,7 +31,7 @@ read_tsc(int package, uint64_t *tsc){
 void 
 dump_clocks(){
 	int package;
-	uint64_t val = 99;
+	uint64_t val = 0;
 
 	for( package=0; package<NUM_PACKAGES; package++){
 		read_aperf(package, &val);
