@@ -13,25 +13,24 @@
 #define IA32_TIME_STAMP_COUNTER 0x00000010
 
 void 
-read_aperf(int socket, uint64_t *aperf){
+read_aperf(const int socket, uint64_t *aperf){
 	read_msr( socket, MSR_IA32_APERF, aperf );
 }
 
 void
-read_mperf(int socket, uint64_t *mperf){
+read_mperf(const int socket, uint64_t *mperf){
 	read_msr( socket, MSR_IA32_MPERF, mperf );
 }
 
 void 
-read_tsc(int socket, uint64_t *tsc){
+read_tsc(const int socket, uint64_t *tsc){
 	read_msr( socket, IA32_TIME_STAMP_COUNTER, tsc );
 }
 
 
 void 
-dump_clocks(int socket){
-	int socket;
-	uint64_t val = 99;
+dump_clocks(const int socket){
+	uint64_t val;
 
 	read_aperf(socket, &val);
 	fprintf(stdout, "MSR_IA32_APERF.%d= %20lu  ", socket, val);
@@ -44,7 +43,7 @@ dump_clocks(int socket){
 }
 
 double
-get_effective_frequency(int socket){
+get_effective_frequency(const int socket){
 	static int init=0;
 	static uint64_t previous_mperf[NUM_SOCKETS], previous_aperf[NUM_SOCKETS];
 	uint64_t mperf, aperf;
