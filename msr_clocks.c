@@ -13,58 +13,49 @@
 #define IA32_TIME_STAMP_COUNTER 0x00000010
 
 void 
-read_aperf(int package, uint64_t *aperf){
-	read_msr( package, MSR_IA32_APERF, aperf );
+read_aperf(const int socket, uint64_t *aperf){
+	read_msr( socket, MSR_IA32_APERF, aperf );
 }
 
 void
-read_mperf(int package, uint64_t *mperf){
-	read_msr( package, MSR_IA32_MPERF, mperf );
+read_mperf(const int socket, uint64_t *mperf){
+	read_msr( socket, MSR_IA32_MPERF, mperf );
 }
 
 void 
-read_tsc(int package, uint64_t *tsc){
-	read_msr( package, IA32_TIME_STAMP_COUNTER, tsc );
+read_tsc(const int socket, uint64_t *tsc){
+	read_msr( socket, IA32_TIME_STAMP_COUNTER, tsc );
 }
 
 
 void 
-dump_clocks(){
-	int package;
-	uint64_t val = 0;
+dump_clocks(const int socket){
+	uint64_t val;
 
-	for( package=0; package<NUM_PACKAGES; package++){
-		read_aperf(package, &val);
-		fprintf(stdout, "%20lu ", val);
-	}
-	fprintf(stdout, "MSR_IA32_APERF\n");
+	read_aperf(socket, &val);
+	fprintf(stdout, "MSR_IA32_APERF.%d= %20lu  ", socket, val);
 
-	for( package=0; package<NUM_PACKAGES; package++){
-		read_mperf(package, &val);
-		fprintf(stdout, "%20lu ", val);
-	}
-	fprintf(stdout, "MSR_IA32_MPERF\n");
+	read_mperf(socket, &val);
+	fprintf(stdout, "MSR_IA32_MPERF.%d= %20lu  ", socket, val);
 
-	for( package=0; package<NUM_PACKAGES; package++){
-		read_tsc(package, &val);
-		fprintf(stdout, "%20lu ", val);
-	}
-	fprintf(stdout, "TSC\n");
+	read_tsc(socket, &val);
+	fprintf(stdout, "TSC.%d= %20lu\n", socket, val);
 }
 
 double
-get_effective_frequency(int package){
+get_effective_frequency(const int socket){
 	static int init=0;
-	static uint64_t previous_mperf[NUM_PACKAGES], previous_aperf[NUM_PACKAGES];
+	static uint64_t previous_mperf[NUM_SOCKETS], previous_aperf[NUM_SOCKETS];
 	uint64_t mperf, aperf;
 	double ef=0.0;
-	read_mperf(package, &mperf);
-	read_aperf(package, &aperf);
-	if(init && (mperf-previous_mperf[package])){
-		ef = ((double)2.6) * ((double)(aperf-previous_aperf[package])) / ((double)(mperf-previous_mperf[package]));
+	read_mperf(socket, &mperf);
+	read_aperf(socket, &aperf);
+	// FIXME:  document where 2.6GHz figure comes from.
+	if(init && (mperf-previous_mperf[socket])){
+		ef = ((double)2.6) * ((double)(aperf-previous_aperf[socket])) / ((double)(mperf-previous_mperf[socket]));
 	}
-	previous_mperf[package] = mperf;
-	previous_aperf[package] = aperf;
+	previous_mperf[socket] = mperf;
+	previous_aperf[socket] = aperf;
 	init=1;
 	return ef;
 }

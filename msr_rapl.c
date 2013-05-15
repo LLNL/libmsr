@@ -113,13 +113,13 @@ struct rapl_units{
 };
 
 static void
-translate( int package, uint64_t* bits, double* units, int type ){
+translate( int socket, uint64_t* bits, double* units, int type ){
 	static int initialized=0;
-	static struct rapl_units ru[NUM_PACKAGES];
+	static struct rapl_units ru[NUM_SOCKETS];
 	int i;
 	if(!initialized){
 		initialized=1;
-		for(i=0; i<NUM_PACKAGES; i++){
+		for(i=0; i<NUM_SOCKETS; i++){
 			// See figure 14-16 for bit fields.
 			//  1  1 1  1 1 
 			//  9  6 5  2 1  8 7  4 3  0
@@ -139,12 +139,12 @@ translate( int package, uint64_t* bits, double* units, int type ){
 		}	
 	}
 	switch(type){
-		case BITS_TO_WATTS: 	*units = (double)(*bits)  * ru[package].watts; 			break;
-		case BITS_TO_SECONDS:	*units = (double)(*bits)  * ru[package].seconds; 		break;
-		case BITS_TO_JOULES:	*units = (double)(*bits)  * ru[package].joules; 		break;
-		case WATTS_TO_BITS:	*bits  = (uint64_t)(  (*units) / ru[package].watts    ); 	break;
-		case SECONDS_TO_BITS:	*bits  = (uint64_t)(  (*units) / ru[package].seconds  ); 	break;
-		case JOULES_TO_BITS:	*bits  = (uint64_t)(  (*units) / ru[package].joules   ); 	break;
+		case BITS_TO_WATTS: 	*units = (double)(*bits)  * ru[socket].watts; 			break;
+		case BITS_TO_SECONDS:	*units = (double)(*bits)  * ru[socket].seconds; 		break;
+		case BITS_TO_JOULES:	*units = (double)(*bits)  * ru[socket].joules; 		break;
+		case WATTS_TO_BITS:	*bits  = (uint64_t)(  (*units) / ru[socket].watts    ); 	break;
+		case SECONDS_TO_BITS:	*bits  = (uint64_t)(  (*units) / ru[socket].seconds  ); 	break;
+		case JOULES_TO_BITS:	*bits  = (uint64_t)(  (*units) / ru[socket].joules   ); 	break;
 		default: 
 			fprintf(stderr, "%s:%d  Unknown value %d.  This is bad.\n", __FILE__, __LINE__, type);  
 			*bits = -1;
@@ -169,51 +169,50 @@ struct rapl_power_info{
 };
 
 static void
-rapl_get_power_info(int package, struct rapl_power_info *info){
+rapl_get_power_info(int socket, struct rapl_power_info *info){
 	uint64_t val = 0;
 	//info->msr_pkg_power_info  = 0x6845000148398;
 	//info->msr_dram_power_info = 0x682d0001482d0;
 
-	read_msr( package, MSR_PKG_POWER_INFO, &(info->msr_pkg_power_info) );
-	read_msr( package, MSR_DRAM_POWER_INFO, &(info->msr_dram_power_info) );
+	read_msr( socket, MSR_PKG_POWER_INFO, &(info->msr_pkg_power_info) );
+	read_msr( socket, MSR_DRAM_POWER_INFO, &(info->msr_dram_power_info) );
 
 	// Note that the same units are used in both the PKG and DRAM domains.
-	// Also note that "package", "socket" and "cpu" are being used interchangably.  This needs to be fixed.
 	
 	val = MASK_VAL( info->msr_pkg_power_info,  53, 48 );
-	translate( package, &val, &(info->pkg_max_window), BITS_TO_SECONDS );
+	translate( socket, &val, &(info->pkg_max_window), BITS_TO_SECONDS );
 	
 	val = MASK_VAL( info->msr_pkg_power_info,  46, 32 );
-	translate( package, &val, &(info->pkg_max_power), BITS_TO_WATTS );
+	translate( socket, &val, &(info->pkg_max_power), BITS_TO_WATTS );
 
 	val = MASK_VAL( info->msr_pkg_power_info,  30, 16 );
-	translate( package, &val, &(info->pkg_min_power), BITS_TO_WATTS );
+	translate( socket, &val, &(info->pkg_min_power), BITS_TO_WATTS );
 
 	val = MASK_VAL( info->msr_pkg_power_info,  14,  0 );
-	translate( package, &val, &(info->pkg_therm_power), BITS_TO_WATTS );
+	translate( socket, &val, &(info->pkg_therm_power), BITS_TO_WATTS );
 
 	val = MASK_VAL( info->msr_dram_power_info, 53, 48 );
-	translate( package, &val, &(info->dram_max_window), BITS_TO_SECONDS );
+	translate( socket, &val, &(info->dram_max_window), BITS_TO_SECONDS );
 
 	val = MASK_VAL( info->msr_dram_power_info, 46, 32 );
-	translate( package, &val, &(info->dram_max_power), BITS_TO_WATTS );
+	translate( socket, &val, &(info->dram_max_power), BITS_TO_WATTS );
 
 	val = MASK_VAL( info->msr_dram_power_info, 30, 16 );
-	translate( package, &val, &(info->dram_min_power), BITS_TO_WATTS );
+	translate( socket, &val, &(info->dram_min_power), BITS_TO_WATTS );
 
 	val = MASK_VAL( info->msr_dram_power_info, 14,  0 );
-	translate( package, &val, &(info->dram_therm_power), BITS_TO_WATTS );
+	translate( socket, &val, &(info->dram_therm_power), BITS_TO_WATTS );
 }
 
 static void
-rapl_limit_calc(int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
-	static struct rapl_power_info rpi[NUM_PACKAGES];
+rapl_limit_calc(int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
+	static struct rapl_power_info rpi[NUM_SOCKETS];
 	static int initialized=0;
 	uint64_t watts_bits=0, seconds_bits=0;
 	int i;
 	if(!initialized){
 		initialized=1;
-		for(i=0; i<NUM_PACKAGES; i++){
+		for(i=0; i<NUM_SOCKETS; i++){
 			rapl_get_power_info(i, &(rpi[i]));
 		}
 	}
@@ -225,14 +224,14 @@ rapl_limit_calc(int package, struct rapl_limit* limit1, struct rapl_limit* limit
 			watts_bits   = MASK_VAL( limit1->bits, 14,  0 );
 			seconds_bits = MASK_VAL( limit1->bits, 23, 17 );
 
-			translate( package, &watts_bits, &limit1->watts, BITS_TO_WATTS );
-			translate( package, &seconds_bits, &limit1->seconds, BITS_TO_SECONDS );
+			translate( socket, &watts_bits, &limit1->watts, BITS_TO_WATTS );
+			translate( socket, &seconds_bits, &limit1->seconds, BITS_TO_SECONDS );
 
 		}else{
 			// We have been given watts and seconds and need to translate
 			// these into bit values.
-			translate( package, &watts_bits,   &limit1->watts,   WATTS_TO_BITS   );
-			translate( package, &seconds_bits, &limit1->seconds, SECONDS_TO_BITS );
+			translate( socket, &watts_bits,   &limit1->watts,   WATTS_TO_BITS   );
+			translate( socket, &seconds_bits, &limit1->seconds, SECONDS_TO_BITS );
 			limit1->bits |= watts_bits   << 0;
 			limit1->bits |= seconds_bits << 17;
 		}
@@ -242,12 +241,12 @@ rapl_limit_calc(int package, struct rapl_limit* limit1, struct rapl_limit* limit
 			watts_bits   = MASK_VAL( limit2->bits, 46, 32 );
 			seconds_bits = MASK_VAL( limit2->bits, 55, 49 );
 
-			translate( package, &watts_bits, &limit2->watts, BITS_TO_WATTS );
-			translate( package, &seconds_bits, &limit2->seconds, BITS_TO_SECONDS );
+			translate( socket, &watts_bits, &limit2->watts, BITS_TO_WATTS );
+			translate( socket, &seconds_bits, &limit2->seconds, BITS_TO_SECONDS );
 
 		}else{
-			translate( package, &watts_bits,   &limit2->watts,   WATTS_TO_BITS   );
-			translate( package, &seconds_bits, &limit2->seconds, SECONDS_TO_BITS );
+			translate( socket, &watts_bits,   &limit2->watts,   WATTS_TO_BITS   );
+			translate( socket, &seconds_bits, &limit2->seconds, SECONDS_TO_BITS );
 			limit2->bits |= watts_bits   << 32;
 			limit2->bits |= seconds_bits << 49;
 		}
@@ -260,14 +259,14 @@ rapl_limit_calc(int package, struct rapl_limit* limit1, struct rapl_limit* limit
 			watts_bits   = MASK_VAL( dram->bits, 14,  0 );
 			seconds_bits = MASK_VAL( dram->bits, 23, 17 );
 
-			translate( package, &watts_bits, &dram->watts, BITS_TO_WATTS );
-			translate( package, &seconds_bits, &dram->seconds, BITS_TO_SECONDS );
+			translate( socket, &watts_bits, &dram->watts, BITS_TO_WATTS );
+			translate( socket, &seconds_bits, &dram->seconds, BITS_TO_SECONDS );
 
 		}else{
 			// We have been given watts and seconds and need to translate
 			// these into bit values.
-			translate( package, &watts_bits,   &dram->watts,   WATTS_TO_BITS   );
-			translate( package, &seconds_bits, &dram->seconds, SECONDS_TO_BITS );
+			translate( socket, &watts_bits,   &dram->watts,   WATTS_TO_BITS   );
+			translate( socket, &seconds_bits, &dram->seconds, SECONDS_TO_BITS );
 			dram->bits |= watts_bits   << 0;
 			dram->bits |= seconds_bits << 17;
 		}
@@ -283,12 +282,12 @@ rapl_dump_limit( struct rapl_limit* L ){
 }
 
 void 
-rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
+rapl_set_limit( int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	// Fill in whatever values are necessary.
 	uint64_t pkg_limit=0;
 	uint64_t dram_limit=0;
 
-	rapl_limit_calc( package, limit1, limit2, dram );
+	rapl_limit_calc( socket, limit1, limit2, dram );
 
 	if(limit1){
 		pkg_limit |= limit1->bits | (1LL << 15) | (1LL << 16);	// enable clamping
@@ -297,27 +296,27 @@ rapl_set_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit
 		pkg_limit |= limit2->bits | (1LL << 47) | (1LL << 48);	// enable clamping
 	}
 	if(limit1 || limit2){
-		write_msr( package, MSR_PKG_POWER_LIMIT, pkg_limit );
+		write_msr( socket, MSR_PKG_POWER_LIMIT, pkg_limit );
 	}
 	if(dram){
 		dram_limit |= dram->bits | (1LL << 15) | (1LL << 16);	// enable clamping
-		write_msr( package, MSR_DRAM_POWER_LIMIT, dram_limit );
+		write_msr( socket, MSR_DRAM_POWER_LIMIT, dram_limit );
 	}
 }
 
 void 
-rapl_get_limit( int package, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
+rapl_get_limit( int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	if(limit1){
-		read_msr( package, MSR_PKG_POWER_LIMIT, &(limit1->bits) );
+		read_msr( socket, MSR_PKG_POWER_LIMIT, &(limit1->bits) );
 	}
 	if(limit2){
-		read_msr( package, MSR_PKG_POWER_LIMIT, &(limit2->bits) );
+		read_msr( socket, MSR_PKG_POWER_LIMIT, &(limit2->bits) );
 	}
 	if(dram){
-		read_msr( package, MSR_DRAM_POWER_LIMIT, &(dram->bits) );
+		read_msr( socket, MSR_DRAM_POWER_LIMIT, &(dram->bits) );
 	}
 	// Fill in whatever values are necessary.
-	rapl_limit_calc( package, limit1, limit2, dram );
+	rapl_limit_calc( socket, limit1, limit2, dram );
 }
 
 void 
@@ -341,52 +340,52 @@ rapl_dump_data( struct rapl_data *r ){
 }
 
 void
-rapl_read_data( int package, struct rapl_data *r ){
-	static double pkg_joules[NUM_PACKAGES] = {0.0};  
-	static double old_pkg_joules[NUM_PACKAGES] = {0.0}; 
-	static double dram_joules[NUM_PACKAGES] = {0.0}; 
-	static double old_dram_joules[NUM_PACKAGES] = {0.0};
-	static uint64_t pkg_bits[NUM_PACKAGES]; 
-	static uint64_t dram_bits[NUM_PACKAGES];
-	static uint64_t old_pkg_bits[NUM_PACKAGES]; 
-	static uint64_t old_dram_bits[NUM_PACKAGES];
-	static struct timeval old_now[NUM_PACKAGES];
-	static struct timeval now[NUM_PACKAGES];
+rapl_read_data( int socket, struct rapl_data *r ){
+	static double pkg_joules[NUM_SOCKETS] = {0.0};  
+	static double old_pkg_joules[NUM_SOCKETS] = {0.0}; 
+	static double dram_joules[NUM_SOCKETS] = {0.0}; 
+	static double old_dram_joules[NUM_SOCKETS] = {0.0};
+	static uint64_t pkg_bits[NUM_SOCKETS]; 
+	static uint64_t dram_bits[NUM_SOCKETS];
+	static uint64_t old_pkg_bits[NUM_SOCKETS]; 
+	static uint64_t old_dram_bits[NUM_SOCKETS];
+	static struct timeval old_now[NUM_SOCKETS];
+	static struct timeval now[NUM_SOCKETS];
 
 	// Copy previous now timestamp to old_now.
-	old_now[package].tv_sec  = now[package].tv_sec;
-	old_now[package].tv_usec = now[package].tv_usec;
+	old_now[socket].tv_sec  = now[socket].tv_sec;
+	old_now[socket].tv_usec = now[socket].tv_usec;
 
 	// Copy previous raw msr values into the old buckets.	
-	old_pkg_joules[package]  = pkg_joules[package];
-	old_dram_joules[package] = dram_joules[package];
+	old_pkg_joules[socket]  = pkg_joules[socket];
+	old_dram_joules[socket] = dram_joules[socket];
 
 	// Copy off old bits (only need this for debugging)
-	old_pkg_bits[package] = pkg_bits[package];
-	old_dram_bits[package] = dram_bits[package];
+	old_pkg_bits[socket] = pkg_bits[socket];
+	old_dram_bits[socket] = dram_bits[socket];
 
 	// Get current timestamp
-	gettimeofday( &(now[package]), NULL );
+	gettimeofday( &(now[socket]), NULL );
 
 	// Get raw joules
-	read_msr( package, MSR_PKG_ENERGY_STATUS,  &pkg_bits[package]  );
-	read_msr( package, MSR_DRAM_ENERGY_STATUS, &dram_bits[package] );
+	read_msr( socket, MSR_PKG_ENERGY_STATUS,  &pkg_bits[socket]  );
+	read_msr( socket, MSR_DRAM_ENERGY_STATUS, &dram_bits[socket] );
 	
 	// get normalized joules
-	translate( package, &pkg_bits[package],  &(pkg_joules[package]),  BITS_TO_JOULES );
-	translate( package, &dram_bits[package], &(dram_joules[package]), BITS_TO_JOULES );
+	translate( socket, &pkg_bits[socket],  &(pkg_joules[socket]),  BITS_TO_JOULES );
+	translate( socket, &dram_bits[socket], &(dram_joules[socket]), BITS_TO_JOULES );
 	
 	// Fill in the struct if present.
 	if(r){
 		// Get delta in seconds
-		r->elapsed = (now[package].tv_sec - old_now[package].tv_sec) 
+		r->elapsed = (now[socket].tv_sec - old_now[socket].tv_sec) 
 			     +
-			     (now[package].tv_usec - old_now[package].tv_usec)/1000000.0;
+			     (now[socket].tv_usec - old_now[socket].tv_usec)/1000000.0;
 
 		// Get delta joules.
 		// Does not handle wraparound.
-		r->pkg_joules  = pkg_joules[package]  - old_pkg_joules[package];		
-		r->dram_joules = dram_joules[package] - old_dram_joules[package];		
+		r->pkg_joules  = pkg_joules[socket]  - old_pkg_joules[socket];		
+		r->dram_joules = dram_joules[socket] - old_dram_joules[socket];		
 
 		// Get watts.
 		// Does not check for div by 0.
@@ -394,11 +393,11 @@ rapl_read_data( int package, struct rapl_data *r ){
 		r->dram_watts = r->dram_joules / r->elapsed;
 
 		// Save off bits for debugging.
-		r->old_pkg_bits = old_pkg_bits[package];
-		r->old_dram_bits = old_dram_bits[package];
+		r->old_pkg_bits = old_pkg_bits[socket];
+		r->old_dram_bits = old_dram_bits[socket];
 
-		r->pkg_bits = pkg_bits[package];
-		r->dram_bits = dram_bits[package];
+		r->pkg_bits = pkg_bits[socket];
+		r->dram_bits = dram_bits[socket];
 	}
 }
 

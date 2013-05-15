@@ -2,8 +2,8 @@
 #define MSR_CORE_H
 #include <stdint.h>
 #include <sys/types.h>	// off_t
-#define NUM_PACKAGES 2
-#define NUM_CORES_PER_PACKAGE 8
+#define NUM_SOCKETS 2
+#define NUM_CORES_PER_SOCKET 8
 enum{
 	MSR_AND,
 	MSR_OR,
