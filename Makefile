@@ -12,12 +12,11 @@ CFLAGS=-fPIC -Wall -O3
 CC=gcc
 
 DEFINES=-DARCH_SANDY_BRIDGE -DPKG_PERF_STATUS_AVAILABLE 
-MYLIBDIR=$(HOME)/local/research/libmsr
 
 all: libmsr 
 
 libmsr: msr_core.o msr_turbo.o msr_pebs.o msr_clocks.o msr_rapl.o
-	$(CC) -fPIC -g -shared -Wl,-rpath,$(MYLIBDIR) -Wl,-soname,libmsr.so -o libmsr.so $^
+	$(CC) -fPIC -g -shared  -Wl,-soname,libmsr.so -o libmsr.so $^
 
 msr_core.o:   Makefile                       msr_core.c   msr_core.h 
 msr_pebs.o:   Makefile msr_core.o            msr_pebs.c   msr_pebs.h 
