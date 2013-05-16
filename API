@@ -1,0 +1,74 @@
+int init_msr();
+void finalize_msr();
+
+	The msr kernel module exposes msr via the /dev 
+	filesystem.  These functions open and close 
+	those files.
+
+
+void write_msr(int socket, off_t msr, uint64_t val);
+void write_msr_all_cores(int socket, off_t msr, uint64_t val);
+void write_msr_all_cores_v(int socket, off_t msr, uint64_t *val);
+void write_msr_single_core(int socket, int core, off_t msr, uint64_t val);
+
+void read_msr(int socket, off_t msr, uint64_t *val);
+void read_msr_all_cores_v(int socket, off_t msr, uint64_t *val);
+void read_msr_single_core(int socket, int core, off_t msr, uint64_t *val);
+
+	MSRs may be associated with a socket (aka package),
+	core or thread.  Thread-level MSRs are not yet 
+	supported.  Use read_msr and write_msr for socket-
+	level MSRs and read_msr_single_core and write_msr_
+	single_core for specific core-level MSRs.  The _v 
+	variants expect a pointer to an array of length
+	NUM_CORES_PER_SOCKET.  write_msr_all_cores handles
+	the special case of writing the same value to all
+	core-level MSRs on the socket.
+	
+
+struct rapl_data{
+	uint64_t old_pkg_bits;
+	uint64_t pkg_bits;
+	uint64_t old_dram_bits;
+	uint64_t dram_bits;
+	double pkg_joules;
+	double dram_joules;
+	double pkg_watts;
+	double dram_watts;
+	double elapsed;
+}
+void rapl_read_data( int socket, struct rapl_data *r );
+void rapl_dump_data( struct rapl_data *r );
+
+	To read off energy consumption on the various power 
+	domains, allocate a struct rapl_data per socket.
+	The first call to rapl_read_data() initializes the
+	struct.  Subsequent calls record measured pkg
+	and dram energy as well as derived watts.
+	rapl_dump_data prints this information to stdout.
+	Fields with the _bits suffix are the raw msr 
+	values.
+
+
+
+struct rapl_limit{
+	double 		watts;		// User-friendly interface.
+	double	 	seconds;
+	uint64_t 	bits;		// User-unfriendly interface.
+};
+void rapl_set_limit( int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
+void rapl_get_limit( int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
+void rapl_dump_limit( struct rapl_limit *L );
+
+	Each socket support two pkg power limits (using two 
+	separate time windows) as well as a DRAM power limit
+	with its own window.  Calling rapl_get_limit() with 
+	one or more non-null parameter will read the relevant
+	MSR and translate the limits into watts and seconds.
+	rapl_set_limit() will either write the specified
+	bits fields directly to the MSR or, if that field
+	is zero, translate the watts and seconds fields 
+	into the appropriate bit pattern and write that to
+	the MSR.  rapl_dump_limit prints out the fields
+	of the provided struct.
+
