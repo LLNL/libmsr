@@ -33,12 +33,9 @@ void write_msr_all_cores_v(int cpu, off_t msr, uint64_t *val);
 void write_msr_single_core(int cpu, int core, off_t msr, uint64_t val);
 
 void read_msr(int socket, off_t msr, uint64_t *val);
-void blr_read_msr(int socket, off_t msr, uint64_t *val);
 void read_msr_all_cores_v(int cpu, off_t msr, uint64_t *val);
 void read_msr_single_core(int cpu, int core, off_t msr, uint64_t *val);
 
-int blr_init_msr();
-void blr_finalize_msr();
 #ifdef __cplusplus 
 }
 #endif

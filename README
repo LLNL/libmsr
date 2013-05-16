@@ -27,6 +27,7 @@ contains an interface to control Intel's Running Average
 Power Limit (RAPL) features.  Future APIs will include
 turbo mode, clocks, fixed-function hardware performance
 counters, thermal management and Precise Event-Based
-Sampling (PEBS).
+Sampling (PEBS), as well as support for hyperthreading
+and other processors.
 
 
