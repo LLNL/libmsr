@@ -113,7 +113,7 @@ struct rapl_units{
 };
 
 static void
-translate( int socket, uint64_t* bits, double* units, int type ){
+translate( const int socket, uint64_t* bits, double* units, int type ){
 	static int initialized=0;
 	static struct rapl_units ru[NUM_SOCKETS];
 	int i;
@@ -169,7 +169,7 @@ struct rapl_power_info{
 };
 
 static void
-rapl_get_power_info(int socket, struct rapl_power_info *info){
+rapl_get_power_info( const int socket, struct rapl_power_info *info){
 	uint64_t val = 0;
 	//info->msr_pkg_power_info  = 0x6845000148398;
 	//info->msr_dram_power_info = 0x682d0001482d0;
@@ -205,7 +205,7 @@ rapl_get_power_info(int socket, struct rapl_power_info *info){
 }
 
 static void
-rapl_limit_calc(int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
+rapl_limit_calc(const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	static struct rapl_power_info rpi[NUM_SOCKETS];
 	static int initialized=0;
 	uint64_t watts_bits=0, seconds_bits=0;
@@ -282,7 +282,7 @@ rapl_dump_limit( struct rapl_limit* L ){
 }
 
 void 
-rapl_set_limit( int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
+rapl_set_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	// Fill in whatever values are necessary.
 	uint64_t pkg_limit=0;
 	uint64_t dram_limit=0;
@@ -305,7 +305,7 @@ rapl_set_limit( int socket, struct rapl_limit* limit1, struct rapl_limit* limit2
 }
 
 void 
-rapl_get_limit( int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
+rapl_get_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	if(limit1){
 		read_msr( socket, MSR_PKG_POWER_LIMIT, &(limit1->bits) );
 	}
@@ -340,7 +340,7 @@ rapl_dump_data( struct rapl_data *r ){
 }
 
 void
-rapl_read_data( int socket, struct rapl_data *r ){
+rapl_read_data( const int socket, struct rapl_data *r ){
 	static double pkg_joules[NUM_SOCKETS] = {0.0};  
 	static double old_pkg_joules[NUM_SOCKETS] = {0.0}; 
 	static double dram_joules[NUM_SOCKETS] = {0.0}; 
@@ -399,13 +399,5 @@ rapl_read_data( int socket, struct rapl_data *r ){
 		r->pkg_bits = pkg_bits[socket];
 		r->dram_bits = dram_bits[socket];
 	}
-}
-
-#include <stdio.h>
-#include <stdlib.h>
-
-int
-main(){
-	return fprintf(stdout, "%lf\n", strtod( getenv("PKG0_WATT_LIMIT"), NULL) );
 }
 
