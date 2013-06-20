@@ -1,9 +1,20 @@
+/* File: msrThermal.c
+ *
+ * Author: Kathleen Shoga
+ * 
+ * Referenced: Intel documentation 
+ *
+*/
+
 #include <stdio.h>
 #include <stdint.h>
 #include <sys/time.h>
 #include <stddef.h>
 #include <assert.h>
+#include "msr_fake.c"
+#include "msr_fake.h"
 
+// Two defines below from Barry Rountree 
 #define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
 #define MASK_VAL(x,m,n) (((uint64_t)(x)&MASK_RANGE((m),(n)))>>(n))
 
@@ -31,13 +42,13 @@ struct msr_temp_target{
 
 void dump_msr_temp_target(struct msr_temp_target *s)
 {
-	fprintf(stdout, "temp_target		= %ln\n", s->temp_target);	
+	fprintf(stdout, "temp_target		= %lu\n", s->temp_target);	
 }
 
 void get_msr_temp_target(int socket, int core, struct msr_temp_target *s)
 {
-	//read_msr(socket, core, IA32_TEMPERATURE_TARGET, &(s->raw));
-	s->raw = 64;
+	read_msr_single_core(socket, core, MSR_TEMPERATURE_TARGET, &(s->raw));
+	//s->raw = 64;
 	s->temp_target = MASK_VAL(s->raw, 23, 16);	// Minimum temperature at which PROCHOT will
     							// be asserted in degree Celsius (Probably 
 							// the TCC Activation Temperature)	
@@ -81,8 +92,8 @@ void dump_misc_enable(struct misc_enable *s)
 
 void get_misc_enable(int package, struct misc_enable *s)
 {
-	//read_msr(package, IA32_MISC_ENABLE, &(s->raw));
-	s->raw = 64;
+	read_msr(package, IA32_MISC_ENABLE, &(s->raw));
+	//s->raw = 164;
         s->fast_string_enable = MASK_VAL(s->raw, 0, 0);				// When set, fast-strings feature (for REP MOVS and REP STORS) 
 										// is enabled (default), (cleared = disabled)
 
@@ -172,8 +183,8 @@ void get_misc_enable(int package, struct misc_enable *s)
 void set_misc_enable(int package, struct misc_enable *s)
 {
 	uint64_t msrVal;
-	//read_msr(package, IA32_MISC_ENABLE, &msrVal);
-	msrVal = 64; //temp value
+	read_msr(package, IA32_MISC_ENABLE, &msrVal);
+	//msrVal = 64; //temp value
 	assert(s->fast_string_enable == 0 || s->fast_string_enable == 1);
 	assert(s->auto_TCC_enable == 0 || s->auto_TCC_enable == 1);
 	assert(s->TM2_enable == 0 || s->TM2_enable == 1);
@@ -192,7 +203,7 @@ void set_misc_enable(int package, struct misc_enable *s)
 	msrVal = (msrVal & (~((uint64_t)1<< (uint64_t)34))) | ((uint64_t)s->XD_bit_disable << (uint64_t)34);
 	msrVal = (msrVal & (~((uint64_t)1<< (uint64_t)38))) | ((uint64_t)s->turbo_mode_disable << (uint64_t)38);
 
-	//write_msr(package, IA32_MISC_ENABLE, msrVal);
+	write_msr(package, IA32_MISC_ENABLE, msrVal);
 }
 
 //---------------------END Misc_Enable functions----------------------------------------------------------------
@@ -233,8 +244,8 @@ void dump_clock_mod(struct clock_mod *s)
 
 void get_clock_mod(int socket, int core, struct clock_mod *s)
 {
-	// read_msr_single_core(socket, core, IA32_CLOCK_MODULATION, &(s->raw));
-	s->raw = 64; // temp value
+	read_msr_single_core(socket, core, IA32_CLOCK_MODULATION, &(s->raw));
+	//s->raw = 64; // temp value
 	s->duty_cycle = MASK_VAL(s->raw, 3, 1);			// specific encoded values for target duty cycle
 
 	s->duty_cycle_enable = MASK_VAL(s->raw, 4, 4);		// On-Demand Clock Modulation Enable
@@ -244,15 +255,15 @@ void get_clock_mod(int socket, int core, struct clock_mod *s)
 void set_clock_mod(int socket, int core, struct clock_mod *s)
 {
 	uint64_t msrVal;
-	// read_msr_single_core(socket, core, IA32_CLOCK_MODULATION, &msrVal);
-	msrVal = 64; // temp value
+	read_msr_single_core(socket, core, IA32_CLOCK_MODULATION, &msrVal);
+	//msrVal = 64; // temp value
 	assert(s->duty_cycle > 0 && s->duty_cycle <8);
 	assert(s->duty_cycle_enable == 0 || s->duty_cycle_enable == 1);
 
 	msrVal = (msrVal & (~(3<<1))) | (s->duty_cycle << 1);
 	msrVal = (msrVal & (~(1<<4))) | (s->duty_cycle_enable << 4);
 
-	// write_msr_single_core(socket, core, IA32_CLOCK_MODULATION, msrVal);
+	write_msr_single_core(socket, core, IA32_CLOCK_MODULATION, msrVal);
 }
 
 //---------------------------------END CLOCK MODULATION FUNCTIONS-----------------------------------------------------------
@@ -426,8 +437,8 @@ void dump_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 
 void get_therm_stat(int socket, int core, struct therm_stat *s)
 {
-	// read_msr_single_core(socket, core, IA32_THERM_STATUS, &(s->raw));
-	s->raw = 56879; //in dec
+	read_msr_single_core(socket, core, IA32_THERM_STATUS, &(s->raw));
+	//s->raw = 56879; //in dec
 	s->status = MASK_VAL(s->raw, 0,0);			// Indicates whether the digital thermal sensor
 								// high-temperature output signal (PROCHOT#) is
 								// currently active.
@@ -499,8 +510,8 @@ void get_therm_stat(int socket, int core, struct therm_stat *s)
 
 void get_therm_interrupt(int socket, int core, struct therm_interrupt *s)
 {
-	// read_msr_single_core(socket, core, IA32_THERM_INTERRUPT, &(s->raw));
-	s->raw = 64;	
+	read_msr_single_core(socket, core, IA32_THERM_INTERRUPT, &(s->raw));
+	//s->raw = 64;	
 	s->high_temp_enable = MASK_VAL(s->raw, 0, 0);		// Allows the BIOS to enable the generation of an inerrupt on the
 								// transition from low-temp to a high-temp threshold. 
 								// 0 (default) disables interrupts (1 enables interrupts)
@@ -545,8 +556,8 @@ void get_therm_interrupt(int socket, int core, struct therm_interrupt *s)
 
 void get_pkg_therm_stat(int package, struct pkg_therm_stat *s)
 {
-	// read_msr( package, IA32_PACKAGE_THERM_STATUS, &(s->raw) ); 
-	s->raw = 56879; //in dec
+	read_msr( package, IA32_PACKAGE_THERM_STATUS, &(s->raw) ); 
+	//s->raw = 56879; //in dec
 	s->status = MASK_VAL(s->raw,0,0); 			// Indicates whether the digital thermal sensor 
 								// high-temp output signal (PROCHOT#) for the pkg
 								// currently active. (1=active)
@@ -605,8 +616,8 @@ void get_pkg_therm_stat(int package, struct pkg_therm_stat *s)
 void set_therm_stat(int socket, int core, struct therm_stat *s)
 {
 	uint64_t msrVal;
-	// read_msr_single_core(socket, core, IA32_THERM_STATUS, &msrVal);
-	msrVal=64; //temp value without the read_msr_single_core
+	read_msr_single_core(socket, core, IA32_THERM_STATUS, &msrVal);
+	//msrVal=64; //temp value without the read_msr_single_core
 	assert(s->status_log == 0 || s->status_log == 1);
 	assert(s->PROCHOT_or_FORCEPR_log == 0 || s->PROCHOT_or_FORCEPR_log == 1);
 	assert(s->crit_temp_log == 0 || s->crit_temp_log == 1);
@@ -621,14 +632,14 @@ void set_therm_stat(int socket, int core, struct therm_stat *s)
 	msrVal = (msrVal & (~(1<<9))) | (s->therm_thresh2_log << 1);
 	msrVal = (msrVal & (~(1<<11))) | (s->power_notification_log << 1);
 
-	// write_msr_single_core(socket, core, IA32_THERM_STATUS, msrVal);
+	write_msr_single_core(socket, core, IA32_THERM_STATUS, msrVal);
 }
 
 void set_therm_interrupt(int socket, int core, struct therm_interrupt *s)
 {
 	uint64_t msrVal;
-	// read_msr_single_core(socket, core, IA32_THERM_INTERRUPT, &msrVal);
-	msrVal = 64; // temp value without read
+	read_msr_single_core(socket, core, IA32_THERM_INTERRUPT, &msrVal);
+	//msrVal = 64; // temp value without read
 	assert(s->high_temp_enable == 0 || s->high_temp_enable == 1);
 	assert(s->low_temp_enable == 0 || s->low_temp_enable == 1);
 	assert(s->PROCHOT_enable == 0 || s->PROCHOT_enable == 1);
@@ -649,14 +660,14 @@ void set_therm_interrupt(int socket, int core, struct therm_interrupt *s)
 	msrVal = (msrVal & (~(1<<23))) | (s->thresh2_enable << 23);
 	msrVal = (msrVal & (~(1<<24))) | (s->pwr_limit_notification_enable << 24);
 
-	// write_msr_single_core(socket, core, IA32_THERM_INTERRUPT, msrVal);
+	write_msr_single_core(socket, core, IA32_THERM_INTERRUPT, msrVal);
 }
 
 void set_pkg_therm_stat(int package, struct pkg_therm_stat *s)
 {
 	uint64_t msrVal;
-	//read_msr(package, IA32_PACKAGE_THERM_INTERRUPT, &msrVal);
-	msrVal=64; //temp value without the read_msr
+	read_msr(package, IA32_PACKAGE_THERM_INTERRUPT, &msrVal);
+	//msrVal=64; //temp value without the read_msr
 	assert(s->status_log == 0 || s->status_log == 1);
 	assert(s->PROCHOT_log == 0 || s->PROCHOT_log == 1);
 	assert(s->crit_temp_log == 0 || s->PROCHOT_log == 1);
@@ -670,13 +681,13 @@ void set_pkg_therm_stat(int package, struct pkg_therm_stat *s)
 	msrVal = (msrVal & (~(1<<7))) | (s->therm_thresh1_log << 7);
 	msrVal = (msrVal & (~(1<<9))) | (s->therm_thresh2_log << 9);
 	msrVal = (msrVal & (~(1<<11))) | (s->power_notification_log << 11);
-	//write_mrs(package, IA32_PACKAGE_THERM_INTERRUPT, msrVal);
+	write_msr(package, IA32_PACKAGE_THERM_INTERRUPT, msrVal);
 }
 
 void get_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s)
 {
-	// read_msr( package, IA32_PACKAGE_THERM_INTERRUPT, &(s->raw));
-	s->raw = 56879;
+	read_msr( package, IA32_PACKAGE_THERM_INTERRUPT, &(s->raw));
+	//s->raw = 56879;
 	s->high_temp_enable = MASK_VAL(s->raw, 0, 0);	// Allows the BIOS to enable the generation of an interrupt on transition
 							// from low temp to pkg high temp threshold
 							// (0 (default)- disables interrupts) (1=enables interrupts)
@@ -711,8 +722,8 @@ void get_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s)
 void set_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s)
 {
 	uint64_t msrVal;
-	//read_msr(package, IA32_PACKAGE_THERM_INTERRUPT, &msrVal);
-	msrVal=64; //temp value without the read_msr
+	read_msr(package, IA32_PACKAGE_THERM_INTERRUPT, &msrVal);
+	//msrVal=64; //temp value without the read_msr
 	
 	assert(s->high_temp_enable == 0 || s->high_temp_enable == 1);
 	assert(s->low_temp_enable == 0 || s->low_temp_enable == 1);
@@ -731,8 +742,8 @@ void set_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s)
 	msrVal = (msrVal & (~(7<<16))) | (s->thresh2_val << 16);
 	msrVal = (msrVal & (~(1<<23))) | (s->thresh2_enable << 23);
 	msrVal = (msrVal & (~(1<<24))) | (s->pwr_limit_notification_enable << 24);
-	//write_msr(package, IA32_PACKAGE_THERM_INTERRUPT, msrVal);
-	return;
+	
+	write_msr(package, IA32_PACKAGE_THERM_INTERRUPT, msrVal);
 }
 
 void Human_Interface_set_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s)
@@ -947,60 +958,60 @@ void Human_Interface_set_pkg_therm_interrupt(int package, struct pkg_therm_inter
 
 int main()
 {
-	/*
-	struct misc_enable s;
-	get_misc_enable(1,&s);
-	dump_misc_enable(&s);	
-	s.turbo_mode_disable = 0;
-	s.XD_bit_disable = 0;
+	printf("\nMiscellaneous Enable\n");
+	struct misc_enable a;
+	get_misc_enable(1,&a);
+	dump_misc_enable(&a);	
+	a.turbo_mode_disable = 1;
+	a.XD_bit_disable = 1;
 	printf("\n");
-	set_misc_enable(1, &s);
-	dump_misc_enable(&s);
-	*/
+	set_misc_enable(1, &a);
+	dump_misc_enable(&a);
 
-	/*
-	struct clock_mod s;
-	get_clock_mod(1,1,&s);
-	dump_clock_mod(&s);
-	s.duty_cycle = 7;
-	s.duty_cycle_enable = 0;
-	set_clock_mod(1,1, &s);
-	dump_clock_mod(&s);
-	*/
+	printf("\nClock Modulation\n");
+	struct clock_mod b;
+	get_clock_mod(1,1,&b);
+	dump_clock_mod(&b);
+	b.duty_cycle = 3;
+	b.duty_cycle_enable = 1;
+	set_clock_mod(1,1, &b);
+	dump_clock_mod(&b);
 
-	/*
-	struct therm_interrupt s;
-	get_therm_interrupt(1,1,&s);
-	dump_therm_interrupt(&s);
-	s.high_temp_enable = 1;
-	s.low_temp_enable = 1;
-	s.thresh1_val = 25;
-	set_therm_interrupt(1,1,&s);
-	dump_therm_interrupt(&s);
-	*/
+	printf("\nThermal Interrupt\n");
+	struct therm_interrupt c;
+	get_therm_interrupt(1,1,&c);
+	dump_therm_interrupt(&c);
+	c.high_temp_enable = 1;
+	c.low_temp_enable = 1;
+	c.thresh1_val = 25;
+	set_therm_interrupt(1,1,&c);
+	dump_therm_interrupt(&c);
 
-	/*
-	struct therm_stat s;
-	get_therm_stat(1,1,&s);
-	dump_therm_stat(&s);
-	s.status = 0;
-	s.readout = 22;
-	s.PROCHOT_or_FORCEPR_log = 0;
-	set_therm_stat(1,1,&s);
-	dump_therm_stat(&s);
-	*/
+	printf("\nThermal Status\n");	
+	struct therm_stat d;
+	get_therm_stat(1,1,&d);
+	dump_therm_stat(&d);
+	d.status = 0;
+	d.readout = 22;
+	d.PROCHOT_or_FORCEPR_log = 0;
+	set_therm_stat(1,1,&d);
+	dump_therm_stat(&d);
 
-	/*
-	struct pkg_therm_interrupt s;
-	get_pkg_therm_interrupt(1, &s);
-	dump_pkg_therm_interrupt(&s);
-	set_pkg_therm_interrupt(1,&s);	
-	*/
-
-	/*
-	struct pkg_therm_stat s;
-	get_pkg_therm_stat(1,&s);
-	dump_pkg_therm_stat(&s);
-	*/
+	printf("\nPackage Thermal Interrupt\n");
+	struct pkg_therm_interrupt e;
+	get_pkg_therm_interrupt(1, &e);
+	dump_pkg_therm_interrupt(&e);
+	e.high_temp_enable = 0;
+	set_pkg_therm_interrupt(1,&e);
+	dump_pkg_therm_interrupt(&e);	
+	
+	printf("\nPackage Thermal Status:\n");
+	struct pkg_therm_stat f;
+	get_pkg_therm_stat(1,&f);
+	dump_pkg_therm_stat(&f);
+	f.status = 0;
+	set_pkg_therm_stat(1, &f);
+	dump_pkg_therm_stat(&f);
+	
 	return 0;
 }
