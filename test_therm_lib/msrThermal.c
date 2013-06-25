@@ -237,7 +237,40 @@ struct clock_mod{
 
 void dump_clock_mod(struct clock_mod *s)
 {
-	fprintf(stdout, "duty_cycle		= %d\n", s->duty_cycle);
+	double percent = 0.0;
+	if(s->duty_cycle == 0)
+	{
+		percent = 6.25;
+	}
+	else if (s->duty_cycle == 1)
+	{
+		percent = 12.5;
+	}
+	else if (s->duty_cycle == 2)
+	{
+		percent = 25.0;
+	}
+	else if (s->duty_cycle == 3)
+	{
+		percent = 37.5;
+	}
+	else if (s->duty_cycle == 4)
+	{
+		percent = 50.0;
+	}
+	else if (s->duty_cycle == 5)
+	{
+		percent = 63.5;
+	}
+	else if (s->duty_cycle == 6)
+	{
+		percent = 75.0;
+	}
+	else if (s->duty_cycle == 7)
+	{
+		percent = 87.5;
+	}
+	fprintf(stdout, "duty_cycle = %d	Percentage = %f%", s->duty_cycle, percent);
 	fprintf(stdout, "duty_cycle_enable	= %d\n", s->duty_cycle_enable);
 	fprintf(stdout, "\n");
 }
