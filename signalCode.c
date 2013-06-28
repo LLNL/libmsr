@@ -29,6 +29,28 @@ void saveData()
 
 int main(int argc, char **argv)
 {
+	int flags, opt, seconds, tfind;
+	flags = 0;	
+
+	while ((opt = getopt(argc, argv, "nt:")) != 1)
+	{
+		switch(opt)
+		{
+			case 't':
+				seconds = atoi(optarg);
+				tfind = 1;
+				break;
+			default: 
+				printf("Usage: %s [-t seconds] name\n", argv[0]);
+				exit(EXIT_FAILURE);
+		}
+	}
+	if(optind >= argc)
+	{
+		printf("Expected argument after options\n");
+		exit(EXIT_FAILURE);
+	}
+
 	// Making a new .out file that will erase
 	// any old ones
 	FILE *fp;
