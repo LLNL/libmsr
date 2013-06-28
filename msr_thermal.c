@@ -11,8 +11,7 @@
 #include <sys/time.h>
 #include <stddef.h>
 #include <assert.h>
-#include "msr_fake.c"
-#include "msr_fake.h"
+#include "msr_core.h"
 
 // Two defines below from Barry Rountree 
 #define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
@@ -270,7 +269,7 @@ void dump_clock_mod(struct clock_mod *s)
 	{
 		percent = 87.5;
 	}
-	fprintf(stdout, "duty_cycle = %d	Percentage = %f%", s->duty_cycle, percent);
+	fprintf(stdout, "duty_cycle 		= %d	\npercentage\t\t= %.2f\n", s->duty_cycle, percent);
 	fprintf(stdout, "duty_cycle_enable	= %d\n", s->duty_cycle_enable);
 	fprintf(stdout, "\n");
 }
@@ -988,9 +987,25 @@ void Human_Interface_set_pkg_therm_interrupt(int package, struct pkg_therm_inter
 }
 
 //--------------------------------- END Thermal Functions --------------------------------------------------------------
-
+/*
 int main()
 {
+	init_msr();
+	printf("\nTCC Activation Temp\n");
+	struct msr_temp_target aa;
+	get_msr_temp_target(1,1,&aa);
+	dump_msr_temp_target(&aa);
+
+	printf("\nMiscellaneous Enable\n");
+	struct misc_enable a;
+	get_misc_enable(1, &a);
+	dump_misc_enable(&a);
+
+	printf("\nClock Modulation\n");
+	struct clock_mod b; 
+	get_clock_mod(1,1,&b);
+	dump_clock_mod(&b);
+
 	printf("\nMiscellaneous Enable\n");
 	struct misc_enable a;
 	get_misc_enable(1,&a);
@@ -1020,6 +1035,7 @@ int main()
 	set_therm_interrupt(1,1,&c);
 	dump_therm_interrupt(&c);
 
+
 	printf("\nThermal Status\n");	
 	struct therm_stat d;
 	get_therm_stat(1,1,&d);
@@ -1029,6 +1045,7 @@ int main()
 	d.PROCHOT_or_FORCEPR_log = 0;
 	set_therm_stat(1,1,&d);
 	dump_therm_stat(&d);
+
 
 	printf("\nPackage Thermal Interrupt\n");
 	struct pkg_therm_interrupt e;
@@ -1046,5 +1063,6 @@ int main()
 	set_pkg_therm_stat(1, &f);
 	dump_pkg_therm_stat(&f);
 	
+	finalize_msr();
 	return 0;
-}
+}*/
