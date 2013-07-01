@@ -402,6 +402,9 @@ struct pkg_therm_interrupt{
 
 void dump_therm_stat(struct therm_stat * s)
 {
+	struct msr_temp_target x;
+	get_msr_temp_target(&x);
+	int actTemp = x->temp_target - s->readout;
 	fprintf(stdout, "status				= %d\n", s->status);
 	fprintf(stdout, "status_log			= %d\n", s->status_log);
 	fprintf(stdout, "PROCHOT_or_FORCEPR_event	= %d\n", s->PROCHOT_or_FORCEPR_event);
@@ -415,6 +418,7 @@ void dump_therm_stat(struct therm_stat * s)
 	fprintf(stdout, "power_limit_status		= %d\n", s->power_limit_status);
 	fprintf(stdout, "power_notification_log		= %d\n", s->power_notification_log);
 	fprintf(stdout, "readout				= %d\n", s->readout);
+	fprintf(stdout, "Actual temperature:		= %d degrees Celsius\n", actTemp);
 	fprintf(stdout, "resolution_deg_celsius		= %d\n", s->resolution_deg_celsius);
 	fprintf(stdout, "readout_valid			= %d\n", s->readout_valid);
 	fprintf(stdout, "\n");
@@ -422,14 +426,20 @@ void dump_therm_stat(struct therm_stat * s)
 
 void dump_therm_interrupt(struct therm_interrupt *s)
 {
+	struct msr_temp_target x;
+	get_msr_temp_target(&x);
+	int actTemp1 = x->temp_target - s->thresh1_val;
+	int actTemp2 = x->temp_target - s->thresh2_val;
 	fprintf(stdout, "high_temp_enable		= %d\n", s->high_temp_enable);
 	fprintf(stdout, "low_temp_enable			= %d\n", s->low_temp_enable);
 	fprintf(stdout, "PROCHOT_enable			= %d\n", s->PROCHOT_enable);
 	fprintf(stdout, "FORCEPR_enable			= %d\n", s->FORCEPR_enable);
 	fprintf(stdout, "crit_temp_enable		= %d\n", s->crit_temp_enable);
 	fprintf(stdout, "thresh1_val			= %d\n", s->thresh1_val);
+	fprintf(stdout, "Thresh1 actual temperature	= %d degrees Celsius\n", actTemp1);
 	fprintf(stdout, "thresh1_enable			= %d\n", s->thresh1_enable);
 	fprintf(stdout, "thresh2_val			= %d\n", s->thresh2_val);
+	fprintf(stdout, "Thresh1 actual temperature	= %d degrees Celsius\n", actTemp2);
 	fprintf(stdout, "thresh2_enable			= %d\n", s->thresh2_enable);
 	fprintf(stdout, "pwr_limit_notification_enable	= %d\n", s->pwr_limit_notification_enable);
 	fprintf(stdout, "\n");
@@ -437,6 +447,9 @@ void dump_therm_interrupt(struct therm_interrupt *s)
 
 void dump_pkg_therm_stat(struct pkg_therm_stat * s)
 {
+	struct msr_temp_target x;
+	get_msr_temp_target(&x);
+	int actTemp = x->temp_target - s->readout;
 	fprintf(stdout, "status			= %d\n", s->status);
         fprintf(stdout, "status_log		= %d\n", s->status_log);
         fprintf(stdout, "PROCHOT_event		= %d\n", s->PROCHOT_event);
@@ -450,18 +463,25 @@ void dump_pkg_therm_stat(struct pkg_therm_stat * s)
 	fprintf(stdout, "power_limit_status	= %d\n", s->power_limit_status);
 	fprintf(stdout, "power_notification_log	= %d\n", s->power_notification_log);	
 	fprintf(stdout, "readout			= %d\n", s->readout);
+	fprintf(stdout, "Actual Temperature	= %d degrees Celsius\n", actTemp);
 	fprintf(stdout, "\n");
 }
 
 void dump_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 {
+	struct msr_temp_target x;
+	get_msr_temp_target(&x);
+	int actTemp1 = x->temp_target - s->thresh1_val;
+	int actTemp2 = x->temp_target - s->thresh2_val;
 	fprintf(stdout, "high_temp_enable		= %4d\n", s->high_temp_enable);
 	fprintf(stdout, "low_temp_enable			= %4d\n", s->low_temp_enable);
 	fprintf(stdout, "PROCHOT_enable			= %4d\n", s->PROCHOT_enable);
 	fprintf(stdout, "crit_temp_enable		= %4d\n", s->crit_temp_enable);
 	fprintf(stdout, "thresh1_val			= %4d\n", s->thresh1_val);
+	fprintf(stdout, "Threshold1 actual temperature	= %4d degrees Celsius\n", actTemp1);
 	fprintf(stdout, "thresh1_enable			= %4d\n", s->thresh1_enable);
 	fprintf(stdout, "thresh2_val			= %4d\n", s->thresh2_val);
+	fprintf(stdout, "Threshold2 actual temperature	= %4d degrees Celsius\n", actTemp2);
 	fprintf(stdout, "thresh2_enable			= %4d\n", s->thresh2_enable);
 	fprintf(stdout, "pwr_limit_notification_enable	= %4d\n", s->pwr_limit_notification_enable);
 	fprintf(stdout, "\n");
@@ -640,9 +660,6 @@ void get_pkg_therm_stat(int package, struct pkg_therm_stat *s)
 								// (0 = Package TTC activation temp)
 								// (1 = (PTCC Activation - 1) etc. 
 								// Note: lower reading actually higher temp
-	//convert readout to its actual number
-	//s->readout = PTCC_Activation - (s->readout);
-	
 }
 
 void set_therm_stat(int socket, int core, struct therm_stat *s)
