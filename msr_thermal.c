@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include "msr_core.h"
+#include "msr_thermal.h"
 
 // Two defines below from Barry Rountree 
 #define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
@@ -33,12 +34,12 @@
 						// what it means exactly)
 
 //---------------------MSR_TEMPERATURE_TARGET functions--------------------------------------------------------
-
+/*
 struct msr_temp_target{
 	uint64_t raw;
 	uint64_t temp_target;	//Read only (probably the TCC Activation Temp)
 };
-
+*/
 void dump_msr_temp_target(struct msr_temp_target *s)
 {
 	fprintf(stdout, "temp_target		= %lu\n", s->temp_target);	
@@ -56,7 +57,7 @@ void get_msr_temp_target(int socket, int core, struct msr_temp_target *s)
 // There is no set function for this because it is read only
 
 //----------------------Misc_Enable functions-------------------------------------------------------------------
-
+/*
 struct misc_enable{
 	uint64_t raw;
 	int fast_string_enable;			// Read/Write (thread scope)	
@@ -72,7 +73,7 @@ struct misc_enable{
 	int XD_bit_disable;				// Read/Write (thread scope)
 	int turbo_mode_disable;				// Read/Write (package scope)
 };
-
+*/
 void dump_misc_enable(struct misc_enable *s)
 {
 	fprintf(stdout, "fast_string_enable			= %d\n", s->fast_string_enable);
@@ -209,7 +210,7 @@ void set_misc_enable(int package, struct misc_enable *s)
 
 
 //----------------------------Software Controlled Clock Modulation-----------------------------------------------
-struct clock_mod{
+/*struct clock_mod{
 	uint64_t raw;
 
 // There is a bit at 0 that can be used for Extended On-Demand Clock Modulation Duty Cycle
@@ -233,7 +234,7 @@ struct clock_mod{
 
 	int duty_cycle_enable;	// Read/Write
 };
-
+*/
 void dump_clock_mod(struct clock_mod *s)
 {
 	double percent = 0.0;
@@ -301,6 +302,7 @@ void set_clock_mod(int socket, int core, struct clock_mod *s)
 //---------------------------------END CLOCK MODULATION FUNCTIONS-----------------------------------------------------------
 
 //---------------------------------Thermal Functions (status and interrupts)------------------------------------------------
+/*
 struct therm_stat{
 	uint64_t raw;
 	int status;			//Read only
@@ -397,14 +399,13 @@ struct pkg_therm_interrupt{
 	int thresh2_val;	
 	int thresh2_enable;
 	int pwr_limit_notification_enable;
-
 };
-
-void dump_therm_stat(struct therm_stat * s)
+*/
+void dump_therm_stat(int socket, int core, struct therm_stat * s)
 {
 	struct msr_temp_target x;
-	get_msr_temp_target(&x);
-	int actTemp = x->temp_target - s->readout;
+	get_msr_temp_target(socket, core, &x);
+	int actTemp = x.temp_target - s->readout;
 	fprintf(stdout, "status				= %d\n", s->status);
 	fprintf(stdout, "status_log			= %d\n", s->status_log);
 	fprintf(stdout, "PROCHOT_or_FORCEPR_event	= %d\n", s->PROCHOT_or_FORCEPR_event);
@@ -424,12 +425,12 @@ void dump_therm_stat(struct therm_stat * s)
 	fprintf(stdout, "\n");
 }
 
-void dump_therm_interrupt(struct therm_interrupt *s)
+void dump_therm_interrupt(int socket, int core, struct therm_interrupt *s)
 {
 	struct msr_temp_target x;
-	get_msr_temp_target(&x);
-	int actTemp1 = x->temp_target - s->thresh1_val;
-	int actTemp2 = x->temp_target - s->thresh2_val;
+	get_msr_temp_target(socket, core, &x);
+	int actTemp1 = x.temp_target - s->thresh1_val;
+	int actTemp2 = x.temp_target - s->thresh2_val;
 	fprintf(stdout, "high_temp_enable		= %d\n", s->high_temp_enable);
 	fprintf(stdout, "low_temp_enable			= %d\n", s->low_temp_enable);
 	fprintf(stdout, "PROCHOT_enable			= %d\n", s->PROCHOT_enable);
@@ -445,11 +446,13 @@ void dump_therm_interrupt(struct therm_interrupt *s)
 	fprintf(stdout, "\n");
 }
 
-void dump_pkg_therm_stat(struct pkg_therm_stat * s)
+void dump_pkg_therm_stat(int package, struct pkg_therm_stat * s)
 {
 	struct msr_temp_target x;
-	get_msr_temp_target(&x);
-	int actTemp = x->temp_target - s->readout;
+	get_msr_temp_target(package, 0, &x);	// use core 0 of the specified package 
+						// hopefully the PTCC temp is the same regardless
+						// of which core we choose
+	int actTemp = x.temp_target - s->readout;
 	fprintf(stdout, "status			= %d\n", s->status);
         fprintf(stdout, "status_log		= %d\n", s->status_log);
         fprintf(stdout, "PROCHOT_event		= %d\n", s->PROCHOT_event);
@@ -467,12 +470,12 @@ void dump_pkg_therm_stat(struct pkg_therm_stat * s)
 	fprintf(stdout, "\n");
 }
 
-void dump_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
+void dump_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s)
 {
 	struct msr_temp_target x;
-	get_msr_temp_target(&x);
-	int actTemp1 = x->temp_target - s->thresh1_val;
-	int actTemp2 = x->temp_target - s->thresh2_val;
+	get_msr_temp_target(package, 0, &x);	// see comment in similar case above
+	int actTemp1 = x.temp_target - s->thresh1_val;
+	int actTemp2 = x.temp_target - s->thresh2_val;
 	fprintf(stdout, "high_temp_enable		= %4d\n", s->high_temp_enable);
 	fprintf(stdout, "low_temp_enable			= %4d\n", s->low_temp_enable);
 	fprintf(stdout, "PROCHOT_enable			= %4d\n", s->PROCHOT_enable);
@@ -1001,6 +1004,14 @@ void Human_Interface_set_pkg_therm_interrupt(int package, struct pkg_therm_inter
 	}
 	//write_msr(package, IA32_PACKAGE_THERM_INTERRUPT, msrVal);
 	return;
+}
+
+void dump_core_temp(int socket, int core, struct therm_stat * s)
+{
+	struct msr_temp_target x;
+        get_msr_temp_target(socket, core, &x);
+        int actTemp = x.temp_target - s->readout;
+	printf("Actual temperature of core %d, of socket %d, is: %d degrees Celsius.\n", socket, core, actTemp);
 }
 
 //--------------------------------- END Thermal Functions --------------------------------------------------------------
