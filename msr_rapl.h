@@ -1,5 +1,7 @@
 /* msr_rapl.h
  */
+#ifndef MSR_RAPL_H
+#define MSR_RAPL_H
 #include <stdint.h>
 
 // TLCC2 architecture uses 062D processors; 
@@ -65,4 +67,4 @@ void rapl_dump_data( struct rapl_data *r );
 }
 #endif
 
-
+#endif /*MSR_RAPL_H*/

@@ -32,7 +32,7 @@ init_msr(){
 	for (i=0; i<NUM_SOCKETS; i++){
 		for (j=0; j<NUM_CORES_PER_SOCKET; j++){
 			// Open the rest of the cores for core-level msrs.  
-			snprintf(filename, 1024, "/dev/socket/%d/msr", i*NUM_CORES_PER_SOCKET+j);
+			snprintf(filename, 1024, "/dev/cpu/%d/msr", i*NUM_CORES_PER_SOCKET+j);
 
 			retVal = stat(filename, &statbuf);
 
@@ -54,7 +54,7 @@ init_msr(){
 			if(core_fd[i][j] == -1){
 				snprintf(filename, 1024, "%s::%d  Error opening /dev/socket/%d/msr, check if msr module is loaded. \n", __FILE__, __LINE__, i*NUM_CORES_PER_SOCKET+j);
 				perror(filename);
-		
+
 				return -1;
 			}
 

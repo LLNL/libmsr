@@ -10,21 +10,31 @@
 #
 CFLAGS=-fPIC -Wall -O3
 CC=gcc
+MYLIBDIR= /home/shoga1/libmsr
 
 DEFINES=-DARCH_SANDY_BRIDGE -DPKG_PERF_STATUS_AVAILABLE 
 
-all: libmsr 
+all: helloWorldMPI.o
 
 libmsr: msr_core.o msr_rapl.o msr_thermal.o signalCode.o
 	$(CC) -fPIC -g -shared  -Wl,-soname,libmsr.so -o libmsr.so $^
+
+libThermTest: thermalTest.c
+	mpicc -fPIC -g -shared  -Wl,-soname,libThermTest.so -o libThermTest.so $^
+
+helloWorldMPI.o: helloWorld_mpi.c libmsr libThermTest
+	mpicc -o helloWorldMPI.o -Wl,-rpath=/home/shoga1/libmsr -L ${MYLIBDIR} -lmsr -L${MYLIBDIR} -lThermTest helloWorld_mpi.c 
 
 msr_core.o:   Makefile msr_core.c   msr_core.h 
 msr_rapl.o:   Makefile msr_rapl.c   msr_rapl.h
 msr_thermal.o: Makefile msr_thermal.c msr_thermal.h
 signalCode.o: Makefile signalCode.c signalCode.h
 
+thermalTest.c: thermal.w
+	./wrap.py -g -o thermalTest.c thermal.w
+
 clean:
-	rm -f *.o *.so
+	rm -f *.o *.so thermalTest.c
 
 
 	

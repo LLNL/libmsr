@@ -1011,7 +1011,7 @@ void dump_core_temp(int socket, int core, struct therm_stat * s)
 	struct msr_temp_target x;
         get_msr_temp_target(socket, core, &x);
         int actTemp = x.temp_target - s->readout;
-	printf("Actual temperature of core %d, of socket %d, is: %d degrees Celsius.\n", socket, core, actTemp);
+	printf("Actual temperature of core %d, of socket %d, is: %d degrees Celsius.\n", core, socket, actTemp);
 }
 
 //--------------------------------- END Thermal Functions --------------------------------------------------------------

@@ -17,7 +17,7 @@ void printData()
 	struct itimerval tout_val;
 
 	signal(SIGALRM, printData);
-	
+
 	struct therm_stat s;
 	int socket, core;
 	for (socket = 0 ; socket <NUM_SOCKETS; socket++)
@@ -36,7 +36,7 @@ void printData()
 	
 	setitimer(ITIMER_REAL, &tout_val, 0);
 }
-
+/*
 int main()
 {
 	struct itimerval tout_val;
@@ -50,4 +50,4 @@ int main()
 	signal(SIGALRM, printData);
 
 	return 0;
-}
+}*/
