@@ -10,30 +10,37 @@
 #include "msr_thermal.h"
 #include "signalCode.h"
 
-{{fn foo MPI_Init}}
-	struct itimerval tout_val;
+static struct itimerval tout_val;
 
-        tout_val.it_interval.tv_sec = 0;
+{{fn foo MPI_Init}}
+	{{callfn}}
+	int taskid;
+	MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
+	if(taskid == 0)
+	{
+	tout_val.it_interval.tv_sec = 0;
         tout_val.it_interval.tv_usec = 0;
         tout_val.it_value.tv_sec = 0;
-        tout_val.it_value.tv_usec = 10;
-
-	{{callfn}}
-	init_msr();	
-        setitimer(ITIMER_REAL, &tout_val, 0);
-        signal(SIGALRM, printData);
+        tout_val.it_value.tv_usec = 100000;
+		init_msr();	
+        	setitimer(ITIMER_REAL, &tout_val, 0);
+        	signal(SIGALRM, printData);
+	}
 {{endfn}}
 
 
 {{fn foo MPI_Finalize}}
-	struct itimerval tout_val;
-	
-        tout_val.it_interval.tv_sec = 0;
-        tout_val.it_interval.tv_usec = 0;
-        tout_val.it_value.tv_sec = 0;
-        tout_val.it_value.tv_usec = 0;
+	int taskid;
+        MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
+	if(taskid == 0)
+	{
+		tout_val.it_interval.tv_sec = 0;
+        	tout_val.it_interval.tv_usec = 0;
+        	tout_val.it_value.tv_sec = 0;
+        	tout_val.it_value.tv_usec = 0;
+		setitimer(ITIMER_REAL, &tout_val, 0);
+		finalize_msr;
+	}
 	{{callfn}}
-	setitimer(ITIMER_REAL, &tout_val, 0);
-	finalize_msr();
 {{endfn}}
 
