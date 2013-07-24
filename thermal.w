@@ -11,28 +11,47 @@
 #include "signalCode.h"
 
 static struct itimerval tout_val;
+static int rank;
+static int size;
 
 {{fn foo MPI_Init}}
 	{{callfn}}
-	int taskid;
-	MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
-	if(taskid == 0)
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	if(rank == 0)
 	{
-	tout_val.it_interval.tv_sec = 0;
-        tout_val.it_interval.tv_usec = 0;
-        tout_val.it_value.tv_sec = 0;
-        tout_val.it_value.tv_usec = 100000;
+		tout_val.it_interval.tv_sec = 0;
+        	tout_val.it_interval.tv_usec = 0;
+        	tout_val.it_value.tv_sec = 0;
+        	tout_val.it_value.tv_usec = 100000;
 		init_msr();	
+		struct rapl_limit limit1, limit2;
+		rapl_get_limit(0,&limit1,&limit2,NULL); 
+		rapl_dump_limit(&limit1);
+		rapl_dump_limit(&limit2);
         	setitimer(ITIMER_REAL, &tout_val, 0);
         	signal(SIGALRM, printData);
 	}
+/*	if(rank == 1)
+	{
+		sleep(300);
+	}
+	if(rank > 0 && rank < 3)
+	{
+		sleep(100); 
+	}*/
+	PMPI_Barrier(MPI_COMM_WORLD);
 {{endfn}}
 
 
 {{fn foo MPI_Finalize}}
-	int taskid;
-        MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
-	if(taskid == 0)
+	PMPI_Barrier(MPI_COMM_WORLD);
+/*	if(rank > 0 && rank < 3)
+	{
+		sleep(100);
+	}*/
+	PMPI_Barrier(MPI_COMM_WORLD);
+	if(rank == 0)
 	{
 		tout_val.it_interval.tv_sec = 0;
         	tout_val.it_interval.tv_usec = 0;

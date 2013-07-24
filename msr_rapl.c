@@ -331,7 +331,7 @@ rapl_dump_data( struct rapl_data *r ){
 	}
 	gettimeofday( &now, NULL );
 	if(r->pkg_joules > 0.01 && r->elapsed > 0.0050){
-		fprintf(stdout, "pkg_watts=%8.4lf   elapsed=%8.5lf   timestamp=%9.6lf\n", 
+		fprintf(stdout, "pkg_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
 				r->pkg_watts,
 				r->elapsed,
 				now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0

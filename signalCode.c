@@ -32,31 +32,27 @@ void printData()
 	signal(SIGALRM, printData);
 
 	struct therm_stat s;
+	struct rapl_data r1, r2;
 	int socket, core;
 	for (socket = 0 ; socket <NUM_SOCKETS; socket++)
-//	for (socket = 0 ; socket <1; socket++)
 	{
 		for(core = 0; core < NUM_CORES_PER_SOCKET; core++)
-//		for(core = 0; core < 1; core++)
 		{
 			gettimeofday(&currentTime, NULL);
 			double timeStamp = (double)(currentTime.tv_sec-startTime.tv_sec)+(currentTime.tv_usec-startTime.tv_usec)/1000000.0;
-			//if and else if put in for debugging purposes
-			if(timeStamp > 0 && stop < 1)
-			{
-		//		printf("in first if ");
-				get_therm_stat(socket, core, &s);
-				dump_core_temp(socket, core, &s);
-				printf(" %.2f\n", timeStamp);
-				stop = 1;
-			}
-			else if (stop == 1) 
-			{
-		//		printf("third if");
-				get_therm_stat(socket, core, &s);
-				dump_core_temp(socket, core, &s);
-				printf(" %.2f\n", timeStamp);
-			}
+			get_therm_stat(socket, core, &s);
+			dump_core_temp(socket, core, &s);
+			printf(" %.2f\n", timeStamp);
+		}
+		if(socket == 0)
+		{
+			rapl_read_data(socket, &r1);
+			rapl_dump_data(&r1);
+		}
+		else
+		{
+			rapl_read_data(socket, &r2);
+			rapl_dump_data(&r2);
 		}
 	}
 	tout_val.it_interval.tv_sec = 0;

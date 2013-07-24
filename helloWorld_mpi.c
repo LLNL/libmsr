@@ -10,11 +10,13 @@
 
 int main (int argc, char *argv[])
 {
+/*
 int   numtasks, taskid, len;
 char hostname[MPI_MAX_PROCESSOR_NAME];
-
+*/
 MPI_Init(&argc, &argv);
-printf("Hello world!");
+//printf("Hello world!");
+sleep(100);
 MPI_Finalize();
 return 0;
 
