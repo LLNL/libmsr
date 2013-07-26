@@ -351,6 +351,8 @@ rapl_read_data( const int socket, struct rapl_data *r ){
 	static uint64_t old_dram_bits[NUM_SOCKETS];
 	static struct timeval old_now[NUM_SOCKETS];
 	static struct timeval now[NUM_SOCKETS];
+	uint64_t  maxbits=4294967296;
+	double max_joules=0.0;
 
 	// Copy previous now timestamp to old_now.
 	old_now[socket].tv_sec  = now[socket].tv_sec;
@@ -386,7 +388,8 @@ rapl_read_data( const int socket, struct rapl_data *r ){
 		// Now handles wraparound.
 		if(pkg_joules [socket] - old_pkg_joules[socket] < 0)
 		{
-			r->pkg_joules = (pkg_joules[socket] + 4294967296) - old_pkg_joules[socket];
+			translate(socket,&maxbits,&max_joules, BITS_TO_JOULES); 
+			r->pkg_joules = (pkg_joules[socket] + max_joules) - old_pkg_joules[socket];
 		}
 		else
 		{
@@ -395,7 +398,8 @@ rapl_read_data( const int socket, struct rapl_data *r ){
 
 		if(dram_joules [socket] - old_dram_joules[socket] < 0)
 		{
-			r->dram_joules = (dram_joules[socket] + 4294967296) - old_dram_joules[socket];
+			translate(socket,&maxbits,&max_joules, BITS_TO_JOULES); 
+			r->dram_joules = (dram_joules[socket] + max_joules) - old_dram_joules[socket];
 		}
 		else
 		{

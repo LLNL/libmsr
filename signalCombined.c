@@ -50,8 +50,10 @@ void printData(int i)
 	double timeStamp = (double)(currentTime.tv_sec-startTime.tv_sec)+(currentTime.tv_usec-startTime.tv_usec)/1000000.0;
 	rapl_read_data(0,&r1);
 	rapl_read_data(1,&r2);
-	printf("RRR NA 0 NA %.2f %8.4lf %8.4lf\n", timeStamp, r1.pkg_watts, r1.dram_watts);
-	printf("RRR NA 1 NA %.2f %8.4lf %8.4lf\n", timeStamp, r2.pkg_watts, r2.dram_watts);
+	double eFreq0=get_effective_frequency(0);
+	double eFreq1=get_effective_frequency(1);
+	printf("RRR NA 0 NA %.2f %8.4lf %8.4lf %8.4f\n", timeStamp, r1.pkg_watts, r1.dram_watts, eFreq0);
+	printf("RRR NA 1 NA %.2f %8.4lf %8.4lf %8.4f\n", timeStamp, r2.pkg_watts, r2.dram_watts, eFreq1);
 	tout_val.it_interval.tv_sec = 0;
 	tout_val.it_interval.tv_usec = 0;
 	tout_val.it_value.tv_sec = 0 ;

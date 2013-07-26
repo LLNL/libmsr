@@ -8,6 +8,7 @@
 #include "msr_core.h"
 #include "msr_thermal.h"
 #include "msr_rapl.h"
+#include "msr_clocks.h"
 
 void printData(int i);
 #endif
