@@ -20,11 +20,14 @@ void printData(int i)
 	
 	signal(SIGALRM, printData);
 
-	struct rapl_data r;
+	struct rapl_data r,rr;
 
 	rapl_read_data(0, &r);
-	printf("QQQ ");
+	rapl_read_data(1, &rr);
+	printf("QQQ 0  dram_watts= %8.4lf ", r.dram_watts);
 	rapl_dump_data(&r);
+	printf("QQQ 1  dram_watts= %8.4lf ", rr.dram_watts);
+	rapl_dump_data(&rr);
 
 	tout_val.it_interval.tv_sec = 0;
 	tout_val.it_interval.tv_usec = 0;

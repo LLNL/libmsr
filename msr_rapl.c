@@ -383,9 +383,24 @@ rapl_read_data( const int socket, struct rapl_data *r ){
 			     (now[socket].tv_usec - old_now[socket].tv_usec)/1000000.0;
 
 		// Get delta joules.
-		// Does not handle wraparound.
-		r->pkg_joules  = pkg_joules[socket]  - old_pkg_joules[socket];		
-		r->dram_joules = dram_joules[socket] - old_dram_joules[socket];		
+		// Now handles wraparound.
+		if(pkg_joules [socket] - old_pkg_joules[socket] < 0)
+		{
+			r->pkg_joules = (pkg_joules[socket] + 4294967296) - old_pkg_joules[socket];
+		}
+		else
+		{
+			r->pkg_joules  = pkg_joules[socket]  - old_pkg_joules[socket];		
+		}
+
+		if(dram_joules [socket] - old_dram_joules[socket] < 0)
+		{
+			r->dram_joules = (dram_joules[socket] + 4294967296) - old_dram_joules[socket];
+		}
+		else
+		{
+			r->dram_joules = dram_joules[socket] - old_dram_joules[socket];	
+		}	
 
 		// Get watts.
 		// Does not check for div by 0.
