@@ -1,7 +1,7 @@
 #ifndef MSR_CLOCKS_H
 #define MSR_CLOCKS_H
 
-#define NUM_PACKAGES 2
+#define NUM_PACKAGES 1
 
 void read_aperf(int package, uint64_t *aperf); 
 void read_mperf(int package, uint64_t *mperf); 

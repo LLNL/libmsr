@@ -50,6 +50,7 @@ dump_clocks(){
 		fprintf(stdout, "%20lu ", val);
 	}
 	fprintf(stdout, "TSC\n");
+
 }
 
 double
@@ -61,7 +62,7 @@ get_effective_frequency(int package){
 	read_mperf(package, &mperf);
 	read_aperf(package, &aperf);
 	if(init && (mperf-previous_mperf[package])){
-		ef = ((double)2.6) * ((double)(aperf-previous_aperf[package])) / ((double)(mperf-previous_mperf[package]));
+		ef = ((double)2.601) * ((double)(aperf-previous_aperf[package])) / ((double)(mperf-previous_mperf[package]));
 	}
 	previous_mperf[package] = mperf;
 	previous_aperf[package] = aperf;

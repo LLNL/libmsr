@@ -29,15 +29,13 @@ static int size;
         	signal(SIGALRM, printData);
 	}
 	PMPI_Barrier(MPI_COMM_WORLD);
-	sleep(180);
-	PMPI_Barrier(MPI_COMM_WORLD);
+	printf("Barrier");
 {{endfn}}
 
 
 {{fn foo MPI_Finalize}}
 	PMPI_Barrier(MPI_COMM_WORLD);
-	sleep(180);
-	PMPI_Barrier(MPI_COMM_WORLD);
+	printf("Barrier");
 	if(rank == 0)
 	{
 		tout_val.it_interval.tv_sec = 0;
