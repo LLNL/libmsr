@@ -10,28 +10,11 @@
 #
 CFLAGS=-fPIC -Wall -O3
 CC=gcc
-MYLIBDIR= /home/shoga1/libmsr
 
-DEFINES=-DARCH_SANDY_BRIDGE -DPKG_PERF_STATUS_AVAILABLE 
+all: libmsr
 
-all: helloWorldMPI.o libPowThermTest libPowerTest
-
-#libmsr: msr_core.o msr_rapl.o msr_thermal.o signalCode.o
-#libmsr: msr_core.o msr_rapl.o msr_thermal.o signalPower.o
 libmsr: msr_core.o msr_rapl.o msr_thermal.o msr_clocks.o signalCombined.o 
 	mpicc -DPIC -fPIC -g -shared  -Wl,-soname,libmsr.so -o libmsr.so $^
-
-libThermTest: thermalTest.c
-	mpicc -fPIC -g -shared  -Wl,-soname,libThermTest.so -o libThermTest.so $^
-
-libPowerTest: powerTest.c
-	mpicc -fPIC -g -shared -Wl,-soname,libPowerTest.so -o libPowerTest.so $^
-
-libPowThermTest: powerThermalTest.c
-	mpicc -fPIC -g -shared -Wl,-soname,libPowThermTest.so -o libPowThermTest.so $^
-
-helloWorldMPI.o: helloWorld_mpi.c libmsr libThermTest
-	mpicc -DPIC -o helloWorldMPI.o -Wl,-rpath=/home/shoga1/libmsr -L ${MYLIBDIR} -lmsr -L${MYLIBDIR} -lThermTest helloWorld_mpi.c 
 
 msr_core.o:   Makefile msr_core.c   msr_core.h 
 msr_rapl.o:   Makefile msr_rapl.c   msr_rapl.h
@@ -41,17 +24,8 @@ signalCode.o: Makefile signalCode.c signalCode.h
 signalPower.o: Makefile signalPower.c signalPower.h
 signalCombined.o: Makefile signalCombined.c signalCombined.h
 
-thermalTest.c: thermal.w
-	./wrap.py -g -o thermalTest.c thermal.w
-
-powerTest.c: power.w
-	./wrap.py -g -o powerTest.c power.w
-
-powerThermalTest.c: powerThermal.w
-	./wrap.py -g -o powerThermalTest.c powerThermal.w
-
 clean:
-	rm -f *.o *.so thermalTest.c powerTest.c powerThermalTest.c
+	rm -f *.o *.so 
 
 
 	
