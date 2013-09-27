@@ -32,7 +32,7 @@ init_msr(){
 	for (i=0; i<NUM_SOCKETS; i++){
 		for (j=0; j<NUM_CORES_PER_SOCKET; j++){
 			// Open the rest of the cores for core-level msrs.  
-			snprintf(filename, 1024, "/dev/cpu/%d/msr-safe", i*NUM_CORES_PER_SOCKET+j);
+			snprintf(filename, 1024, "/dev/cpu/%d/msr_safe", i*NUM_CORES_PER_SOCKET+j);
 
 			retVal = stat(filename, &statbuf);
 

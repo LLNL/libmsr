@@ -28,24 +28,11 @@ static int size;
         	setitimer(ITIMER_REAL, &tout_val, 0);
         	signal(SIGALRM, printData);
 	}
-/*	if(rank == 1)
-	{
-		sleep(300);
-	}
-	if(rank > 0 && rank < 3)
-	{
-		sleep(100); 
-	}*/
 	PMPI_Barrier(MPI_COMM_WORLD);
 {{endfn}}
 
 
 {{fn foo MPI_Finalize}}
-	PMPI_Barrier(MPI_COMM_WORLD);
-/*	if(rank > 0 && rank < 3)
-	{
-		sleep(100);
-	}*/
 	PMPI_Barrier(MPI_COMM_WORLD);
 	if(rank == 0)
 	{
