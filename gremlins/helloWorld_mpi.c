@@ -1,23 +1,16 @@
-/* Example code from Blaise Barney
- *
- * 
- */
-
-#include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
-#define  MASTER		0
+#include <mpi.h>
 
 int main (int argc, char *argv[])
 {
-/*
-int   numtasks, taskid, len;
-char hostname[MPI_MAX_PROCESSOR_NAME];
-*/
-MPI_Init(&argc, &argv);
-//printf("Hello world!");
-sleep(100);
-MPI_Finalize();
-return 0;
-
+	int rank, size;
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+	MPI_Comm_size( MPI_COMM_WORLD, &size );	
+	fprintf(stdout, "Hello from rank %d of %d.\n", rank, size);
+	sleep(10);
+	fprintf(stdout, "Goodbye from rank %d of %d.\n", rank, size);
+	MPI_Finalize();
+	return 0;
 }
