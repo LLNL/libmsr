@@ -170,7 +170,6 @@ void set_therm_interrupt(int socket, int core, struct therm_interrupt *s);
 void set_pkg_therm_stat(int package, struct pkg_therm_stat *s);
 void get_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s);
 void set_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s);
-void Human_Interface_set_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s);
 
 void dump_core_temp(int socket, int core, struct therm_stat *s);
 
