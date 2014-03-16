@@ -1,3 +1,4 @@
+test/libmsr_test
 .*.swp
 *.o
 app
