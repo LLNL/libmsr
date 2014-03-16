@@ -321,7 +321,6 @@ rapl_get_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 
 void 
 rapl_dump_data( struct rapl_data *r ){
-	// Don't bother printing if joules < 0.01 or elapsed < 0.001.
 	static int initialized=0;
 	static struct timeval start;
 	struct timeval now;
@@ -330,13 +329,16 @@ rapl_dump_data( struct rapl_data *r ){
 		gettimeofday( &start, NULL );
 	}
 	gettimeofday( &now, NULL );
-	if(r->pkg_joules > 0.01 && r->elapsed > 0.0050){
-		fprintf(stdout, "pkg_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
-				r->pkg_watts,
-				r->elapsed,
-				now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
-				);
-	}
+	fprintf(stdout, "pkg_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
+			r->pkg_watts,
+			r->elapsed,
+			now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
+			);
+	fprintf(stdout, "dram_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
+			r->dram_watts,
+			r->elapsed,
+			now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
+			);
 }
 
 void
