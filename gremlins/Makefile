@@ -22,8 +22,8 @@ powerThermalTest.c: powerThermal.w
 
 profile: 
 	$(WRAP) -g -o PMPI_profile.c PMPI_profile.w
-	mpicc -Wall -c -I../include PMPI_profile.c
-	mpicc $(CFLAGS) -shared -Wl,-soname,libgaramond.so -o ../lib/libgaramond.so -L../lib -lmsr 
+	mpicc -fPIC -Wall -c -I../include PMPI_profile.c
+	mpicc $(CFLAGS) -shared -Wl,-soname,libgaramond.so -o ../lib/libgaramond.so -L../lib -lmsr PMPI_profile.o
 
 clean:
 	rm -f *.o *.so thermalTest.c powerTest.c powerThermalTest.c
