@@ -57,12 +57,15 @@ struct rapl_limit{
 #ifdef __cplusplus 
 extern "C" {
 #endif
-void rapl_set_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
-void rapl_get_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
-void rapl_dump_limit( struct rapl_limit *L );
+void set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
+void get_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
+void dump_rapl_limit( struct rapl_limit *L );
 
-void rapl_read_data( const int socket, struct rapl_data *r );
-void rapl_dump_data( struct rapl_data *r );
+void read_rapl_data( const int socket, struct rapl_data *r );
+void dump_rapl_data( struct rapl_data *r );
+
+void dump_rapl_terse();
+void dump_rapl_terse_label();
 #ifdef __cplusplus 
 }
 #endif

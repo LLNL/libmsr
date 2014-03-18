@@ -13,37 +13,37 @@
 #define IA32_TIME_STAMP_COUNTER 0x00000010
 
 void 
-read_aperf(int package, uint64_t *aperf){
-	read_msr( package, MSR_IA32_APERF, aperf );
+read_aperf(int socket, uint64_t *aperf){
+	read_msr( socket, MSR_IA32_APERF, aperf );
 }
 
 void
-read_mperf(int package, uint64_t *mperf){
-	read_msr( package, MSR_IA32_MPERF, mperf );
+read_mperf(int socket, uint64_t *mperf){
+	read_msr( socket, MSR_IA32_MPERF, mperf );
 }
 
 void 
-read_tsc(int package, uint64_t *tsc){
-	read_msr( package, IA32_TIME_STAMP_COUNTER, tsc );
+read_tsc(int socket, uint64_t *tsc){
+	read_msr( socket, IA32_TIME_STAMP_COUNTER, tsc );
 }
 
 void
 dump_clocks_terse_label(){
-	int package;
-	for(package=0; package<NUM_PACKAGES; package++){
+	int socket;
+	for(socket=0; socket<NUM_SOCKETS; socket++){
 		fprintf(stdout, "aperf%02d mperf%02d tsc%02d ", 
-			package, package, package);
+			socket, socket, socket);
 	}
 }
 
 void
 dump_clocks_terse(){
 	uint64_t aperf_val, mperf_val, tsc_val;
-	int package;
-	for(package=0; package<NUM_PACKAGES; package++){
-		read_aperf(package, &aperf_val);
-		read_mperf(package, &mperf_val);
-		read_tsc  (package, &tsc_val);
+	int socket;
+	for(socket=0; socket<NUM_SOCKETS; socket++){
+		read_aperf(socket, &aperf_val);
+		read_mperf(socket, &mperf_val);
+		read_tsc  (socket, &tsc_val);
 		fprintf(stdout, "%20lu %20lu %20lu ", 
 			aperf_val, mperf_val, tsc_val);
 	}
@@ -51,23 +51,23 @@ dump_clocks_terse(){
 
 void 
 dump_clocks(){
-	int package;
+	int socket;
 	uint64_t val = 10101010101;
 
-	for( package=0; package<NUM_PACKAGES; package++){
-		read_aperf(package, &val);
+	for( socket=0; socket<NUM_SOCKETS; socket++){
+		read_aperf(socket, &val);
 		fprintf(stdout, "%20lu ", val);
 	}
 	fprintf(stdout, "MSR_IA32_APERF\n");
 
-	for( package=0; package<NUM_PACKAGES; package++){
-		read_mperf(package, &val);
+	for( socket=0; socket<NUM_SOCKETS; socket++){
+		read_mperf(socket, &val);
 		fprintf(stdout, "%20lu ", val);
 	}
 	fprintf(stdout, "MSR_IA32_MPERF\n");
 
-	for( package=0; package<NUM_PACKAGES; package++){
-		read_tsc(package, &val);
+	for( socket=0; socket<NUM_SOCKETS; socket++){
+		read_tsc(socket, &val);
 		fprintf(stdout, "%20lu ", val);
 	}
 	fprintf(stdout, "TSC\n");
@@ -75,18 +75,18 @@ dump_clocks(){
 }
 
 double
-get_effective_frequency(int package){
+get_effective_frequency(int socket){
 	static int init=0;
-	static uint64_t previous_mperf[NUM_PACKAGES], previous_aperf[NUM_PACKAGES];
+	static uint64_t previous_mperf[NUM_SOCKETS], previous_aperf[NUM_SOCKETS];
 	uint64_t mperf, aperf;
 	double ef=0.0;
-	read_mperf(package, &mperf);
-	read_aperf(package, &aperf);
-	if(init && (mperf-previous_mperf[package])){
-		ef = ((double)2.601) * ((double)(aperf-previous_aperf[package])) / ((double)(mperf-previous_mperf[package]));
+	read_mperf(socket, &mperf);
+	read_aperf(socket, &aperf);
+	if(init && (mperf-previous_mperf[socket])){
+		ef = ((double)2.601) * ((double)(aperf-previous_aperf[socket])) / ((double)(mperf-previous_mperf[socket]));
 	}
-	previous_mperf[package] = mperf;
-	previous_aperf[package] = aperf;
+	previous_mperf[socket] = mperf;
+	previous_aperf[socket] = aperf;
 	init=1;
 	return ef;
 }

@@ -169,7 +169,7 @@ struct rapl_power_info{
 };
 
 static void
-rapl_get_power_info( const int socket, struct rapl_power_info *info){
+get_rapl_power_info( const int socket, struct rapl_power_info *info){
 	uint64_t val = 0;
 	//info->msr_pkg_power_info  = 0x6845000148398;
 	//info->msr_dram_power_info = 0x682d0001482d0;
@@ -205,7 +205,7 @@ rapl_get_power_info( const int socket, struct rapl_power_info *info){
 }
 
 static void
-rapl_limit_calc(const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
+calc_rapl_limit(const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	static struct rapl_power_info rpi[NUM_SOCKETS];
 	static int initialized=0;
 	uint64_t watts_bits=0, seconds_bits=0;
@@ -213,7 +213,7 @@ rapl_limit_calc(const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 	if(!initialized){
 		initialized=1;
 		for(i=0; i<NUM_SOCKETS; i++){
-			rapl_get_power_info(i, &(rpi[i]));
+			get_rapl_power_info(i, &(rpi[i]));
 		}
 	}
 	if(limit1){
@@ -274,7 +274,7 @@ rapl_limit_calc(const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 }
 
 void
-rapl_dump_limit( struct rapl_limit* L ){
+dump_rapl_limit( struct rapl_limit* L ){
 	fprintf(stdout, "bits    = %lx\n", L->bits);
 	fprintf(stdout, "seconds = %lf\n", L->seconds);
 	fprintf(stdout, "watts   = %lf\n", L->watts);
@@ -282,12 +282,12 @@ rapl_dump_limit( struct rapl_limit* L ){
 }
 
 void 
-rapl_set_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
+set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	// Fill in whatever values are necessary.
 	uint64_t pkg_limit=0;
 	uint64_t dram_limit=0;
 
-	rapl_limit_calc( socket, limit1, limit2, dram );
+	calc_rapl_limit( socket, limit1, limit2, dram );
 
 	if(limit1){
 		pkg_limit |= limit1->bits | (1LL << 15) | (1LL << 16);	// enable clamping
@@ -305,7 +305,7 @@ rapl_set_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 }
 
 void 
-rapl_get_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
+get_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	if(limit1){
 		read_msr( socket, MSR_PKG_POWER_LIMIT, &(limit1->bits) );
 	}
@@ -316,11 +316,30 @@ rapl_get_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 		read_msr( socket, MSR_DRAM_POWER_LIMIT, &(dram->bits) );
 	}
 	// Fill in whatever values are necessary.
-	rapl_limit_calc( socket, limit1, limit2, dram );
+	calc_rapl_limit( socket, limit1, limit2, dram );
+}
+
+void
+dump_rapl_terse_label(){
+	int socket;
+	for(socket=0; socket<NUM_SOCKETS; socket++){
+		fprintf(stdout,"pkgW%02d dramW%02d ", socket, socket );
+	}
+}
+
+void
+dump_rapl_terse(){
+	int socket;
+	struct rapl_data r;
+
+	for(socket=0; socket<NUM_SOCKETS; socket++){
+		read_rapl_data(socket, &r);
+		fprintf(stdout,"%8.4lf %8.4lf ", r.pkg_watts, r.dram_watts);
+	}
 }
 
 void 
-rapl_dump_data( struct rapl_data *r ){
+dump_rapl_data( struct rapl_data *r ){
 	static int initialized=0;
 	static struct timeval start;
 	struct timeval now;
@@ -342,7 +361,7 @@ rapl_dump_data( struct rapl_data *r ){
 }
 
 void
-rapl_read_data( const int socket, struct rapl_data *r ){
+read_rapl_data( const int socket, struct rapl_data *r ){
 	static double pkg_joules[NUM_SOCKETS] = {0.0};  
 	static double old_pkg_joules[NUM_SOCKETS] = {0.0}; 
 	static double dram_joules[NUM_SOCKETS] = {0.0}; 
