@@ -10,5 +10,5 @@
 #include "msr_rapl.h"
 #include "msr_clocks.h"
 
-void printData(int i);
+void msr_profile(int i);
 #endif

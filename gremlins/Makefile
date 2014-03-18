@@ -1,6 +1,6 @@
 CFLAGS=-fPIC -Wall -O3 -I../include -g
 CC=gcc
-MYLIBDIR=../lib
+MYLIBDIR=${HOME}/local/research/libmsr/lib
 WRAP=../wrap/wrap.py
 
 all: helloWorldMPI.o libPowThermTest 
@@ -19,6 +19,11 @@ powerTest.c: power.w
 
 powerThermalTest.c: powerThermal.w
 	$(WRAP) -g -o powerThermalTest.c powerThermal.w
+
+profile: 
+	$(WRAP) -g -o PMPI_profile.c PMPI_profile.w
+	mpicc -Wall -c -I../include PMPI_profile.c
+	mpicc $(CFLAGS) -shared -Wl,-soname,libgaramond.so -o ../lib/libgaramond.so -L../lib -lmsr 
 
 clean:
 	rm -f *.o *.so thermalTest.c powerTest.c powerThermalTest.c

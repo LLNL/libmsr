@@ -27,11 +27,20 @@ read_tsc(int package, uint64_t *tsc){
 	read_msr( package, IA32_TIME_STAMP_COUNTER, tsc );
 }
 
+void
+dump_clocks_terse( int package ){
+	uint64_t val = 10101010101;
+	fprintf(stdout, "CLK %d %20lu %20lu %20lu ", 
+		package,
+		read_aperf(package, &val),
+		read_mperf(package, &val),
+		read_tsc(package, &val));
+}
 
 void 
 dump_clocks(){
 	int package;
-	uint64_t val = 99;
+	uint64_t val = 10101010101;
 
 	for( package=0; package<NUM_PACKAGES; package++){
 		read_aperf(package, &val);
