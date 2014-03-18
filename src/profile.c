@@ -11,7 +11,6 @@ msr_profile() {
 	struct timeval currentTime;
 	static int init = 0;
 	static struct itimerval tout_val;
-	int socket;
 
 	if(!init) {
 		signal(SIGALRM, msr_profile);
@@ -21,13 +20,15 @@ msr_profile() {
 		tout_val.it_value.tv_usec = 100000;
 		init = 1;
 		gettimeofday(&startTime, NULL);
+
+		fprintf(stdout, "QQQ gtod ");
+		dump_clocks_terse_label();
 	}
 	
 	gettimeofday(&currentTime, NULL);
+
 	fprintf(stdout, "QQQ %lf ", (double)(currentTime.tv_sec-startTime.tv_sec)+(currentTime.tv_usec-startTime.tv_usec)/1000000.0);
-	for (socket = 0 ; socket < NUM_SOCKETS; socket++) {
-		dump_clocks_terse(socket);
-	}
+	dump_clocks_terse();
 
 	setitimer(ITIMER_REAL, &tout_val, 0);
 	
