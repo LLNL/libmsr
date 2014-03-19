@@ -2,8 +2,12 @@
 #define MSR_CORE_H
 #include <stdint.h>
 #include <sys/types.h>	// off_t
-#define NUM_SOCKETS 2
+#define NUM_SOCKETS 4
 #define NUM_CORES_PER_SOCKET 8 
+#define NUM_THREADS_PER_CORE 1
+#define NUM_DEVS (NUM_SOCKETS * NUM_CORES_PER_SOCKET * NUM_THREADS_PER_CORE)
+
+
 enum{
 	MSR_AND,
 	MSR_OR,
@@ -27,14 +31,25 @@ extern "C" {
 
 int init_msr();
 void finalize_msr();
-void write_msr(int socket, off_t msr, uint64_t val);
-void write_msr_all_cores(int socket, off_t msr, uint64_t val);
-void write_msr_all_cores_v(int socket, off_t msr, uint64_t *val);
-void write_msr_single_core(int socket, int core, off_t msr, uint64_t val);
 
-void read_msr(int socket, off_t msr, uint64_t *val);
-void read_msr_all_cores_v(int socket, off_t msr, uint64_t *val);
-void read_msr_single_core(int socket, int core, off_t msr, uint64_t *val);
+write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val );
+read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val );
+
+write_msr_by_coord( int socket, int core, int thread, off_t msr, uint64_t  val );
+read_msr_by_coord(  int socket, int core, int thread, off_t msr, uint64_t *val );
+
+write_all_sockets(   off_t msr, uint64_t  val  );
+write_all_sockets_v( off_t msr, uint64_t *val );
+write_all_cores(     off_t msr, uint64_t  val  );
+write_all_cores_v(   off_t msr, uint64_t *val );
+write_all_threads(   off_t msr, uint64_t  val  );
+write_all_threads_v( off_t msr, uint64_t *val );
+
+read_msr_by_idx(     off_t msr, uint64_t *val );
+read_msr_by_coord(   off_t msr, uint64_t *val );
+read_all_sockets(    off_t msr, uint64_t *val );
+read_all_cores(      off_t msr, uint64_t *val );
+read_all_threads(    off_t msr, uint64_t *val );
 
 #ifdef __cplusplus 
 }

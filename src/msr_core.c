@@ -6,21 +6,20 @@
 // Necessary for pread & pwrite.
 #define _XOPEN_SOURCE 500
 
-#include <stdio.h>	//   perror
-#include <unistd.h>	//   pread, pwrite
-//#include <sys/types.h>  // \ ....
-#include <sys/stat.h> 	// | open, fstat
-#include <fcntl.h>	// / ....
-#include <stdint.h>	// uint64_t
+#include <stdio.h>	
+#include <unistd.h>	
+#include <sys/stat.h> 	
+#include <fcntl.h>	
+#include <stdint.h>	
 #include <errno.h>
 #include "msr_core.h"
 
 int msr_debug;
-static int core_fd[NUM_SOCKETS][NUM_CORES_PER_SOCKET];
+static int core_fd[NUM_SOCKETS * NUM_CORES_PER_SOCKET * NUM_THREADS_PER_CORE];
 
 int
 init_msr(){
-	int i,j;
+	int dev_idx;
 	char filename[1025];
 	struct stat statbuf;
 	static int initialized = 0;
@@ -29,137 +28,159 @@ init_msr(){
 	if( initialized ){
 		return 0;
 	}
-	for (i=0; i<NUM_SOCKETS; i++){
-		for (j=0; j<NUM_CORES_PER_SOCKET; j++){
-			// Open the rest of the cores for core-level msrs.  
-			snprintf(filename, 1024, "/dev/cpu/%d/msr_safe", i*NUM_CORES_PER_SOCKET+j);
 
-			retVal = stat(filename, &statbuf);
+	for (dev_idx=0; dev_idx < NUM_DEVS; dev_idx++){
 
-			if (retVal == -1) {
-			      snprintf(filename, 1024, "%s::%d  Error: stat failed on /dev/socket/%d/msr_safe, check if msr module is loaded\n", __FILE__, __LINE__, i*NUM_CORES_PER_SOCKET+j);
-					
-				return -1; 
-			}	
-		
-			if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR)){
-				snprintf(filename, 1024, "%s::%d  Read/write permissions denied on /dev/socket/%d/msr_safe\n", __FILE__, __LINE__, i*NUM_CORES_PER_SOCKET+j);
-		
-				return -1;
-			}
- 
+		snprintf(filename, 1024, "/dev/cpu/%d/msr_safe", dev_idx);
+		retVal = stat(filename, &statbuf);
 
-			core_fd[i][j] = open( filename, O_RDWR );
-
-			if(core_fd[i][j] == -1){
-				snprintf(filename, 1024, "%s::%d  Error opening /dev/socket/%d/msr_safe, check if msr module is loaded. \n", __FILE__, __LINE__, i*NUM_CORES_PER_SOCKET+j);
-				perror(filename);
-
-				return -1;
-			}
-
+		if (retVal == -1) {
+			snprintf(filename, 1024, "%s::%d  Error: stat failed on /dev/socket/%d/msr_safe, check if msr module is loaded\n", 
+				__FILE__, __LINE__, dev_idx);
+			return -1; 
+		}	
+			
+		if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR)){
+			snprintf(filename, 1024, "%s::%d  Read/write permissions denied on /dev/socket/%d/msr_safe\n", 
+				__FILE__, __LINE__, dev_idx);
+			
+			return -1;
 		}
-		
+	 
+		core_fd[dev_idx] = open( filename, O_RDWR );
+
+		if(core_fd[dev_idx] == -1){
+			snprintf(filename, 1024, "%s::%d  Error opening /dev/socket/%d/msr_safe, check if msr module is loaded. \n", 
+				__FILE__, __LINE__, dev_idx);
+			perror(filename);
+			return -1;
+		}
 	}
-
 	initialized = 1;
-
 	return 0;
 }
 
 void 
 finalize_msr(){
-	int i, j, rc;
+	int dev_idx, rc;
 	char filename[1025];
-	for( i=0; i<NUM_SOCKETS; i++){
-		for(j=0; j<NUM_CORES_PER_SOCKET; j++){
-			if(core_fd[i][j]){
-				rc = close(core_fd[i][j]);
-				if( rc != 0 ){
-					snprintf(filename, 1024, "%s::%d  Error closing file /dev/socket/%d/msr\n", 
-							__FILE__, __LINE__, i*NUM_CORES_PER_SOCKET+j);
-					perror(filename);
-				}
+	for (dev_idx=0; dev_idx < NUM_DEVS; dev_idx++){
+		if(core_fd[dev_idx]){
+			rc = close(core_fd[dev_idx]);
+			if( rc != 0 ){
+				snprintf(filename, 1024, "%s::%d  Error closing file /dev/socket/%d/msr\n", 
+						__FILE__, __LINE__, dev_idx); 
+				perror(filename);
 			}else{
-				core_fd[i][j] = 0;
+				core_fd[dev_idx] = 0;
 			}
 		}
 	}
 }
 
 void
-write_msr(int socket, off_t msr, uint64_t val){
-	write_msr_single_core( socket, 0, msr, val );
+write_msr_by_coord( int socket, int core, int thread, off_t msr, uint64_t  val ){
+	write_msr_by_idx( socket * NUM_CORES_PER_SOCKET + core * NUM_THREADS_PER_CORE + thread, msr, val );
 }
 
 void
-write_msr_all_cores(int socket, off_t msr, uint64_t val){
-	int j;
-	for(j=0; j<NUM_CORES_PER_SOCKET; j++){
-		write_msr_single_core( socket, j, msr, val );
+read_msr_by_coord(  int socket, int core, int thread, off_t msr, uint64_t *val ){
+	read_msr_by_idx( socket * NUM_CORES_PER_SOCKET + core * NUM_THREADS_PER_CORE + thread, msr, val );
+}
+
+void
+write_all_sockets(   off_t msr, uint64_t  val ){
+	int dev_idx;
+	for(dev_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_CORES_PER_SOCKET * NUM_THREADS_PER_CORE ){
+		write_msr_by_idx( dev_idx, msr, val );
 	}
 }
 
 void
-write_msr_all_cores_v(int socket, off_t msr, uint64_t *val){
-	int j;
-	for(j=0; j<NUM_CORES_PER_SOCKET; j++){
-		write_msr_single_core( socket, j, msr, val[j] );
+write_all_cores(     off_t msr, uint64_t  val ){
+	int dev_idx;
+	for(dev_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_THREADS_PER_CORE ){
+		write_msr_by_idx( dev_idx, msr, val );
 	}
 }
 
 void
-write_msr_single_core(int socket, int core, off_t msr, uint64_t val){
-	int rc, core_fd_idx;
+write_all_threads(   off_t msr, uint64_t  val ){
+	int dev_idx;
+	for(dev_idx=0; dev_idx<NUM_DEVS; dev_idx++){
+		write_msr_by_idx( dev_idx, msr, val );
+	}
+}
+
+void
+write_all_sockets_v( off_t msr, uint64_t *val ){
+	int dev_idx, val_idx;
+	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_CORES_PER_SOCKET*NUM_THREADS_PER_CORE, val_idx++ ){
+		write_msr_by_idx( dev_idx, msr, val[val_idx] );
+	}
+}
+
+void
+write_all_cores_v(   off_t msr, uint64_t *val ){
+	int dev_idx, val_idx;
+	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_THREADS_PER_CORE, val_idx++ ){
+		write_msr_by_idx( dev_idx, msr, val[val_idx] );
+	}
+}
+
+void
+write_all_threads_v( off_t msr, uint64_t *val ){
+	int dev_idx, val_idx;
+	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx++, val_idx++ ){
+		write_msr_by_idx( dev_idx, msr, val[val_idx] );
+	}
+}
+
+
+void
+read_all_sockets(    off_t msr, uint64_t *val )
+	int dev_idx, val_idx;
+	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += (NUM_CORES_PER_SOCKET*NUM_THREADS_PER_CORE ), val_idx++ ){
+		read_msr_by_idx( dev_idx, msr, &val[val_idx] );
+	}
+}
+
+void
+read_all_cores(      off_t msr, uint64_t *val ){
+	int dev_idx, val_idx;
+	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_THREADS_PER_CORE, val_idx++ ){
+		read_msr_by_idx( dev_idx, msr, &val[val_idx] );
+	}
+}
+
+void
+read_all_threads(    off_t msr, uint64_t *val ){
+	int dev_idx, val_idx;
+	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx++, val_idx++ ){
+		read_msr_by_idx( dev_idx, msr, &val[val_idx] );
+	}
+}
+
+void
+read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val ){
+	int rc;
 	char error_msg[1025];
-	uint64_t actual;
-	core_fd_idx = socket*NUM_CORES_PER_SOCKET+core;
-	rc = pwrite( core_fd[socket][core], &val, (size_t)sizeof(uint64_t), msr );
+	rc = pread( core_fd[dev_idx], (void*)val, (size_t)sizeof(uint64_t), msr );
 	if( rc != sizeof(uint64_t) ){
-		snprintf( error_msg, 1024, "%s::%d  pwrite returned %d.  core_fd[%d][%d]=%d, socket=%d, core=%d socket+core=%d msr=%ld (0x%lx).  errno=%d\n", 
-				__FILE__, __LINE__, rc, socket, core, core_fd[socket][core], socket, core, core_fd_idx, msr, msr, errno );
+		snprintf( error_msg, 1024, "%s::%d  pread returned %d.  core_fd[%d]=%d, msr=%ld (0x%lx).  errno=%d\n", 
+				__FILE__, __LINE__, rc, dev_idx, core_fd[dev_idx], msr, msr, errno );
 		perror(error_msg);
 	}
-
-	//Verify the value that was written
-	 rc = pread(core_fd[socket][core], &actual, (size_t)sizeof(uint64_t), msr);
-	if( rc != sizeof(uint64_t) ){
-                snprintf( error_msg, 1024, "%s::%d  Verifying the value that was written: pread returned %d.  core_fd[%d][%d]=%d, socket=%d, core=%d socket+core=%d msr=%ld (0x%lx).  errno=%d\n",
-                                __FILE__, __LINE__, rc, socket, core, core_fd[socket][core], socket, core, core_fd_idx, msr, msr, errno );
-                perror(error_msg);
-        }
-	if(actual == val){
-		fprintf(stderr,"writemsr: Verification successful. core_fd[%d][%d]=%d, socket=%d, core=%d socket+core=%d msr=%ld (0x%lx).\n", socket, core, core_fd[socket][core], socket, core, core_fd_idx, msr,msr);
-	}
-	else {
-             snprintf(error_msg, 1024, "%s::%d  writemsr: verification failed. core_fd[%d][%d]=%d, socket=%d, core=%d socket+core=%d msr=%ld (0x%lx).  errno=%d\n",
-                                __FILE__, __LINE__, socket, core, core_fd[socket][core], socket, core, core_fd_idx, msr, msr, errno );
-	}
-
 }
 
 void
-read_msr(int socket, off_t msr, uint64_t *val){
-	read_msr_single_core(socket, 0, msr, val);
-}
-
-void
-read_msr_all_cores_v(int socket, off_t msr, uint64_t *val){
-	int j;
-	for(j=0; j<NUM_CORES_PER_SOCKET; j++){
-		read_msr_single_core(socket, 0, msr, &val[j]);
-	}
-}
-
-void 
-read_msr_single_core(int socket, int core, off_t msr, uint64_t *val){
-	int rc, core_fd_idx;
+write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val )
+	int rc;
 	char error_msg[1025];
-	core_fd_idx = socket*NUM_CORES_PER_SOCKET+core;
-	rc = pread( core_fd[socket][core], (void*)val, (size_t)sizeof(uint64_t), msr );
+	rc = pwrite( core_fd[dev_idx], &val, (size_t)sizeof(uint64_t), msr );
 	if( rc != sizeof(uint64_t) ){
-		snprintf( error_msg, 1024, "%s::%d  pread returned %d.  core_fd[%d][%d]=%d, socket=%d, core=%d socket+core=%d msr=%ld (0x%lx).  errno=%d\n", 
-				__FILE__, __LINE__, rc, socket, core, core_fd[socket][core], socket, core, core_fd_idx, msr, msr, errno );
+		snprintf( error_msg, 1024, "%s::%d  pwrite returned %d.  core_fd[%d]=%d, msr=%ld (0x%lx).  errno=%d\n", 
+				__FILE__, __LINE__, rc, dev_idx, core_fd[dev_idx], msr, msr, errno );
 		perror(error_msg);
 	}
 }
