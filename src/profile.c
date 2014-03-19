@@ -6,6 +6,7 @@
 #include "profile.h"
 #include "msr_rapl.h"
 #include "msr_clocks.h"
+#include "msr_counters.h"
 void 
 msr_profile() {
 	static struct timeval startTime;
@@ -25,6 +26,7 @@ msr_profile() {
 		fprintf(stdout, "QQQ gtod ");
 		dump_clocks_terse_label();
 		dump_rapl_terse_label();
+		dump_fixed_terse_label();
 		fprintf(stdout, "\n");
 	}
 	
@@ -33,6 +35,7 @@ msr_profile() {
 	fprintf(stdout, "QQQ %lf ", (double)(currentTime.tv_sec-startTime.tv_sec)+(currentTime.tv_usec-startTime.tv_usec)/1000000.0);
 	dump_clocks_terse();
 	dump_rapl_terse();
+	dump_fixed_terse();
 	fprintf(stdout, "\n");
 
 	setitimer(ITIMER_REAL, &tout_val, 0);
