@@ -151,7 +151,7 @@ struct pkg_therm_interrupt{
 };
 
 void dump_msr_temp_target(struct msr_temp_target *s);
-void get_msr_temp_target(int socket, int core, struct msr_temp_target *s);
+void get_temp_target(int socket, struct msr_temp_target *s);
 void dump_misc_enable(struct misc_enable *s);
 void get_misc_enable(int package, struct misc_enable *s);
 void set_misc_enable(int package, struct misc_enable *s);
