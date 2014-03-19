@@ -13,11 +13,11 @@
 // and should remain the same
 
 struct ctr_data{
-	int enable[NUM_THREADS];
-	int ring_level[NUM_THREADS];
-	int anyThread_enable[NUM_THREADS];
-	int pmi_enable[NUM_THREADS];
-	int overflow_stat[NUM_THREADS]; // no function for this yet
+	uint64_t enable[NUM_THREADS];
+	uint64_t ring_level[NUM_THREADS];
+	uint64_t anyThread[NUM_THREADS];
+	uint64_t pmi[NUM_THREADS];
+	uint64_t overflow_stat[NUM_THREADS]; // no function for this yet
 	uint64_t value[NUM_THREADS];
 };
 
@@ -27,12 +27,13 @@ struct fixed_counter_data{
 	int width;		//when found, this is the bit width of the fixed counter MSRs
 };
 
-void get_fixed_ctr_ctrl(struct ctr0_data *zero, struct ctr1_data *one, struct ctr2_data *two);
-void set_fixed_ctr_ctrl(struct ctr0_data *zero, struct ctr1_data *one, struct ctr2_data *two);
-void dump_fixed_ctr_ctrl(struct ctr0_data *zero, struct ctr1_data *one, struct ctr2_data *two); 
-
+void get_fixed_ctr_ctrl(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data *ctr2);
+void set_fixed_ctr_ctrl(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data *ctr2);
 void get_fixed_counter_data(struct fixed_counter_data *data);
-
-void get_fixed_ctr_values(struct ctr0_data *zero, struct ctr1_data *one, struct ctr2_data *two, int socket, int core);
+void get_fixed_ctr_values(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data *ctr2);
+void enable_fixed_counters();
+void disable_fixed_counters();
+void dump_fixed_terse();
+void dump_fixed_terse_label();
 
 #endif
