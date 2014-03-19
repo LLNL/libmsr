@@ -138,9 +138,9 @@ write_all_threads_v( off_t msr, uint64_t *val ){
 
 
 void
-read_all_sockets(    off_t msr, uint64_t *val )
+read_all_sockets(    off_t msr, uint64_t *val ){
 	int dev_idx, val_idx;
-	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += (NUM_CORES_PER_SOCKET*NUM_THREADS_PER_CORE ), val_idx++ ){
+	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_CORES_PER_SOCKET*NUM_THREADS_PER_CORE, val_idx++ ){
 		read_msr_by_idx( dev_idx, msr, &val[val_idx] );
 	}
 }
@@ -174,7 +174,7 @@ read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val ){
 }
 
 void
-write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val )
+write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val ){
 	int rc;
 	char error_msg[1025];
 	rc = pwrite( core_fd[dev_idx], &val, (size_t)sizeof(uint64_t), msr );

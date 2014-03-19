@@ -13,83 +13,39 @@
 #define IA32_TIME_STAMP_COUNTER 0x00000010
 
 void 
-read_aperf(int socket, uint64_t *aperf){
-	read_msr( socket, MSR_IA32_APERF, aperf );
+read_all_aperf(uint64_t *aperf){
+	read_all_threads( MSR_IA32_APERF, aperf );
 }
 
 void
-read_mperf(int socket, uint64_t *mperf){
-	read_msr( socket, MSR_IA32_MPERF, mperf );
+read_all_mperf(uint64_t *mperf){
+	read_all_threads( MSR_IA32_MPERF, mperf );
 }
 
 void 
-read_tsc(int socket, uint64_t *tsc){
-	read_msr( socket, IA32_TIME_STAMP_COUNTER, tsc );
+read_all_tsc(uint64_t *tsc){
+	read_all_threads( IA32_TIME_STAMP_COUNTER, tsc );
 }
 
 void
 dump_clocks_terse_label(){
-	int socket;
-	for(socket=0; socket<NUM_SOCKETS; socket++){
+	int thread_idx;
+	for(thread_idx=0; thread_idx<NUM_THREADS; thread_idx++){
 		fprintf(stdout, "aperf%02d mperf%02d tsc%02d ", 
-			socket, socket, socket);
+			thread_idx, thread_idx, thread_idx);
 	}
 }
 
 void
 dump_clocks_terse(){
-	uint64_t aperf_val, mperf_val, tsc_val;
-	int socket;
-	for(socket=0; socket<NUM_SOCKETS; socket++){
-		read_aperf(socket, &aperf_val);
-		read_mperf(socket, &mperf_val);
-		read_tsc  (socket, &tsc_val);
+	uint64_t aperf_val[NUM_THREADS], mperf_val[NUM_THREADS], tsc_val[NUM_THREADS];
+	int thread_idx;
+	read_all_aperf(aperf_val);
+	read_all_mperf(mperf_val);
+	read_all_tsc  (tsc_val);
+	for(thread_idx=0; thread_idx<NUM_THREADS; thread_idx++){
 		fprintf(stdout, "%20lu %20lu %20lu ", 
-			aperf_val, mperf_val, tsc_val);
+			aperf_val[thread_idx], mperf_val[thread_idx], tsc_val[thread_idx]);
 	}
 }
-
-void 
-dump_clocks(){
-	int socket;
-	uint64_t val = 10101010101;
-
-	for( socket=0; socket<NUM_SOCKETS; socket++){
-		read_aperf(socket, &val);
-		fprintf(stdout, "%20lu ", val);
-	}
-	fprintf(stdout, "MSR_IA32_APERF\n");
-
-	for( socket=0; socket<NUM_SOCKETS; socket++){
-		read_mperf(socket, &val);
-		fprintf(stdout, "%20lu ", val);
-	}
-	fprintf(stdout, "MSR_IA32_MPERF\n");
-
-	for( socket=0; socket<NUM_SOCKETS; socket++){
-		read_tsc(socket, &val);
-		fprintf(stdout, "%20lu ", val);
-	}
-	fprintf(stdout, "TSC\n");
-
-}
-
-double
-get_effective_frequency(int socket){
-	static int init=0;
-	static uint64_t previous_mperf[NUM_SOCKETS], previous_aperf[NUM_SOCKETS];
-	uint64_t mperf, aperf;
-	double ef=0.0;
-	read_mperf(socket, &mperf);
-	read_aperf(socket, &aperf);
-	if(init && (mperf-previous_mperf[socket])){
-		ef = ((double)2.601) * ((double)(aperf-previous_aperf[socket])) / ((double)(mperf-previous_mperf[socket]));
-	}
-	previous_mperf[socket] = mperf;
-	previous_aperf[socket] = aperf;
-	init=1;
-	return ef;
-}
-
-
 
