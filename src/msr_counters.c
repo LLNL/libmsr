@@ -94,6 +94,10 @@ set_fixed_ctr_ctrl(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data
 
 	write_all_threads_v( IA32_PERF_GLOBAL_CTRL, perf_global_ctrl);	
 	write_all_threads_v( IA32_FIXED_CTR_CTRL,   fixed_ctr_ctrl);
+
+	write_all_threads(IA32_FIXED_CTR0, 0);
+	write_all_threads(IA32_FIXED_CTR1, 0);
+	write_all_threads(IA32_FIXED_CTR2, 0);
 }
 
 void 

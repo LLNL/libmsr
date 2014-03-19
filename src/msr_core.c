@@ -13,6 +13,7 @@
 #include <stdint.h>	
 #include <errno.h>
 #include "msr_core.h"
+#include "msr_counters.h"
 
 int msr_debug;
 static int core_fd[NUM_SOCKETS * NUM_CORES_PER_SOCKET * NUM_THREADS_PER_CORE];
@@ -57,6 +58,7 @@ init_msr(){
 		}
 	}
 	initialized = 1;
+	enable_fixed_counters();
 	return 0;
 }
 
@@ -76,6 +78,7 @@ finalize_msr(){
 			}
 		}
 	}
+	disable_fixed_counters();
 }
 
 void
