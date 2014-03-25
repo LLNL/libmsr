@@ -802,3 +802,37 @@ void dump_core_temp(int socket, int core, struct therm_stat * s)
 	printf("QQQ %d %d %d", core, socket, actTemp);
 }
 
+void dump_thermal_terse_lable()
+{
+	int socket;
+	int core;
+	for(socket=0; socket<NUM_SOCKETS; socket++)
+	{
+		for(core=0; core<NUM_CORES_PER_SOCKET; core++)
+		{
+			fprintf(stdout,"TempC_%02d_%02d ", socket, core); 
+		}
+	}
+}
+
+void dump_thermal_terse()
+{
+	int socket;
+	int core;
+	int actTemp;
+	struct therm_stat s;
+	struct msr_temp_target x;
+	get_temp_target(0, &x);
+
+	for(socket=0;socket<NUM_SOCKETS; socket++)
+	{
+		for(core=0; core<NUM_CORES_PER_SOCKET; core++)
+		{
+			get_therm_stat(socket, core, &s);
+			actTemp = x.temp_target - s.readout;
+			fprintf(stdout,"%d ", actTemp);
+		}
+	}
+}
+
+
