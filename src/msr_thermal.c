@@ -802,7 +802,7 @@ void dump_core_temp(int socket, int core, struct therm_stat * s)
 	printf("QQQ %d %d %d", core, socket, actTemp);
 }
 
-void dump_thermal_terse_lable()
+void dump_thermal_terse_label()
 {
 	int socket;
 	int core;

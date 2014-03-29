@@ -15,7 +15,7 @@ msr_counters.o:		Makefile msr_counters.c	  ../include/msr_counters.h
 profile.o: 		Makefile profile.c        ../include/profile.h
 
 clean:
-	rm -f *.o *.so 
+	rm -f *.o ../lib/*.so 
 
 
 	

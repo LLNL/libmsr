@@ -172,5 +172,7 @@ void get_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s);
 void set_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s);
 
 void dump_core_temp(int socket, int core, struct therm_stat *s);
+void dump_thermal_terse_label();
+void dump_thermal_terse();
 
 #endif
