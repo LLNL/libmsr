@@ -6,122 +6,127 @@
 #define MSR_THERMAL_H
 #include <stdio.h>
 
-struct msr_temp_target{
-	uint64_t raw;
-	uint64_t temp_target;	//Read only (probably the TCC Activation Temp)
+struct msr_temp_target{				//Scope is "unique" for Sandy Bridge
+						//Assuming that it is by socket
+	uint64_t raw[NUM_SOCKETS];
+	uint64_t temp_target[NUM_SOCKETS];	//Read only (probably the TCC Activation Temp)
 };
 
 
-struct therm_stat{
-	uint64_t raw;
-	int status;			//Read only
+struct therm_stat{			//Scope is "core" for Sandy Bridge
+	uint64_t raw[NUM_CORES];
+	int status[NUM_CORES];				//Read only
 
-	int status_log;			//Read and Write (Sticky bit)  
-					//Cleared by software to 0 or RESET
+	int status_log[NUM_CORES];			//Read and Write (Sticky bit)  
+							//Cleared by software to 0 or RESET
 
-	int PROCHOT_or_FORCEPR_event;	//Read only
+	int PROCHOT_or_FORCEPR_event[NUM_CORES];	//Read only
 
-	int PROCHOT_or_FORCEPR_log;	//Read and Write
+	int PROCHOT_or_FORCEPR_log[NUM_CORES];		//Read and Write
 
-	int crit_temp_status;		//Read only
+	int crit_temp_status[NUM_CORES];		//Read only
 
-	int crit_temp_log;		//Read and Write
-					//Sticky bit
+	int crit_temp_log[NUM_CORES];			//Read and Write
+							//Sticky bit
 
-	int therm_thresh1_status;	//Read only
+	int therm_thresh1_status[NUM_CORES];		//Read only
 
-	int therm_thresh1_log;		//Read and Write 
-					//Sticky bit
+	int therm_thresh1_log[NUM_CORES];		//Read and Write 
+							//Sticky bit
 
-	int therm_thresh2_status;	//Read only
+	int therm_thresh2_status[NUM_CORES];		//Read only
 
-	int therm_thresh2_log;		//Read and Write
-					//Sticky bit
+	int therm_thresh2_log[NUM_CORES];		//Read and Write
+							//Sticky bit
 
-	int power_limit_status;		//Read only
+	int power_limit_status[NUM_CORES];		//Read only
 
-	int power_notification_log;	//Read and Write
-					//Sticky bit
+	int power_notification_log[NUM_CORES];		//Read and Write
+							//Sticky bit
 
-	int readout;			//Read only
+	int readout[NUM_CORES];				//Read only
 
-	int resolution_deg_celsius;	//Read only
+	int resolution_deg_celsius[NUM_CORES];		//Read only
 
-	int readout_valid;		//Read only
+	int readout_valid[NUM_CORES];			//Read only
 };
 
-struct therm_interrupt{
-	uint64_t raw;
+struct therm_interrupt{			//Core scope
+	uint64_t raw[NUM_CORES];
 	//Below all read and write
-	int high_temp_enable;	
-	int low_temp_enable;
-	int PROCHOT_enable;
-	int FORCEPR_enable;
-	int crit_temp_enable;
-	int thresh1_val;
-	int thresh1_enable;
-	int thresh2_val;
-	int thresh2_enable;
-	int pwr_limit_notification_enable;
+	int high_temp_enable[NUM_CORES];	
+	int low_temp_enable[NUM_CORES];
+	int PROCHOT_enable[NUM_CORES];
+	int FORCEPR_enable[NUM_CORES];
+	int crit_temp_enable[NUM_CORES];
+	int thresh1_val[NUM_CORES];
+	int thresh1_enable[NUM_CORES];
+	int thresh2_val[NUM_CORES];
+	int thresh2_enable[NUM_CORES];
+	int pwr_limit_notification_enable[NUM_CORES];
 };
 
-struct pkg_therm_stat{
-	uint64_t raw;
-	int status;		//Read only
+struct pkg_therm_stat{			//Package (socket) scope
+	uint64_t raw[NUM_SOCKETS];
+	int status[NUM_SOCKETS];		//Read only
 
-	int status_log;		//Read or Write Sticky bit (default: clear) 
-				//Cleared by software to 0 or reset
+	int status_log[NUM_SOCKETS];		//Read or Write Sticky bit (default: clear) 
+						//Cleared by software to 0 or reset
 
-	int PROCHOT_event;	//Read only
+	int PROCHOT_event[NUM_SOCKETS];		//Read only
 
-	int PROCHOT_log;	//Read or Write
-				//Sticky bit
+	int PROCHOT_log[NUM_SOCKETS];		//Read or Write
+						//Sticky bit
 
-	int crit_temp_status;	//Read only
-	int crit_temp_log;	//Read or write
-				//Sticky bit
+	int crit_temp_status[NUM_SOCKETS];	//Read only
+	int crit_temp_log[NUM_SOCKETS];		//Read or write
+						//Sticky bit
 
-	int therm_thresh1_status;	//Read only
-	int therm_thresh1_log;		//Read or write
-					//Sticky bit
+	int therm_thresh1_status[NUM_SOCKETS];	//Read only
+	int therm_thresh1_log[NUM_SOCKETS];	//Read or write
+						//Sticky bit
 
-	int therm_thresh2_status;	//Read only
-	int therm_thresh2_log;		//Read or write
-					//Sticky bit
+	int therm_thresh2_status[NUM_SOCKETS];	//Read only
+	int therm_thresh2_log[NUM_SOCKETS];	//Read or write
+						//Sticky bit
 
-	int power_limit_status;		//Read only
-	int power_notification_log;	//Read or write
-					//Sticky bit
+	int power_limit_status[NUM_SOCKETS];	//Read only
+	int power_notification_log[NUM_SOCKETS];//Read or write
+						//Sticky bit
 
-	int readout;			//Read only
+	int readout[NUM_SOCKETS];		//Read only
 };
 
-struct pkg_therm_interrupt{
-	uint64_t raw;
+struct pkg_therm_interrupt{			//Package(socket) scope
+	uint64_t raw[NUM_SOCKETS];
 	//All read and write below
-	int high_temp_enable;	
-	int low_temp_enable;	
-	int PROCHOT_enable;	
-	int crit_temp_enable;	
-	int thresh1_val;	
-	int thresh1_enable;	
-	int thresh2_val;	
-	int thresh2_enable;
-	int pwr_limit_notification_enable;
+	int high_temp_enable[NUM_SOCKETS];	
+	int low_temp_enable[NUM_SOCKETS];	
+	int PROCHOT_enable[NUM_SOCKETS];	
+	int crit_temp_enable[NUM_SOCKETS];	
+	int thresh1_val[NUM_SOCKETS];	
+	int thresh1_enable[NUM_SOCKETS];	
+	int thresh2_val[NUM_SOCKETS];	
+	int thresh2_enable[NUM_SOCKETS];
+	int pwr_limit_notification_enable[NUM_SOCKETS];
 };
 
-void dump_msr_temp_target(struct msr_temp_target *s);
-void get_temp_target(int socket, struct msr_temp_target *s);
+void dump_msr_temp_target();
+void get_temp_target(struct msr_temp_target *s);
+
 void dump_therm_stat(int socket, int core, struct therm_stat * s);
 void dump_therm_interrupt(int socket, int core, struct therm_interrupt *s);
 void dump_pkg_therm_stat(int package, struct pkg_therm_stat * s);
 void dump_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s);
+
 void get_therm_stat(int socket, int core, struct therm_stat *s);
 void get_therm_interrupt(int socket, int core, struct therm_interrupt *s);
 void get_pkg_therm_stat(int package, struct pkg_therm_stat *s);
+
 void set_therm_stat(int socket, int core, struct therm_stat *s);
 void set_therm_interrupt(int socket, int core, struct therm_interrupt *s);
 void set_pkg_therm_stat(int package, struct pkg_therm_stat *s);
+
 void get_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s);
 void set_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s);
 
