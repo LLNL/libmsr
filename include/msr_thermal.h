@@ -114,23 +114,23 @@ struct pkg_therm_interrupt{			//Package(socket) scope
 void dump_msr_temp_target();
 void get_temp_target(struct msr_temp_target *s);
 
-void dump_therm_stat(int socket, int core, struct therm_stat * s);
-void dump_therm_interrupt(int socket, int core, struct therm_interrupt *s);
-void dump_pkg_therm_stat(int package, struct pkg_therm_stat * s);
-void dump_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s);
+void dump_therm_stat(struct therm_stat * s);
+void dump_therm_interrupt(struct therm_interrupt *s);
+void dump_pkg_therm_stat(struct pkg_therm_stat * s);
+void dump_pkg_therm_interrupt(struct pkg_therm_interrupt *s);
 
-void get_therm_stat(int socket, int core, struct therm_stat *s);
-void get_therm_interrupt(int socket, int core, struct therm_interrupt *s);
-void get_pkg_therm_stat(int package, struct pkg_therm_stat *s);
+void get_therm_stat(struct therm_stat *s);
+void get_therm_interrupt(struct therm_interrupt *s);
+void get_pkg_therm_stat(struct pkg_therm_stat *s);
 
-void set_therm_stat(int socket, int core, struct therm_stat *s);
-void set_therm_interrupt(int socket, int core, struct therm_interrupt *s);
-void set_pkg_therm_stat(int package, struct pkg_therm_stat *s);
+void set_therm_stat(struct therm_stat *s);
+void set_therm_interrupt(struct therm_interrupt *s);
+void set_pkg_therm_stat(struct pkg_therm_stat *s);
 
-void get_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s);
-void set_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s);
+void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s);
+void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s);
 
-void dump_core_temp(int socket, int core, struct therm_stat *s);
+void dump_core_temp(struct therm_stat *s);
 void dump_thermal_terse_label();
 void dump_thermal_terse();
 

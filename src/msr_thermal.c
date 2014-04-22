@@ -65,7 +65,7 @@ void get_temp_target(struct msr_temp_target *s)
 
 //---------------------------------Thermal Functions (status and interrupts)------------------------------------------------
 
-void get_therm_stat(int socket, int core, struct therm_stat *s)
+void get_therm_stat(struct therm_stat *s)
 {
 	read_all_cores(IA32_THERM_STATUS,s->raw);
 	//read_msr_by_coord(socket, core, 0, IA32_THERM_STATUS, &(s->raw));
@@ -143,7 +143,7 @@ void get_therm_stat(int socket, int core, struct therm_stat *s)
 	}
 }
 
-void get_therm_interrupt(int socket, int core, struct therm_interrupt *s)
+void get_therm_interrupt(struct therm_interrupt *s)
 {
 	read_all_cores(IA32_THERM_INTERRUPT,s->raw);
 	//read_msr_by_coord(socket, core, 0, IA32_THERM_INTERRUPT, &(s->raw));
@@ -194,7 +194,7 @@ void get_therm_interrupt(int socket, int core, struct therm_interrupt *s)
 	}
 }
 
-void get_pkg_therm_stat(int package, struct pkg_therm_stat *s)
+void get_pkg_therm_stat(struct pkg_therm_stat *s)
 {
 	read_all_sockets(IA32_PACKAGE_THERM_STATUS,s->raw);
 	//read_msr_by_coord( package, 0, 0, IA32_PACKAGE_THERM_STATUS, &(s->raw) ); 
@@ -255,7 +255,7 @@ void get_pkg_therm_stat(int package, struct pkg_therm_stat *s)
 		}
 }
 
-void get_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s)
+void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 {
 	read_all_sockets(IA32_PACKAGE_THERM_INTERRUPT, s->raw);
 	//read_msr_by_coord( package, 0, 0, IA32_PACKAGE_THERM_INTERRUPT, &(s->raw));
@@ -295,7 +295,7 @@ void get_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s)
 	}
 }
 
-void set_therm_stat(int socket, int core, struct therm_stat *s)
+void set_therm_stat(struct therm_stat *s)
 {
 	uint64_t msrVal[NUM_CORES];
 	read_all_cores(IA32_THERM_STATUS,msrVal);
@@ -322,7 +322,7 @@ void set_therm_stat(int socket, int core, struct therm_stat *s)
 //Not sure if I should update the struct here or not.
 }
 
-void set_therm_interrupt(int socket, int core, struct therm_interrupt *s)
+void set_therm_interrupt(struct therm_interrupt *s)
 {
 	uint64_t msrVal[NUM_CORES];
 	read_all_cores(IA32_THERM_INTERRUPT,msrVal);
@@ -355,7 +355,7 @@ void set_therm_interrupt(int socket, int core, struct therm_interrupt *s)
 	//write_msr_by_coord(socket, core, 0, IA32_THERM_INTERRUPT, msrVal);
 }
 
-void set_pkg_therm_stat(int package, struct pkg_therm_stat *s)
+void set_pkg_therm_stat(struct pkg_therm_stat *s)
 {
 	uint64_t msrVal[NUM_SOCKETS];
 	read_all_sockets(IA32_PACKAGE_THERM_STATUS,msrVal);
@@ -381,7 +381,7 @@ void set_pkg_therm_stat(int package, struct pkg_therm_stat *s)
 	//write_msr_by_coord(package, 0, 0, IA32_PACKAGE_THERM_STATUS, msrVal);
 }
 
-void set_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s)
+void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 {
 	uint64_t msrVal[NUM_SOCKETS];
 	read_all_sockets(IA32_PACKAGE_THERM_INTERRUPT,msrVal);
@@ -411,6 +411,30 @@ void set_pkg_therm_interrupt(int package, struct pkg_therm_interrupt *s)
 	//write_msr_by_coord(package, 0, 0, IA32_PACKAGE_THERM_INTERRUPT, msrVal);
 }
 
+
+void dump_thermal_terse_label()
+{
+	int core;
+	for(core = 0; core < NUM_CORES; core++)
+	{
+		fprintf(stdout,"TempC_%02d ", core); 
+	}
+}
+
+void dump_thermal_terse()
+{
+	is_init();
+	get_therm_stat(&t_stat);
+	int core;
+	int actTemp;
+
+	for(core=0; core < NUM_CORES; core++)
+	{
+		actTemp = t_target.temp_target[core] - t_stat[core].readout;
+		fprintf(stdout,"%d ", actTemp);
+	}
+}
+
  //---------------------------------Dump Thermal Functions ------------------------------------------------
 
 /*
@@ -422,38 +446,6 @@ void dump_core_temp(int socket, int core, struct therm_stat * s)
 	printf("QQQ %d %d %d", core, socket, actTemp);
 }
 
-void dump_thermal_terse_label()
-{
-	int socket;
-	int core;
-	for(socket=0; socket<NUM_SOCKETS; socket++)
-	{
-		for(core=0; core<NUM_CORES_PER_SOCKET; core++)
-		{
-			fprintf(stdout,"TempC_%02d_%02d ", socket, core); 
-		}
-	}
-}
-
-void dump_thermal_terse()
-{
-	int socket;
-	int core;
-	int actTemp;
-	struct therm_stat s;
-	struct msr_temp_target x;
-	get_temp_target(0, &x);
-
-	for(socket=0;socket<NUM_SOCKETS; socket++)
-	{
-		for(core=0; core<NUM_CORES_PER_SOCKET; core++)
-		{
-			get_therm_stat(socket, core, &s);
-			actTemp = x.temp_target - s.readout;
-			fprintf(stdout,"%d ", actTemp);
-		}
-	}
-}
 
 // old dump functions
 void dump_msr_temp_target()
