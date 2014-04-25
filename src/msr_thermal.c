@@ -414,10 +414,13 @@ void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 
 void dump_thermal_terse_label()
 {
-	int core;
-	for(core = 0; core < NUM_CORES; core++)
+	int core,socket;
+	for(socket = 0; socket < NUM_SOCKETS; socket++)
 	{
-		fprintf(stdout,"TempC_%02d ", core); 
+		for(core = NUM_CORES_PER_SOCKET*socket; core < NUM_CORES_PER_SOCKET*(socket+1); core++)
+		{
+			fprintf(stdout,"TempC_%02d_%02d ", socket,core); 
+		}
 	}
 }
 
@@ -425,13 +428,16 @@ void dump_thermal_terse()
 {
 	is_init();
 	get_therm_stat(&t_stat);
-	int core;
+	int core, socket;
 	int actTemp;
 
-	for(core=0; core < NUM_CORES; core++)
+	for(socket=0; socket < NUM_SOCKETS; socket++)
 	{
-		actTemp = t_target.temp_target[core] - t_stat[core].readout;
-		fprintf(stdout,"%d ", actTemp);
+		for(core=NUM_CORES_PER_SOCKET*socket; core < NUM_CORES_PER_SOCKET*(socket+1); core++)
+		{
+			actTemp = t_target.temp_target[socket] - t_stat.readout[core];
+			fprintf(stdout,"%d ", actTemp);
+		}
 	}
 }
 
