@@ -122,16 +122,16 @@ void dump_pkg_therm_interrupt(struct pkg_therm_interrupt *s);
 void get_therm_stat(struct therm_stat *s);
 void get_therm_interrupt(struct therm_interrupt *s);
 void get_pkg_therm_stat(struct pkg_therm_stat *s);
+void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s);
 
 void set_therm_stat(struct therm_stat *s);
 void set_therm_interrupt(struct therm_interrupt *s);
 void set_pkg_therm_stat(struct pkg_therm_stat *s);
-
-void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s);
 void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s);
 
-void dump_core_temp(struct therm_stat *s);
 void dump_thermal_terse_label();
 void dump_thermal_terse();
+void dump_thermal_verbose_label();
+void dump_thermal_verbose()
 
 #endif

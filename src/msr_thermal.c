@@ -441,6 +441,158 @@ void dump_thermal_terse()
 	}
 }
 
+void dump_thermal_verbose_label()
+{
+	for(socket=0; socket < NUM_SOCKETS; socket++)
+	{
+		// Registers that are socket granularity
+
+		//Thermal Status dump (package)
+		fprintf(stdout, "socket_status_%02d ", socket);
+		fprintf(stdout, "socket_log_%02d ", socket);
+		fprintf(stdout, "socket_PROCHOT_event_%02d ", socket);
+		fprintf(stdout, "socket_PROCHOT_log_%02d ", socket);
+		fprintf(stdout, "socket_crit_temp_status_%02d ", socket);
+		fprintf(stdout, "socket_crit_temp_log_%02d ", socket);
+		fprintf(stdout, "socket_therm_thresh1_status_%02d ", socket);
+		fprintf(stdout, "socket_therm_thresh1_log_%02d ", socket);
+		fprintf(stdout, "socket_therm_thresh2_status_%02d ", socket);
+		fprintf(stdout, "socket_therm_thresh2_log_%02d ", socket);
+		fprintf(stdout, "socket_power_limit_status_%02d ", socket);
+		fprintf(stdout, "socket_power_notification_log_%02d ", socket);
+		fprintf(stdout, "socket_readout_%02d ", socket);
+		fprintf(stdout, "socket_TempC_%02d ", socket);
+		//Thermal Interrupt dump (package)	
+		fprintf(stdout, "socket_high_temp_enable_%02d ", socket);
+		fprintf(stdout, "socket_low_temp_enable_%02d ", socket);
+		fprintf(stdout, "socket_PROCHOT_enable_%02d ", socket);
+		fprintf(stdout, "socket_crit_temp_enable_%02d ", socket);
+		fprintf(stdout, "socket_thresh1_val_%02d ", socket);
+		fprintf(stdout, "socket_thresh1_actual_tempC_%02d ", socket);
+		fprintf(stdout, "socket_thresh1_enable_%02d ", socket);
+		fprintf(stdout, "socket_thresh2_val_%02d ", socket);
+		fprintf(stdout, "socket_thresh2_actual_tempC_%02d ", socket);
+		fprintf(stdout, "socket_thresh2_enable_%02d ", socket);
+		fprintf(stdout, "socket_pwr_limit_notification_enable_%02d ", socket);
+		
+		// Registers that are core granularity
+		for(core=NUM_CORES_PER_SOCKET*socket; core < NUM_CORES_PER_SOCKET*(socket+1); core++)
+		{
+			//Thermal Status dump (core)
+			fprintf(stdout, "core_status_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_PROCHOT_or_FORCEPR_event_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_PROCHOT_or_FORCEPR_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_crit_temp_status_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_crit_temp_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_therm_thresh1_status_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_therm_thresh1_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_therm_thresh2_status_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_therm_thresh2_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_power_limit_status_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_power_notification_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_readout_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_TempC_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_resolution_deg_celsius_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_readout_valid_%02d_%02d ", socket, core);
+			//Thermal Interrupt dump (core)	
+			fprintf(stdout, "core_high_temp_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_low_temp_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_PROCHOT_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_FORCEPR_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_crit_temp_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_thresh1_val_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_thresh1_actual_tempC_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_thresh1_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_thresh2_val_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_thresh2_actual_tempC_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_thresh2_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_pwr_limit_notification_enable_%02d_%02d ", socket, core);
+			
+		}
+	}
+}
+
+void dump_thermal_verbose()
+{
+	is_init();
+	get_therm_stat(&t_stat);
+	get_therm_interrupt(&t_interrupt);
+	get_pkg_therm_stat(&pkg_stat);
+	get_pkg_therm_interrupt(&pkg_interrupt);
+	int core, socket;
+	int actTemp;
+	//TODO: Change from printing labels to printing values
+	for(socket=0; socket < NUM_SOCKETS; socket++)
+	{
+		// Registers that are socket granularity
+
+		//Thermal Status dump (package)
+		fprintf(stdout, "socket_status_%02d ", socket);
+		fprintf(stdout, "socket_log_%02d ", socket);
+		fprintf(stdout, "socket_PROCHOT_event_%02d ", socket);
+		fprintf(stdout, "socket_PROCHOT_log_%02d ", socket);
+		fprintf(stdout, "socket_crit_temp_status_%02d ", socket);
+		fprintf(stdout, "socket_crit_temp_log_%02d ", socket);
+		fprintf(stdout, "socket_therm_thresh1_status_%02d ", socket);
+		fprintf(stdout, "socket_therm_thresh1_log_%02d ", socket);
+		fprintf(stdout, "socket_therm_thresh2_status_%02d ", socket);
+		fprintf(stdout, "socket_therm_thresh2_log_%02d ", socket);
+		fprintf(stdout, "socket_power_limit_status_%02d ", socket);
+		fprintf(stdout, "socket_power_notification_log_%02d ", socket);
+		fprintf(stdout, "socket_readout_%02d ", socket);
+		fprintf(stdout, "socket_TempC_%02d ", socket);
+		//Thermal Interrupt dump (package)	
+		fprintf(stdout, "socket_high_temp_enable_%02d ", socket);
+		fprintf(stdout, "socket_low_temp_enable_%02d ", socket);
+		fprintf(stdout, "socket_PROCHOT_enable_%02d ", socket);
+		fprintf(stdout, "socket_crit_temp_enable_%02d ", socket);
+		fprintf(stdout, "socket_thresh1_val_%02d ", socket);
+		fprintf(stdout, "socket_thresh1_actual_tempC_%02d ", socket);
+		fprintf(stdout, "socket_thresh1_enable_%02d ", socket);
+		fprintf(stdout, "socket_thresh2_val_%02d ", socket);
+		fprintf(stdout, "socket_thresh2_actual_tempC_%02d ", socket);
+		fprintf(stdout, "socket_thresh2_enable_%02d ", socket);
+		fprintf(stdout, "socket_pwr_limit_notification_enable_%02d ", socket);
+		
+		// Registers that are core granularity
+		for(core=NUM_CORES_PER_SOCKET*socket; core < NUM_CORES_PER_SOCKET*(socket+1); core++)
+		{
+			//Thermal Status dump (core)
+			fprintf(stdout, "core_status_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_PROCHOT_or_FORCEPR_event_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_PROCHOT_or_FORCEPR_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_crit_temp_status_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_crit_temp_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_therm_thresh1_status_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_therm_thresh1_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_therm_thresh2_status_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_therm_thresh2_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_power_limit_status_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_power_notification_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_readout_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_TempC_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_resolution_deg_celsius_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_readout_valid_%02d_%02d ", socket, core);
+			//Thermal Interrupt dump (core)	
+			fprintf(stdout, "core_high_temp_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_low_temp_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_PROCHOT_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_FORCEPR_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_crit_temp_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_thresh1_val_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_thresh1_actual_tempC_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_thresh1_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_thresh2_val_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_thresh2_actual_tempC_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_thresh2_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_pwr_limit_notification_enable_%02d_%02d ", socket, core);
+			
+		}
+	}
+}
+
  //---------------------------------Dump Thermal Functions ------------------------------------------------
 
 /*
