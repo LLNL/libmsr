@@ -7,9 +7,12 @@
 
 void
 rapl_test(){
+	read_rapl_data(0, NULL);	// Initialize
+	sleep(3);
+
 	dump_rapl_terse_label();
 	fprintf(stdout, "\n");
-	dump_rapl_terse();
+	dump_rapl_terse();		// Read and dump.
 	fprintf(stdout, "\n");
 
 }
@@ -24,7 +27,6 @@ void thermal_test(){
 int
 main(){
 	init_msr();
-
 	rapl_test();
 	thermal_test();
 
