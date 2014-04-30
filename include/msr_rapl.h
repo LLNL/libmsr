@@ -35,7 +35,7 @@ struct rapl_limit{
 
 // We're going to overload this interface a bit...
 //
-// rapl_set_limit()
+// set_rapl_limit()
 //
 //	a) If a pointer is null, do nothing.
 //
@@ -45,7 +45,7 @@ struct rapl_limit{
 //	c) If the bit_vector is zero, translate the watts and seconds to the appropriate
 //	bit_vector and write the bit_vector to the msr.
 //
-// rapl_get_limit()
+// get_rapl_limit()
 //
 //	a) If a pointer is null, do nothing.
 //
