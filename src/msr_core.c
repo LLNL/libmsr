@@ -64,6 +64,7 @@ init_msr(){
 
 void 
 finalize_msr(){
+	disable_fixed_counters();
 	int dev_idx, rc;
 	char filename[1025];
 	for (dev_idx=0; dev_idx < NUM_DEVS; dev_idx++){
@@ -78,7 +79,6 @@ finalize_msr(){
 			}
 		}
 	}
-	disable_fixed_counters();
 }
 
 void
