@@ -443,6 +443,8 @@ void dump_thermal_terse()
 
 void dump_thermal_verbose_label()
 {
+	int socket;
+	int core;
 	for(socket=0; socket < NUM_SOCKETS; socket++)
 	{
 		// Registers that are socket granularity
@@ -480,7 +482,7 @@ void dump_thermal_verbose_label()
 		{
 			//Thermal Status dump (core)
 			fprintf(stdout, "core_status_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_log_%02d_%02d ", socket, core);
+			fprintf(stdout, "core_status_log_%02d_%02d ", socket, core);
 			fprintf(stdout, "core_PROCHOT_or_FORCEPR_event_%02d_%02d ", socket, core);
 			fprintf(stdout, "core_PROCHOT_or_FORCEPR_log_%02d_%02d ", socket, core);
 			fprintf(stdout, "core_crit_temp_status_%02d_%02d ", socket, core);
@@ -522,72 +524,77 @@ void dump_thermal_verbose()
 	get_pkg_therm_interrupt(&pkg_interrupt);
 	int core, socket;
 	int actTemp;
-	//TODO: Change from printing labels to printing values
 	for(socket=0; socket < NUM_SOCKETS; socket++)
 	{
 		// Registers that are socket granularity
 
 		//Thermal Status dump (package)
-		fprintf(stdout, "socket_status_%02d ", socket);
-		fprintf(stdout, "socket_log_%02d ", socket);
-		fprintf(stdout, "socket_PROCHOT_event_%02d ", socket);
-		fprintf(stdout, "socket_PROCHOT_log_%02d ", socket);
-		fprintf(stdout, "socket_crit_temp_status_%02d ", socket);
-		fprintf(stdout, "socket_crit_temp_log_%02d ", socket);
-		fprintf(stdout, "socket_therm_thresh1_status_%02d ", socket);
-		fprintf(stdout, "socket_therm_thresh1_log_%02d ", socket);
-		fprintf(stdout, "socket_therm_thresh2_status_%02d ", socket);
-		fprintf(stdout, "socket_therm_thresh2_log_%02d ", socket);
-		fprintf(stdout, "socket_power_limit_status_%02d ", socket);
-		fprintf(stdout, "socket_power_notification_log_%02d ", socket);
-		fprintf(stdout, "socket_readout_%02d ", socket);
-		fprintf(stdout, "socket_TempC_%02d ", socket);
+		fprintf(stdout, "%d ", pkg_stat.status[socket]);
+		fprintf(stdout, "%d ", pkg_stat.status_log[socket]);
+		fprintf(stdout, "%d ", pkg_stat.PROCHOT_event[socket]);
+		fprintf(stdout, "%d ", pkg_stat.PROCHOT_log[socket]);
+		fprintf(stdout, "%d ", pkg_stat.crit_temp_status[socket]);
+		fprintf(stdout, "%d ", pkg_stat.crit_temp_log[socket]);
+		fprintf(stdout, "%d ", pkg_stat.therm_thresh1_status[socket]);
+		fprintf(stdout, "%d ", pkg_stat.therm_thresh1_log[socket]);
+		fprintf(stdout, "%d ", pkg_stat.therm_thresh2_status[socket]);
+		fprintf(stdout, "%d ", pkg_stat.therm_thresh2_log[socket]);
+		fprintf(stdout, "%d ", pkg_stat.power_limit_status[socket]);
+		fprintf(stdout, "%d ", pkg_stat.power_notification_log[socket]);
+		fprintf(stdout, "%d ", pkg_stat.readout[socket]);
+		actTemp=(t_target.temp_target[socket] - pkg_stat.readout[socket]);
+		fprintf(stdout, "%d ", actTemp);
 		//Thermal Interrupt dump (package)	
-		fprintf(stdout, "socket_high_temp_enable_%02d ", socket);
-		fprintf(stdout, "socket_low_temp_enable_%02d ", socket);
-		fprintf(stdout, "socket_PROCHOT_enable_%02d ", socket);
-		fprintf(stdout, "socket_crit_temp_enable_%02d ", socket);
-		fprintf(stdout, "socket_thresh1_val_%02d ", socket);
-		fprintf(stdout, "socket_thresh1_actual_tempC_%02d ", socket);
-		fprintf(stdout, "socket_thresh1_enable_%02d ", socket);
-		fprintf(stdout, "socket_thresh2_val_%02d ", socket);
-		fprintf(stdout, "socket_thresh2_actual_tempC_%02d ", socket);
-		fprintf(stdout, "socket_thresh2_enable_%02d ", socket);
-		fprintf(stdout, "socket_pwr_limit_notification_enable_%02d ", socket);
+		fprintf(stdout, "%d ", pkg_interrupt.high_temp_enable[socket]);
+		fprintf(stdout, "%d ", pkg_interrupt.low_temp_enable[socket]);
+		fprintf(stdout, "%d ", pkg_interrupt.PROCHOT_enable[socket]);
+		fprintf(stdout, "%d ", pkg_interrupt.crit_temp_enable[socket]);
+		fprintf(stdout, "%d ", pkg_interrupt.thresh1_val[socket]);
+		actTemp=(t_target.temp_target[socket]-pkg_interrupt.thresh1_val[socket]);
+		fprintf(stdout, "%d ", actTemp);
+		fprintf(stdout, "%d ", pkg_interrupt.thresh1_enable[socket]);
+		fprintf(stdout, "%d ", pkg_interrupt.thresh1_val[socket]);
+		actTemp=(t_target.temp_target[socket]-pkg_interrupt.thresh2_val[socket]);
+		fprintf(stdout, "%d ", actTemp);
+		fprintf(stdout, "%d ", pkg_interrupt.thresh2_enable[socket]);
+		fprintf(stdout, "%d ", pkg_interrupt.pwr_limit_notification_enable[socket]);
 		
 		// Registers that are core granularity
 		for(core=NUM_CORES_PER_SOCKET*socket; core < NUM_CORES_PER_SOCKET*(socket+1); core++)
 		{
 			//Thermal Status dump (core)
-			fprintf(stdout, "core_status_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_log_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_PROCHOT_or_FORCEPR_event_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_PROCHOT_or_FORCEPR_log_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_crit_temp_status_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_crit_temp_log_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_therm_thresh1_status_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_therm_thresh1_log_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_therm_thresh2_status_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_therm_thresh2_log_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_power_limit_status_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_power_notification_log_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_readout_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_TempC_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_resolution_deg_celsius_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_readout_valid_%02d_%02d ", socket, core);
+			fprintf(stdout, "%d ", t_stat.status[core]);
+			fprintf(stdout, "%d ", t_stat.status_log[core]);
+			fprintf(stdout, "%d ", t_stat.PROCHOT_or_FORCEPR_event[core]);
+			fprintf(stdout, "%d ", t_stat.PROCHOT_or_FORCEPR_log[core]);
+			fprintf(stdout, "%d ", t_stat.crit_temp_status[core]);
+			fprintf(stdout, "%d ", t_stat.crit_temp_log[core]);
+			fprintf(stdout, "%d ", t_stat.therm_thresh1_status[core]);
+			fprintf(stdout, "%d ", t_stat.therm_thresh1_log[core]);
+			fprintf(stdout, "%d ", t_stat.therm_thresh2_status[core]);
+			fprintf(stdout, "%d ", t_stat.therm_thresh2_log[core]);
+			fprintf(stdout, "%d ", t_stat.power_limit_status[core]);
+			fprintf(stdout, "%d ", t_stat.power_notification_log[core]);
+			fprintf(stdout, "%d ", t_stat.readout[core]);
+			actTemp=(t_target.temp_target[socket]-t_stat.readout[core]);
+			fprintf(stdout, "%d ", actTemp);
+			fprintf(stdout, "%d ", t_stat.resolution_deg_celsius[core]);
+			fprintf(stdout, "%d ", t_stat.readout_valid[core]);
 			//Thermal Interrupt dump (core)	
-			fprintf(stdout, "core_high_temp_enable_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_low_temp_enable_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_PROCHOT_enable_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_FORCEPR_enable_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_crit_temp_enable_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_thresh1_val_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_thresh1_actual_tempC_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_thresh1_enable_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_thresh2_val_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_thresh2_actual_tempC_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_thresh2_enable_%02d_%02d ", socket, core);
-			fprintf(stdout, "core_pwr_limit_notification_enable_%02d_%02d ", socket, core);
+			fprintf(stdout, "%d ", t_interrupt.high_temp_enable[core]);
+			fprintf(stdout, "%d ", t_interrupt.low_temp_enable[core]);
+			fprintf(stdout, "%d ", t_interrupt.PROCHOT_enable[core]);
+			fprintf(stdout, "%d ", t_interrupt.FORCEPR_enable[core]);
+			fprintf(stdout, "%d ", t_interrupt.crit_temp_enable[core]);
+			fprintf(stdout, "%d ", t_interrupt.thresh1_val[core]);
+			actTemp=(t_target.temp_target[socket]-t_interrupt.thresh1_val[core]);
+			fprintf(stdout, "%d ", actTemp);
+			fprintf(stdout, "%d ", t_interrupt.thresh1_enable[core]);
+			fprintf(stdout, "%d ", t_interrupt.thresh2_val[core]);
+			actTemp=(t_target.temp_target[socket]-t_interrupt.thresh2_val[core]);
+			fprintf(stdout, "%d ", actTemp);
+			fprintf(stdout, "%d ", t_interrupt.thresh2_enable[core]);
+			fprintf(stdout, "%d ", t_interrupt.pwr_limit_notification_enable[core]);
 			
 		}
 	}
