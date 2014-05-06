@@ -287,8 +287,9 @@ void
 set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram ){
 	// Fill in whatever values are necessary.
 	uint64_t pkg_limit=0;
+#ifdef RAPL_DRAM_AVAIL
 	uint64_t dram_limit=0;
-
+#endif 
 	calc_rapl_limit( socket, limit1, limit2, dram );
 
 	if(limit1){
