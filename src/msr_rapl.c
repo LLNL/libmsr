@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <sys/time.h>
 #include <stddef.h>
 #include "msr_core.h"
 #include "msr_rapl.h"
@@ -364,82 +363,86 @@ dump_rapl_data( struct rapl_data *r ){
 
 void
 read_rapl_data( const int socket, struct rapl_data *r ){
-	static double pkg_joules[NUM_SOCKETS] = {0.0};  
-	static double old_pkg_joules[NUM_SOCKETS] = {0.0}; 
-	static double dram_joules[NUM_SOCKETS] = {0.0}; 
-	static double old_dram_joules[NUM_SOCKETS] = {0.0};
-	static uint64_t pkg_bits[NUM_SOCKETS]; 
-	static uint64_t dram_bits[NUM_SOCKETS];
-	static uint64_t old_pkg_bits[NUM_SOCKETS]; 
-	static uint64_t old_dram_bits[NUM_SOCKETS];
-	static struct timeval old_now[NUM_SOCKETS];
-	static struct timeval now[NUM_SOCKETS];
+	/* 
+	 * If r is null, measurments are recorded into the local static struct s.
+	 *
+	 * If r is not null and r->flags == 0, measurements are also recorded 
+	 *   into the local static struct s and the delta is recorded in r.
+	 *
+	 * If r is not null and r->flags & RDF_REENTRANT, measurements are recorded in
+	 *   r only and the delta is calculated relative to the difference in 
+	 *   the values passed in with r.  old_* values are destroyed and * values
+	 *   are moved to old_* values.  
+	 *
+	 * If r is not null and r->flags & RDF_INITIALIZE, no calculations are 
+	 *   performed and deltas are set to zero.  This is intented as a convenience
+	 *   function only; there is no harm in initializing without this flag and
+	 *   simply ignoring the results.
+	 *
+	 * This functionality allows for the case where the user wishes to, e.g., 
+	 *   take measurments at points A, B, C, C', B', A' using three separate
+	 *   rapl_data structs.
+	 */
+
+	struct rapl_data *p;	// Where the previous state lives.
 	uint64_t  maxbits=4294967296;
 	double max_joules=0.0;
+	static struct rapl_data s[NUM_SOCKETS];
 
-	// Copy previous now timestamp to old_now.
-	old_now[socket].tv_sec  = now[socket].tv_sec;
-	old_now[socket].tv_usec = now[socket].tv_usec;
-
-	// Copy previous raw msr values into the old buckets.	
-	old_pkg_joules[socket]  = pkg_joules[socket];
-	old_dram_joules[socket] = dram_joules[socket];
-
-	// Copy off old bits (only need this for debugging)
-	old_pkg_bits[socket] = pkg_bits[socket];
-	old_dram_bits[socket] = dram_bits[socket];
+	if( (r == NULL) || !(r->flags & RDF_REENTRANT) ){
+		p = &s[socket];
+	}else{
+		p = r;
+	}
+	
+	// Move current variables to "old" variables.
+	p->old_pkg_bits		= p->pkg.bits;
+	p->old_dram_bits	= p->dram_bits;
+	p->old_pkg_joules	= p->pkg_joules;
+	p->old_dram_joules	= p->dram_joules;
+	p->old_now.tv_sec 	= p->now.tv_sec;
+	p->old_now.tv_usec	= p->now.tv_usec;
 
 	// Get current timestamp
-	gettimeofday( &(now[socket]), NULL );
+	gettimeofday( &(p->now), NULL );
 
 	// Get raw joules
-	read_msr_by_coord( socket, 0, 0, MSR_PKG_ENERGY_STATUS,  &pkg_bits[socket]  );
-	read_msr_by_coord( socket, 0, 0, MSR_DRAM_ENERGY_STATUS, &dram_bits[socket] );
+	read_msr_by_coord( socket, 0, 0, MSR_PKG_ENERGY_STATUS,  &(p->pkg_bits)  );
+	read_msr_by_coord( socket, 0, 0, MSR_DRAM_ENERGY_STATUS, &(p->dram_bits) );
 	
 	// get normalized joules
-	translate( socket, &pkg_bits[socket],  &(pkg_joules[socket]),  BITS_TO_JOULES );
-	translate( socket, &dram_bits[socket], &(dram_joules[socket]), BITS_TO_JOULES );
+	translate( socket, &(p->pkg_bits),  &(p->pkg_joules),  BITS_TO_JOULES );
+	translate( socket, &(p->dram_bits), &(p->dram_joules), BITS_TO_JOULES );
 	
 	// Fill in the struct if present.
 	if(r){
 		// Get delta in seconds
-		r->elapsed = (now[socket].tv_sec - old_now[socket].tv_sec) 
+		r->elapsed = (p->now.tv_sec - p->old_now.tv_sec) 
 			     +
-			     (now[socket].tv_usec - old_now[socket].tv_usec)/1000000.0;
+			     (p->now.tv_usec - p->old_now.tv_usec)/1000000.0;
 
 		// Get delta joules.
 		// Now handles wraparound.
-		if(pkg_joules [socket] - old_pkg_joules[socket] < 0)
+		if(p->pkg_joules - p->old_pkg_joules < 0)
 		{
-			translate(socket,&maxbits,&max_joules, BITS_TO_JOULES); 
-			r->pkg_joules = (pkg_joules[socket] + max_joules) - old_pkg_joules[socket];
-		}
-		else
-		{
-			r->pkg_joules  = pkg_joules[socket]  - old_pkg_joules[socket];		
+			translate(socket,&(p->maxbits),&(p->max_joules), BITS_TO_JOULES); 
+			r->pkg_joules = ( p->pkg_joules + max_joules) - p->old_pkg_joules;
+		} else {
+			r->pkg_joules  = p->pkg_joules  - p->old_pkg_joules;		
 		}
 
-		if(dram_joules [socket] - old_dram_joules[socket] < 0)
+		if(p->dram_joules - p->old_dram_joules < 0)
 		{
-			translate(socket,&maxbits,&max_joules, BITS_TO_JOULES); 
-			r->dram_joules = (dram_joules[socket] + max_joules) - old_dram_joules[socket];
-		}
-		else
-		{
-			r->dram_joules = dram_joules[socket] - old_dram_joules[socket];	
+			translate(socket,p->maxbits,p->max_joules, BITS_TO_JOULES); 
+			r->dram_joules = (p->dram_joules + max_joules) - p->old_dram_joules;
+		} else {
+			r->dram_joules = p->dram_joules - p->old_dram_joules;	
 		}	
 
 		// Get watts.
 		// Does not check for div by 0.
 		r->pkg_watts  = r->pkg_joules  / r->elapsed;
 		r->dram_watts = r->dram_joules / r->elapsed;
-
-		// Save off bits for debugging.
-		r->old_pkg_bits = old_pkg_bits[socket];
-		r->old_dram_bits = old_dram_bits[socket];
-
-		r->pkg_bits = pkg_bits[socket];
-		r->dram_bits = dram_bits[socket];
 	}
 }
 
