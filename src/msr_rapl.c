@@ -176,8 +176,9 @@ get_rapl_power_info( const int socket, struct rapl_power_info *info){
 	//info->msr_dram_power_info = 0x682d0001482d0;
 
 	read_msr_by_coord( socket, 0, 0, MSR_PKG_POWER_INFO, &(info->msr_pkg_power_info) );
+#ifdef RAPL_DRAM_AVAIL
 	read_msr_by_coord( socket, 0, 0, MSR_DRAM_POWER_INFO, &(info->msr_dram_power_info) );
-
+#endif
 	// Note that the same units are used in both the PKG and DRAM domains.
 	
 	val = MASK_VAL( info->msr_pkg_power_info,  53, 48 );
@@ -299,10 +300,12 @@ set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 	if(limit1 || limit2){
 		write_msr_by_coord( socket, 0, 0, MSR_PKG_POWER_LIMIT, pkg_limit );
 	}
+#ifdef RAPL_DRAM_AVAIL
 	if(dram){
 		dram_limit |= dram->bits | (1LL << 15) | (1LL << 16);	// enable clamping
 		write_msr_by_coord( socket, 0, 0, MSR_DRAM_POWER_LIMIT, dram_limit );
 	}
+#endif
 }
 
 void 
@@ -313,9 +316,11 @@ get_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 	if(limit2){
 		read_msr_by_coord( socket, 0, 0, MSR_PKG_POWER_LIMIT, &(limit2->bits) );
 	}
+#ifdef RAPL_DRAM_AVAIL
 	if(dram){
 		read_msr_by_coord( socket, 0, 0, MSR_DRAM_POWER_LIMIT, &(dram->bits) );
 	}
+#endif 
 	// Fill in whatever values are necessary.
 	calc_rapl_limit( socket, limit1, limit2, dram );
 }
@@ -408,7 +413,9 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 
 	// Get raw joules
 	read_msr_by_coord( socket, 0, 0, MSR_PKG_ENERGY_STATUS,  &(p->pkg_bits)  );
+#ifdef RAPL_DRAM_AVAIL
 	read_msr_by_coord( socket, 0, 0, MSR_DRAM_ENERGY_STATUS, &(p->dram_bits) );
+#endif
 	
 	// get normalized joules
 	translate( socket, &(p->pkg_bits),  &(p->pkg_joules),  BITS_TO_JOULES );
