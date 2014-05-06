@@ -396,7 +396,7 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 	}
 	
 	// Move current variables to "old" variables.
-	p->old_pkg_bits		= p->pkg.bits;
+	p->old_pkg_bits		= p->pkg_bits;
 	p->old_dram_bits	= p->dram_bits;
 	p->old_pkg_joules	= p->pkg_joules;
 	p->old_dram_joules	= p->dram_joules;
@@ -425,7 +425,7 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 		// Now handles wraparound.
 		if(p->pkg_joules - p->old_pkg_joules < 0)
 		{
-			translate(socket,&(p->maxbits),&(p->max_joules), BITS_TO_JOULES); 
+			translate(socket, &maxbits, &max_joules, BITS_TO_JOULES); 
 			r->pkg_joules = ( p->pkg_joules + max_joules) - p->old_pkg_joules;
 		} else {
 			r->pkg_joules  = p->pkg_joules  - p->old_pkg_joules;		
@@ -433,7 +433,7 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 
 		if(p->dram_joules - p->old_dram_joules < 0)
 		{
-			translate(socket,p->maxbits,p->max_joules, BITS_TO_JOULES); 
+			translate(socket, &maxbits, &max_joules, BITS_TO_JOULES); 
 			r->dram_joules = (p->dram_joules + max_joules) - p->old_dram_joules;
 		} else {
 			r->dram_joules = p->dram_joules - p->old_dram_joules;	
