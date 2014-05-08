@@ -397,54 +397,64 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 
 	if( (r == NULL) || !(r->flags & RDF_REENTRANT) ){
 		p = &s[socket];
-	}else{
+	} else{
 		p = r;
+/*		if(r->flags & RDF_INITIALIZE) {
+			p->pkg_bits = 0;
+			p->dram_bits = 0;
+			p->pkg_joules = 0;
+			p->dram_joules = 0;
+			
+		}*/
 	}
-	
+
+
 	// Move current variables to "old" variables.
-	p->old_pkg_bits		= p->pkg_bits;
-	p->old_dram_bits	= p->dram_bits;
-	p->old_pkg_joules	= p->pkg_joules;
-	p->old_dram_joules	= p->dram_joules;
-	p->old_now.tv_sec 	= p->now.tv_sec;
-	p->old_now.tv_usec	= p->now.tv_usec;
+	p->pvt_old_pkg_bits	= p->pvt_pkg_bits;
+	p->pvt_old_dram_bits	= p->pvt_dram_bits;
+	p->pvt_old_pkg_joules	= p->pvt_pkg_joules;
+	p->pvt_old_dram_joules	= p->pvt_dram_joules;
+	p->pvt_old_now.tv_sec 	= p->pvt_now.tv_sec;
+	p->pvt_old_now.tv_usec	= p->pvt_now.tv_usec;
 
 	// Get current timestamp
-	gettimeofday( &(p->now), NULL );
+	gettimeofday( &(p->pvt_now), NULL );
 
 	// Get raw joules
-	read_msr_by_coord( socket, 0, 0, MSR_PKG_ENERGY_STATUS,  &(p->pkg_bits)  );
+	read_msr_by_coord( socket, 0, 0, MSR_PKG_ENERGY_STATUS,  &(p->pvt_pkg_bits)  );
 #ifdef RAPL_DRAM_AVAIL
-	read_msr_by_coord( socket, 0, 0, MSR_DRAM_ENERGY_STATUS, &(p->dram_bits) );
+	read_msr_by_coord( socket, 0, 0, MSR_DRAM_ENERGY_STATUS, &(p->pvt_dram_bits) );
 #endif
 	
 	// get normalized joules
-	translate( socket, &(p->pkg_bits),  &(p->pkg_joules),  BITS_TO_JOULES );
-	translate( socket, &(p->dram_bits), &(p->dram_joules), BITS_TO_JOULES );
+	translate( socket, &(p->pvt_pkg_bits),  &(p->pvt_pkg_joules),  BITS_TO_JOULES );
+	translate( socket, &(p->pvt_dram_bits), &(p->pvt_dram_joules), BITS_TO_JOULES );
 	
 	// Fill in the struct if present.
 	if(r){
 		// Get delta in seconds
-		r->elapsed = (p->now.tv_sec - p->old_now.tv_sec) 
+		r->elapsed = (p->pvt_now.tv_sec - p->pvt_old_now.tv_sec) 
 			     +
-			     (p->now.tv_usec - p->old_now.tv_usec)/1000000.0;
+			     (p->pvt_now.tv_usec - p->pvt_old_now.tv_usec)/1000000.0;
 
 		// Get delta joules.
 		// Now handles wraparound.
-		if(p->pkg_joules - p->old_pkg_joules < 0)
+//printf("p->pkg_joules=%le, p->old_pkg_joules=%le\n", p->pvt_pkg_joules , p->pvt_old_pkg_joules);
+//printf("p->dram_joules=%le, p->old_dram_joules=%le\n", p->pvt_dram_joules , p->pvt_old_dram_joules);
+		if(p->pvt_pkg_joules - p->pvt_old_pkg_joules < 0)
 		{
 			translate(socket, &maxbits, &max_joules, BITS_TO_JOULES); 
-			r->pkg_joules = ( p->pkg_joules + max_joules) - p->old_pkg_joules;
+			r->pkg_joules = ( p->pvt_pkg_joules + max_joules) - p->pvt_old_pkg_joules;
 		} else {
-			r->pkg_joules  = p->pkg_joules  - p->old_pkg_joules;		
+			r->pkg_joules  = p->pvt_pkg_joules  - p->pvt_old_pkg_joules;		
 		}
 
-		if(p->dram_joules - p->old_dram_joules < 0)
+		if(p->pvt_dram_joules - p->pvt_old_dram_joules < 0)
 		{
 			translate(socket, &maxbits, &max_joules, BITS_TO_JOULES); 
-			r->dram_joules = (p->dram_joules + max_joules) - p->old_dram_joules;
+			r->dram_joules = (p->pvt_dram_joules + max_joules) - p->pvt_old_dram_joules;
 		} else {
-			r->dram_joules = p->dram_joules - p->old_dram_joules;	
+			r->dram_joules = p->pvt_dram_joules - p->pvt_old_dram_joules;	
 		}	
 
 		// Get watts.

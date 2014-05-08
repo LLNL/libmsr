@@ -1,6 +1,9 @@
 libmsr_test: libmsr_test.c 
 	gcc -Wall -o libmsr_test libmsr_test.c -L ../lib -lmsr
 
+libmsr_mpi_test: libmsr_test.c 
+	mpicc -Wall -DMPI -o libmsr_mpi_test libmsr_test.c -L ../lib -lmsr
+
 mpi: mpi_test.c
 	mpicc -Wall -o mpi_test mpi_test.c -L../lib -lgaramond 
 
