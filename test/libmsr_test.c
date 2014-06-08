@@ -62,35 +62,18 @@ void perform_rapl_measurement(struct rapl_data* r) {
 
 void rapl_r_test(){
 	// Initialize two separate state objects and read rapl data into them during overlapping time windows
-	struct rapl_data r1; r1.flags = RDF_REENTRANT | RDF_INIT;
-	struct rapl_data r2; r2.flags = RDF_REENTRANT;
-	fprintf(stdout, "R1: ");
-	r1.flags = RDF_REENTRANT | RDF_INIT;
+	struct rapl_data r1; 
+	struct rapl_data r2; 
+
+	r1.flags = r2.flags = RDF_REENTRANT | RDF_INIT;
+
 	perform_rapl_measurement(&r1);  // Initialize r1
 	r1.flags = RDF_REENTRANT;
 	sleep(1);
 
-
 	fprintf(stdout, "R1: ");
 	perform_rapl_measurement(&r1);
 	sleep(1);
-/*
-	fprintf(stdout, "R1: ");
-	perform_rapl_measurement(&r1);
-	sleep(1);
-
-	fprintf(stdout, "R1: ");
-	perform_rapl_measurement(&r1);
-	sleep(1);
-	
-	fprintf(stdout, "R1: ");
-	perform_rapl_measurement(&r1);
-	sleep(1);
-	
-	fprintf(stdout, "R1: ");
-	perform_rapl_measurement(&r1);
-	sleep(1);
-*/	
 }
 
 
