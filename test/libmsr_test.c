@@ -50,6 +50,11 @@ void thermal_test(){
 	fprintf(stdout, "\n");
 	dump_thermal_terse();
 	fprintf(stdout, "\n");
+
+	dump_thermal_verbose_label();
+	fprintf(stdout, "\n");
+	dump_thermal_verbose();
+	fprintf(stdout, "\n");
 }
 
 void perform_rapl_measurement(struct rapl_data* r) {
