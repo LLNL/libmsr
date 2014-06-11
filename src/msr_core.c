@@ -28,8 +28,9 @@ init_msr(){
 	static int initialized = 0;
 	int retVal;
 
+#ifdef LIBMSR_DEBUG
 	fprintf(stderr, "Initializing %d device(s).\n", NUM_DEVS);
-
+#endif
 	if( initialized ){
 		return 0;
 	}
