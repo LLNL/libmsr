@@ -39,7 +39,7 @@ void perform_rapl_measurement(struct rapl_data* r) {
 	for(socket=0; socket<NUM_SOCKETS; socket++) {
 		r[socket].flags = RDF_REENTRANT;
 		read_rapl_data(socket, &r[socket]);
-		fprintf(stdout,"%8.6lf\t%8.6lf\t%8.6lf\t%8.6lf\t%8.6lf\t", r[socket].pkg_watts, r[socket].pkg_joules, r[socket].dram_watts, r[socket].dram_joules, r[socket].elapsed);
+		fprintf(stdout,"%8.6lf\t%8.6lf\t%8.6lf\t%8.6lf\t%8.6lf\t", r[socket].pkg_watts, r[socket].pkg_delta_joules, r[socket].dram_watts, r[socket].dram_delta_joules, r[socket].elapsed);
 	}
 	fprintf(stdout, "\n");
 }
