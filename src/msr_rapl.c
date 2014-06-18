@@ -7,7 +7,7 @@
 #include <assert.h>
 #include "msr_core.h"
 #include "msr_rapl.h"
-#define LIBMSR_DEBUG
+//#define LIBMSR_DEBUG
 /* 
  * Macros 
  */
