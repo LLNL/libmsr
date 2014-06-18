@@ -17,8 +17,6 @@
 						// for each logical processor. 
 						// Must have it enabled and the same for all logical
 						// processors within the physical processor
-#define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
-#define MASK_VAL(x,m,n) (((uint64_t)(x)&MASK_RANGE((m),(n)))>>(n))
 
 void 
 read_all_aperf(uint64_t *aperf){

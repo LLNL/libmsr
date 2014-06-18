@@ -12,14 +12,6 @@
 #include "msr_counters.h"
 #include "cpuid.h"
 
-/*
- * Macros
- */
-
-// Two defines below from Barry Rountree 
-#define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
-#define MASK_VAL(x,m,n) (((uint64_t)(x)&MASK_RANGE((m),(n)))>>(n))
-
 //These defines are from the Architectural MSRs (Should not change between models)
 
 #define IA32_FIXED_CTR_CTRL		(0x38D)	// Controls for fixed ctr0, 1, and 2 

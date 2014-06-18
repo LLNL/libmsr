@@ -14,10 +14,6 @@
 #include "msr_core.h"
 #include "msr_misc.h"
 
-// Two defines below from Barry Rountree 
-#define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
-#define MASK_VAL(x,m,n) (((uint64_t)(x)&MASK_RANGE((m),(n)))>>(n))
-
 // Section 35.7 Table 35-11
 // Or Section 35.1 Table 35.2
 #define IA32_MISC_ENABLE		(0x1A0) 

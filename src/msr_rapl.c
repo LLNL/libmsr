@@ -8,27 +8,6 @@
 #include "msr_core.h"
 #include "msr_rapl.h"
 //#define LIBMSR_DEBUG
-/* 
- * Macros 
- */
-
-/* MASK_RANGE
- * Create a mask from bit m to n. 
- * 63 >= m >= n >= 0
- * Example:  MASK_RANGE(4,2) -->     (((1<<((4)-(2)+1))-1)<<(2)) 
- * 				     (((1<<          3)-1)<<(2))
- * 				     ((               4-1)<<(2))
- * 				     (                  3)<<(2))
- * 				     (                       24) = b11000
- */ 				 
-#define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))	// m>=n
-
-/* MASK_VAL
- * Return the value of x after applying bitmask (m,n).
- * 63 >= m >= n >= 0
- * Example:  MASK_RANGE(17,4,2) --> 17&24 = b10001 & b11000 = b10000
- */
-#define MASK_VAL(x,m,n) (((uint64_t)(x)&MASK_RANGE((m),(n)))>>(n))
 
 /* UNIT_SCALE 
  * Calculates x/(2^y).  
@@ -41,9 +20,6 @@
  */
 #define UNIT_SCALE(x,y) ((x)/(double)(1<<(y)))
 #define UNIT_DESCALE(x,y) ((x)*(double)(1<<(y)))
-
-
-
 
 // Section 35.7
 // Table 35-11.  MSRs supported by Intel processors based on Intel 
