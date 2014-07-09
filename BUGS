@@ -1,0 +1,7 @@
+Known Bugs:
+
+There is a bug when using dump terse in msr_rapl.c due to the addition of the reentrant code. There
+will be a fix coming out for it in the future. It has to do with setting the flags
+that are needed for reentrant. 
+
+
