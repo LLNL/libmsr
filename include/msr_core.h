@@ -25,7 +25,7 @@
  * 63 >= m >= n >= 0
  * Example:  MASK_RANGE(17,4,2) --> 17&24 = b10001 & b11000 = b10000
  */
-#define MASK_VAL(x,m,n) (((uint32_t)(x)&MASK_RANGE((m),(n)))>>(n))
+#define MASK_VAL(x,m,n) (((uint64_t)(x)&MASK_RANGE((m),(n)))>>(n))
 
 enum{
 	MSR_AND,
