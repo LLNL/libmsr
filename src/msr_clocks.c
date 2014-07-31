@@ -34,23 +34,23 @@ read_all_tsc(uint64_t *tsc){
 }
 
 void
-dump_clocks_terse_label(){
+dump_clocks_terse_label(FILE *writeFile){
 	int thread_idx;
 	for(thread_idx=0; thread_idx<NUM_THREADS; thread_idx++){
-		fprintf(stdout, "aperf%02d mperf%02d tsc%02d ", 
+		fprintf(writeFile, "aperf%02d mperf%02d tsc%02d ", 
 			thread_idx, thread_idx, thread_idx);
 	}
 }
 
 void
-dump_clocks_terse(){
+dump_clocks_terse(FILE *writeFile){
 	uint64_t aperf_val[NUM_THREADS], mperf_val[NUM_THREADS], tsc_val[NUM_THREADS];
 	int thread_idx;
 	read_all_aperf(aperf_val);
 	read_all_mperf(mperf_val);
 	read_all_tsc  (tsc_val);
 	for(thread_idx=0; thread_idx<NUM_THREADS; thread_idx++){
-		fprintf(stdout, "%20lu %20lu %20lu ", 
+		fprintf(writeFile, "%20lu %20lu %20lu ", 
 			aperf_val[thread_idx], mperf_val[thread_idx], tsc_val[thread_idx]);
 	}
 }
@@ -81,7 +81,7 @@ dump_clocks_terse(){
 	int duty_cycle_enable;	// Read/Write
 };
 */
-void dump_clock_mod(struct clock_mod *s)
+void dump_clock_mod(struct clock_mod *s, FILE *writeFile)
 {
 	double percent = 0.0;
 	if(s->duty_cycle == 0)
@@ -116,9 +116,9 @@ void dump_clock_mod(struct clock_mod *s)
 	{
 		percent = 87.5;
 	}
-	fprintf(stdout, "duty_cycle 		= %d	\npercentage\t\t= %.2f\n", s->duty_cycle, percent);
-	fprintf(stdout, "duty_cycle_enable	= %d\n", s->duty_cycle_enable);
-	fprintf(stdout, "\n");
+	fprintf(writeFile, "duty_cycle 		= %d	\npercentage\t\t= %.2f\n", s->duty_cycle, percent);
+	fprintf(writeFile, "duty_cycle_enable	= %d\n", s->duty_cycle_enable);
+	fprintf(writeFile, "\n");
 }
 
 void get_clock_mod(int socket, int core, struct clock_mod *s)

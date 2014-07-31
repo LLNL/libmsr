@@ -263,11 +263,11 @@ calc_rapl_limit(const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 }
 
 void
-dump_rapl_limit( struct rapl_limit* L ){
-	fprintf(stdout, "bits    = %lx\n", L->bits);
-	fprintf(stdout, "seconds = %lf\n", L->seconds);
-	fprintf(stdout, "watts   = %lf\n", L->watts);
-	fprintf(stdout, "\n");
+dump_rapl_limit( struct rapl_limit* L, FILE *writeFile ){
+	fprintf(writeFile, "bits    = %lx\n", L->bits);
+	fprintf(writeFile, "seconds = %lf\n", L->seconds);
+	fprintf(writeFile, "watts   = %lf\n", L->watts);
+	fprintf(writeFile, "\n");
 }
 
 void 
@@ -317,26 +317,26 @@ get_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 }
 
 void
-dump_rapl_terse_label(){
+dump_rapl_terse_label( FILE *writeFile ){
 	int socket;
 	for(socket=0; socket<NUM_SOCKETS; socket++){
-		fprintf(stdout,"pkgW%02d dramW%02d ", socket, socket );
+		fprintf(writeFile,"pkgW%02d dramW%02d ", socket, socket );
 	}
 }
 
 void
-dump_rapl_terse(){
+dump_rapl_terse( FILE * writeFile ){
 	int socket;
 	struct rapl_data r;
 
 	for(socket=0; socket<NUM_SOCKETS; socket++){
 		read_rapl_data(socket, &r);
-		fprintf(stdout,"%8.4lf %8.4lf ", r.pkg_watts, r.dram_watts);
+		fprintf(writeFile,"%8.4lf %8.4lf ", r.pkg_watts, r.dram_watts);
 	}
 }
 
 void 
-dump_rapl_data( struct rapl_data *r ){
+dump_rapl_data( struct rapl_data *r, FILE *writeFile ){
 	static int initialized=0;
 	static struct timeval start;
 	struct timeval now;
@@ -345,16 +345,41 @@ dump_rapl_data( struct rapl_data *r ){
 		gettimeofday( &start, NULL );
 	}
 	gettimeofday( &now, NULL );
-	fprintf(stdout, "pkg_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
+	fprintf(writeFile, "pkg_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
 			r->pkg_watts,
 			r->elapsed,
 			now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
 			);
-	fprintf(stdout, "dram_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
+	fprintf(writeFile, "dram_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
 			r->dram_watts,
 			r->elapsed,
 			now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
 			);
+}
+
+void
+dump_rapl_power_info( FILE *writeFile){
+	int socket;
+	struct rapl_power_info info;
+	for(socket = 0; socket < NUM_SOCKETS; socket++)
+	{
+		get_rapl_power_info(socket, &info);
+		fprintf(writeFile, "Socket= %d pkg_max_power= %8.4lf pkg_min_power=%8.4lf pkg_max_window=%8.4lf pkg_therm_power=%8.4lf\n",
+				socket,
+				info.pkg_max_power,
+				info.pkg_min_power,
+				info.pkg_max_window,
+				info.pkg_therm_power);
+#ifdef RAPL_USE_DRAM
+
+		fprintf(writeFile, "Socket= %d dram_max_power= %8.4lf dram_min_power=%8.4lf dram_max_window=%8.4lf dram_therm_power=%8.4lf\n",
+				socket,
+				info.dram_max_power,
+				info.dram_min_power,
+				info.dram_max_window,
+				info.dram_therm_power);
+#endif
+	}
 }
 
 void

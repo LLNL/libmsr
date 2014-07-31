@@ -33,7 +33,7 @@ void get_fixed_counter_data(struct fixed_counter_data *data);
 void get_fixed_ctr_values(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data *ctr2);
 void enable_fixed_counters();
 void disable_fixed_counters();
-void dump_fixed_terse();
-void dump_fixed_terse_label();
+void dump_fixed_terse(FILE *w);
+void dump_fixed_terse_label(FILE *w);
 
 #endif

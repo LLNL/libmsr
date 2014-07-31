@@ -77,13 +77,14 @@ extern "C" {
 #endif
 void set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
 void get_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
-void dump_rapl_limit( struct rapl_limit *L );
+void dump_rapl_limit( struct rapl_limit *L, FILE *w );
 
 void read_rapl_data( const int socket, struct rapl_data *r );
 void dump_rapl_data( struct rapl_data *r );
 
-void dump_rapl_terse();
-void dump_rapl_terse_label();
+void dump_rapl_terse(FILE *w);
+void dump_rapl_terse_label(FILE *w);
+void dump_rapl_power_info(FILE *w);
 #ifdef __cplusplus 
 }
 #endif

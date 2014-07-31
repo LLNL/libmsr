@@ -129,9 +129,9 @@ void set_therm_interrupt(struct therm_interrupt *s);
 void set_pkg_therm_stat(struct pkg_therm_stat *s);
 void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s);
 
-void dump_thermal_terse_label();
-void dump_thermal_terse();
-void dump_thermal_verbose_label();
-void dump_thermal_verbose();
+void dump_thermal_terse_label(FILE *w);
+void dump_thermal_terse(FILE *w);
+void dump_thermal_verbose_label(FILE *w);
+void dump_thermal_verbose(FILE *w);
 
 #endif

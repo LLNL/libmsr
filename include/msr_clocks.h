@@ -4,8 +4,8 @@
 void read_all_aperf(uint64_t *aperf); 
 void read_all_mperf(uint64_t *mperf); 
 void read_all_tsc  (uint64_t *tsc); 
-void dump_clocks_terse();
-void dump_clocks_terse_label();
+void dump_clocks_terse(FILE *w);
+void dump_clocks_terse_label(FILE *w);
 
 struct clock_mod{
 	uint64_t raw;
@@ -32,7 +32,7 @@ struct clock_mod{
 	int duty_cycle_enable;	// Read/Write
 };
 
-void dump_clock_mod(struct clock_mod *s);
+void dump_clock_mod(struct clock_mod *s, FILE *w);
 void get_clock_mod(int socket, int core, struct clock_mod *s);
 void set_clock_mod(int socket, int core, struct clock_mod *s);
 

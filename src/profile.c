@@ -24,18 +24,18 @@ msr_profile() {
 		gettimeofday(&startTime, NULL);
 
 		fprintf(stdout, "QQQ gtod ");
-		dump_clocks_terse_label();
-		dump_rapl_terse_label();
-		dump_fixed_terse_label();
+		dump_clocks_terse_label(stdout);
+		dump_rapl_terse_label(stdout);
+		dump_fixed_terse_label(stdout);
 		fprintf(stdout, "\n");
 	}
 	
 	gettimeofday(&currentTime, NULL);
 
 	fprintf(stdout, "QQQ %lf ", (double)(currentTime.tv_sec-startTime.tv_sec)+(currentTime.tv_usec-startTime.tv_usec)/1000000.0);
-	dump_clocks_terse();
-	dump_rapl_terse();
-	dump_fixed_terse();
+	dump_clocks_terse(stdout);
+	dump_rapl_terse(stdout);
+	dump_fixed_terse(stdout);
 	fprintf(stdout, "\n");
 
 	setitimer(ITIMER_REAL, &tout_val, 0);

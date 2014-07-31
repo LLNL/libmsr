@@ -133,17 +133,17 @@ disable_fixed_counters(){
 }
 
 void
-dump_fixed_terse(){
+dump_fixed_terse(FILE *writeFile){
 	int i;
 	get_fixed_ctr_values( &c0, &c1, &c2 );
 	for(i=0; i<NUM_THREADS; i++){
-		fprintf(stdout, "%lu %lu %lu ", c0.value[i], c1.value[i], c2.value[i]);
+		fprintf(writeFile, "%lu %lu %lu ", c0.value[i], c1.value[i], c2.value[i]);
 	}
 
 }
 
 void
-dump_fixed_terse_label(){
+dump_fixed_terse_label(FILE *writeFile){
 	/*
 	 * 0 	Unhalted core cycles
 	 * 1	Instructions retired
@@ -155,6 +155,6 @@ dump_fixed_terse_label(){
 	 */
 	int i;
 	for(i=0; i<NUM_THREADS; i++){
-		fprintf(stdout, "UCC%02d IR%02d URC%02d ", i, i, i);
+		fprintf(writeFile, "UCC%02d IR%02d URC%02d ", i, i, i);
 	}
 }
