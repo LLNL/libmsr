@@ -328,6 +328,7 @@ void
 dump_rapl_terse( FILE * writeFile ){
 	int socket;
 	struct rapl_data r;
+	r.flags=0;
 
 	for(socket=0; socket<NUM_SOCKETS; socket++){
 		read_rapl_data(socket, &r);
