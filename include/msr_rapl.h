@@ -80,7 +80,7 @@ void get_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_li
 void dump_rapl_limit( struct rapl_limit *L, FILE *w );
 
 void read_rapl_data( const int socket, struct rapl_data *r );
-void dump_rapl_data( struct rapl_data *r );
+void dump_rapl_data( struct rapl_data *r, FILE *w );
 
 void dump_rapl_terse(FILE *w);
 void dump_rapl_terse_label(FILE *w);

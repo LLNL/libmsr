@@ -14,9 +14,9 @@ rapl_test(){
 	read_rapl_data(0, NULL);	// Initialize
 	sleep(3);
 
-	dump_rapl_terse_label();
+	dump_rapl_terse_label(stdout);
 	fprintf(stdout, "\n");
-	dump_rapl_terse();		// Read and dump.
+	dump_rapl_terse(stdout);		// Read and dump.
 	fprintf(stdout, "\n");
 
 }
@@ -27,8 +27,8 @@ get_limits(){
 	for(i=0; i<NUM_SOCKETS; i++){
 		fprintf(stderr, "%d\n", i);
 		get_rapl_limit(i, &l1, &l2, NULL);
-		dump_rapl_limit(&l1);
-		dump_rapl_limit(&l2);
+		dump_rapl_limit(&l1, stdout);
+		dump_rapl_limit(&l2, stdout);
 	}
 	/*dump_rapl_limit(&l3);*/
 }
@@ -46,14 +46,14 @@ set_limits(){
 }
 
 void thermal_test(){
-	dump_thermal_terse_label();
+	dump_thermal_terse_label(stdout);
 	fprintf(stdout, "\n");
-	dump_thermal_terse();
+	dump_thermal_terse(stdout);
 	fprintf(stdout, "\n");
 
-	dump_thermal_verbose_label();
+	dump_thermal_verbose_label(stdout);
 	fprintf(stdout, "\n");
-	dump_thermal_verbose();
+	dump_thermal_verbose(stdout);
 	fprintf(stdout, "\n");
 }
 
@@ -88,7 +88,7 @@ int main(int argc, char** argv){
 	#endif
 	
 	init_msr();
-	set_limits();
+	//set_limits();
 	get_limits();
 	rapl_test();
 	rapl_r_test();

@@ -54,7 +54,7 @@ void printData(int i)
 	fprintf(stdout, "Timestamp: %3.2lf\n", timeStamp);	
 
 	fprintf(stdout, "Core Temperatures: ");
-	dump_thermal_terse();	
+	dump_thermal_terse(stdout);	
 	fprintf(stdout, "\n");
 
 	read_rapl_data(0,&r1);
