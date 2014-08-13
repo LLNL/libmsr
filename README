@@ -1,0 +1,35 @@
+/* README
+ *
+ * Copyright (c) 2011, 2012, 2013, 2014 by Lawrence Livermore National Security, LLC. LLNL-CODE-645430 
+ * Written by Kathleen Shoga and Barry Rountree (shoga1|rountree@llnl.gov).
+ * This file is part of libmsr and is licensed under the LGLP.  See the LICENSE file for details.
+ */
+
+Welcome to libmsr, a friendly (well, friendlier) interface to several of the
+model-specific registers in Intel processors.  
+
+INSTALLATION:
+
+mkdir ./lib
+cd src
+make
+
+
+Notes:
+
+This software depends on the files /dev/cpu/*/msr being present with r/w
+permissions.  Recent kernels require additional capabilities.  We have found it
+easier to use our own msr-safe kernel module, but running as root (or going
+through the bother of additing the capabilities to the binaries) are other
+options.
+
+Call msr_init() before using any of the APIs.
+
+Sample code and API documentation will be forthcoming.  Please feel free to
+contact the authors with questions and suggestions.
+
+Kathleen Shoga (shoga1@llnl.gov)
+Barry Rountreee (rountree@llnl.gov)
+
+
+
