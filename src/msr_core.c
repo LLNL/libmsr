@@ -7,6 +7,7 @@
 #define _XOPEN_SOURCE 500
 
 #include <stdio.h>	
+#include <stdlib.h>
 #include <unistd.h>	
 #include <sys/stat.h> 	
 #include <fcntl.h>	
@@ -29,7 +30,7 @@ init_msr(){
 	int retVal;
 
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "Initializing %d device(s).\n", NUM_DEVS);
+	fprintf(stderr, "%s Initializing %d device(s).\n", getenv("HOSTNAME"),NUM_DEVS);
 #endif
 	if( initialized ){
 		return 0;
@@ -42,14 +43,14 @@ init_msr(){
 		retVal = stat(filename, &statbuf);
 
 		if (retVal == -1) {
-			snprintf(filename, 1024, "%s::%d  Error: stat failed on /dev/socket/%d/msr_safe, check if msr module is loaded\n", 
-				__FILE__, __LINE__, dev_idx);
+			snprintf(filename, 1024, "%s %s::%d  Error: stat failed on /dev/cpu/%d/msr_safe, check if msr module is loaded\n", 
+				getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
 			return -1; 
 		}	
 			
 		if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR)){
-			snprintf(filename, 1024, "%s::%d  Read/write permissions denied on /dev/socket/%d/msr_safe\n", 
-				__FILE__, __LINE__, dev_idx);
+			snprintf(filename, 1024, "%s %s::%d  Read/write permissions denied on /dev/cpu/%d/msr_safe\n", 
+				getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
 			
 			return -1;
 		}
@@ -57,8 +58,8 @@ init_msr(){
 		core_fd[dev_idx] = open( filename, O_RDWR );
 
 		if(core_fd[dev_idx] == -1){
-			snprintf(filename, 1024, "%s::%d  Error opening /dev/socket/%d/msr_safe, check if msr module is loaded. \n", 
-				__FILE__, __LINE__, dev_idx);
+			snprintf(filename, 1024, "%s %s::%d  Error opening /dev/cpu/%d/msr_safe, check if msr module is loaded. \n", 
+				getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
 			perror(filename);
 			return -1;
 		}
@@ -75,8 +76,8 @@ finalize_msr(){
 		if(core_fd[dev_idx]){
 			rc = close(core_fd[dev_idx]);
 			if( rc != 0 ){
-				snprintf(filename, 1024, "%s::%d  Error closing file /dev/socket/%d/msr\n", 
-						__FILE__, __LINE__, dev_idx); 
+				snprintf(filename, 1024, "%s %s::%d  Error closing file /dev/cpu/%d/msr\n", 
+						getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx); 
 				perror(filename);
 			}else{
 				core_fd[dev_idx] = 0;
@@ -88,7 +89,7 @@ finalize_msr(){
 void
 write_msr_by_coord( int socket, int core, int thread, off_t msr, uint64_t  val ){
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (write_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx) val=%lu\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr, val);
+	fprintf(stderr, "%s %s %s::%d (write_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx) val=%lu\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr, val);
 #endif
 	write_msr_by_idx( socket * NUM_CORES_PER_SOCKET + core * NUM_THREADS_PER_CORE + thread, msr, val );
 }
@@ -96,7 +97,7 @@ write_msr_by_coord( int socket, int core, int thread, off_t msr, uint64_t  val )
 void
 read_msr_by_coord(  int socket, int core, int thread, off_t msr, uint64_t *val ){
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (read_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx)\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr);
+	fprintf(stderr, "%s %s %s::%d (read_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr);
 #endif
 	assert(socket < NUM_SOCKETS);
 	assert(core   < NUM_CORES_PER_SOCKET);
@@ -111,7 +112,7 @@ void
 write_all_sockets(   off_t msr, uint64_t  val ){
 	int dev_idx;
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (write_all_sockets) msr=%lu (0x%lx)\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
+	fprintf(stderr, "%s %s %s::%d (write_all_sockets) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
 	for(dev_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_CORES_PER_SOCKET * NUM_THREADS_PER_CORE ){
 		write_msr_by_idx( dev_idx, msr, val );
@@ -122,7 +123,7 @@ void
 write_all_cores(     off_t msr, uint64_t  val ){
 	int dev_idx;
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (write_all_cores) msr=%lu (0x%lx)\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
+	fprintf(stderr, "%s %s %s::%d (write_all_cores) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
 	for(dev_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_THREADS_PER_CORE ){
 		write_msr_by_idx( dev_idx, msr, val );
@@ -133,7 +134,7 @@ void
 write_all_threads(   off_t msr, uint64_t  val ){
 	int dev_idx;
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (write_all_threads) msr=%lu (0x%lx)\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
+	fprintf(stderr, "%s %s %s::%d (write_all_threads) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
 	for(dev_idx=0; dev_idx<NUM_DEVS; dev_idx++){
 		write_msr_by_idx( dev_idx, msr, val );
@@ -144,7 +145,7 @@ void
 write_all_sockets_v( off_t msr, uint64_t *val ){
 	int dev_idx, val_idx;
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (write_all_sockets_v) msr=%lu (0x%lx)\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
+	fprintf(stderr, "%s %s %s::%d (write_all_sockets_v) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_CORES_PER_SOCKET*NUM_THREADS_PER_CORE, val_idx++ ){
 		write_msr_by_idx( dev_idx, msr, val[val_idx] );
@@ -155,7 +156,7 @@ void
 write_all_cores_v(   off_t msr, uint64_t *val ){
 	int dev_idx, val_idx;
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (write_all_cores_v) msr=%lu (0x%lx)\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
+	fprintf(stderr, "%s %s %s::%d (write_all_cores_v) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_THREADS_PER_CORE, val_idx++ ){
 		write_msr_by_idx( dev_idx, msr, val[val_idx] );
@@ -166,7 +167,7 @@ void
 write_all_threads_v( off_t msr, uint64_t *val ){
 	int dev_idx, val_idx;
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (write_all_threads_v) msr=%lu (0x%lx)\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
+	fprintf(stderr, "%s %s %s::%d (write_all_threads_v) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx++, val_idx++ ){
 		write_msr_by_idx( dev_idx, msr, val[val_idx] );
@@ -178,7 +179,7 @@ void
 read_all_sockets(    off_t msr, uint64_t *val ){
 	int dev_idx, val_idx;
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (read_all_sockets) msr=%lu (0x%lx)\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
+	fprintf(stderr, "%s %s %s::%d (read_all_sockets) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_CORES_PER_SOCKET*NUM_THREADS_PER_CORE, val_idx++ ){
 		read_msr_by_idx( dev_idx, msr, &val[val_idx] );
@@ -189,7 +190,7 @@ void
 read_all_cores(      off_t msr, uint64_t *val ){
 	int dev_idx, val_idx;
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (read_all_cores) msr=%lu (0x%lx)\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
+	fprintf(stderr, "%s %s %s::%d (read_all_cores) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_THREADS_PER_CORE, val_idx++ ){
 		read_msr_by_idx( dev_idx, msr, &val[val_idx] );
@@ -200,7 +201,7 @@ void
 read_all_threads(    off_t msr, uint64_t *val ){
 	int dev_idx, val_idx;
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (read_all_threads) msr=%lu (0x%lx)\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
+	fprintf(stderr, "%s %s %s::%d (read_all_threads) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx++, val_idx++ ){
 		read_msr_by_idx( dev_idx, msr, &val[val_idx] );
@@ -212,12 +213,12 @@ read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val ){
 	int rc;
 	char error_msg[1025];
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (read_msr_by_idx) msr=%lu (0x%lx)\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
+	fprintf(stderr, "%s %s %s::%d (read_msr_by_idx) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
 	rc = pread( core_fd[dev_idx], (void*)val, (size_t)sizeof(uint64_t), msr );
 	if( rc != sizeof(uint64_t) ){
-		snprintf( error_msg, 1024, "%s::%d  pread returned %d.  core_fd[%d]=%d, msr=%ld (0x%lx).  errno=%d\n", 
-				__FILE__, __LINE__, rc, dev_idx, core_fd[dev_idx], msr, msr, errno );
+		snprintf( error_msg, 1024, "%s %s::%d  pread returned %d.  core_fd[%d]=%d, msr=%ld (0x%lx).  errno=%d\n", 
+				getenv("HOSTNAME"),__FILE__, __LINE__, rc, dev_idx, core_fd[dev_idx], msr, msr, errno );
 		perror(error_msg);
 	}
 }
@@ -227,12 +228,12 @@ write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val ){
 	int rc;
 	char error_msg[1025];
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s::%d (write_msr_by_idx) msr=%lu (0x%lx)\n", LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
+	fprintf(stderr, "%s %s %s::%d (write_msr_by_idx) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
 	rc = pwrite( core_fd[dev_idx], &val, (size_t)sizeof(uint64_t), msr );
 	if( rc != sizeof(uint64_t) ){
-		snprintf( error_msg, 1024, "%s::%d  pwrite returned %d.  core_fd[%d]=%d, msr=%ld (0x%lx).  errno=%d\n", 
-				__FILE__, __LINE__, rc, dev_idx, core_fd[dev_idx], msr, msr, errno );
+		snprintf( error_msg, 1024, "%s %s::%d  pwrite returned %d.  core_fd[%d]=%d, msr=%ld (0x%lx).  errno=%d\n", 
+				getenv("HOSTNAME"),__FILE__, __LINE__, rc, dev_idx, core_fd[dev_idx], msr, msr, errno );
 		perror(error_msg);
 	}
 }
