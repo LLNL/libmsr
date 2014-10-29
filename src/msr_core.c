@@ -28,6 +28,7 @@ init_msr(){
 	struct stat statbuf;
 	static int initialized = 0;
 	int retVal;
+	int whichKernel=0; //msr_safe=0, msr=1
 
 #ifdef LIBMSR_DEBUG
 	fprintf(stderr, "%s Initializing %d device(s).\n", getenv("HOSTNAME"),NUM_DEVS);
@@ -39,29 +40,65 @@ init_msr(){
 	for (dev_idx=0; dev_idx < NUM_DEVS; dev_idx++){
 
 		snprintf(filename, 1024, "/dev/cpu/%d/msr_safe", dev_idx);
-		//snprintf(filename, 1024, "/dev/cpu/%d/msr", dev_idx);
 		retVal = stat(filename, &statbuf);
 
 		if (retVal == -1) {
+			/*
 			snprintf(filename, 1024, "%s %s::%d  Error: stat failed on /dev/cpu/%d/msr_safe, check if msr module is loaded\n", 
 				getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
-			return -1; 
+			*/
+			whichKernel =1;
+			break; 
 		}	
 			
 		if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR)){
+			/*
 			snprintf(filename, 1024, "%s %s::%d  Read/write permissions denied on /dev/cpu/%d/msr_safe\n", 
 				getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
-			
-			return -1;
+			*/	
+			whichKernel =1;
+			break;
 		}
 	 
 		core_fd[dev_idx] = open( filename, O_RDWR );
 
 		if(core_fd[dev_idx] == -1){
+			/*
 			snprintf(filename, 1024, "%s %s::%d  Error opening /dev/cpu/%d/msr_safe, check if msr module is loaded. \n", 
 				getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
 			perror(filename);
-			return -1;
+			*/
+			whichKernel =1;
+			break;
+		}
+	}
+	if (whichKernel == 1){
+		for (dev_idx=0; dev_idx < NUM_DEVS; dev_idx++){
+	
+			snprintf(filename, 1024, "/dev/cpu/%d/msr", dev_idx);
+			retVal = stat(filename, &statbuf);
+	
+			if (retVal == -1) {
+				snprintf(filename, 1024, "%s %s::%d  Error: stat failed on /dev/cpu/%d/msr, check if msr module is loaded\n", 
+					getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
+				return -1; 
+			}	
+				
+			if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR)){
+				snprintf(filename, 1024, "%s %s::%d  Read/write permissions denied on /dev/cpu/%d/msr\n", 
+					getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
+				
+				return -1;
+			}
+		 
+			core_fd[dev_idx] = open( filename, O_RDWR );
+	
+			if(core_fd[dev_idx] == -1){
+				snprintf(filename, 1024, "%s %s::%d  Error opening /dev/cpu/%d/msr, check if msr module is loaded. \n", 
+					getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
+				perror(filename);
+				return -1;
+			}
 		}
 	}
 	initialized = 1;
