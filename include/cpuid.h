@@ -3,11 +3,15 @@
  *Author: Kathleen Shoga
  *
 */
-#ifndef CHECKCPUID_H
-#define CHECKCPUID_H
+#ifndef MSR_CHECKCPUID_H
+#define MSR_CHECKCPUID_H
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 bool cpuid_MPERF_and_APERF();
 bool cpuid_timeStampCounter_avail();
@@ -31,4 +35,8 @@ int cpuid_pkg_maxLogicalProcessors();
 int cpuid_num_fixed_perf_counters();
 int cpuid_width_fixed_perf_counters();
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif // MSR_CHECKCPUID_H
