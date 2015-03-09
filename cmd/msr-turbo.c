@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "msr_core.h"
 #include "msr_turbo.h"
 
 void usage() {
@@ -35,6 +36,8 @@ int main(int argc, char **argv) {
 
   // TODO: enable and disable are void -- should they return errors?
   const char *subcommand = argv[arg_start];
+
+  init_msr();
   if (strcmp(subcommand, "enable") == 0) {
     enable_turbo();
   } else if (strcmp(subcommand, "disable") == 0) {
@@ -44,6 +47,7 @@ int main(int argc, char **argv) {
   } else {
     usage();
   }
+  finalize_msr();
 
   exit(0);
 }
