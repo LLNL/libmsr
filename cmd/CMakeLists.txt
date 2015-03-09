@@ -17,5 +17,9 @@ target_link_libraries(msr-turbo msr)
 # All the commands get installed in bin.
 #
 install(
-  TARGETS msr-cmd msr-turbo
+  TARGETS msr-cmd
   DESTINATION bin)
+
+install(
+  TARGETS msr-turbo
+  DESTINATION libexec/libmsr)
