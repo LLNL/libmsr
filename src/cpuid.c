@@ -17,9 +17,9 @@
 void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t *rdx)
 {
 	asm volatile(
-		"\txchg %%rbx, %%edi\n"
+		"\txchg %%rbx, %%rdi\n"
         "\tcpuid\n"
-        "\txchg %%rbx, %%edi"
+        "\txchg %%rbx, %%rdi"
 	        	:"=a" (*rax), "=D" (*rbx), "=c" (*rcx), "=d" (*rdx)
 	        	:"a" (leaf)
 		);
@@ -28,9 +28,9 @@ void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t 
 void cpuidInput_rax_rcx(uint64_t leafa, uint64_t leafc, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t *rdx)
 {
 	asm volatile(
-			"xchg %%rbx, %%edi\n"
+			"xchg %%rbx, %%rdi\n"
             "\tcpuid\n"
-            "\txchg %%rbx, %%edi"
+            "\txchg %%rbx, %%rdi"
                 :"=a" (*rax), "=D" (*rbx), "=c" (*rcx), "=d" (*rdx)
                 : "a" (leafa), "c" (leafc)
 		    );
