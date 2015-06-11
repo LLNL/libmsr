@@ -3,11 +3,13 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stddef.h>
 #include <assert.h>
 #include "msr_core.h"
 #include "msr_rapl.h"
-//#define LIBMSR_DEBUG
+#define LIBMSR_DEBUG 1
+#define RAPL_USE_DRAM 1
 
 /* UNIT_SCALE 
  * Calculates x/(2^y).  
@@ -96,6 +98,7 @@ translate( const int socket, uint64_t* bits, double* units, int type ){
 	int i;
 	if(!initialized){
 		initialized=1;
+        // why does this have to read all of them to translate one unit?
 		read_all_sockets( MSR_RAPL_POWER_UNIT, val );
 		for(i=0; i<NUM_SOCKETS; i++){
 			// See figure 14-16 for bit fields.
@@ -280,6 +283,7 @@ set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 
 	calc_rapl_limit( socket, limit1, limit2, dram );
 
+    // for these: why do 1 << 15 | 1 << 16 when you can just do 3 << 15?
 	if(limit1){
 		pkg_limit |= limit1->bits | (1LL << 15) | (1LL << 16);	// enable clamping
 	}
@@ -290,8 +294,12 @@ set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 		write_msr_by_coord( socket, 0, 0, MSR_PKG_POWER_LIMIT, pkg_limit );
 	}
 #ifdef RAPL_USE_DRAM
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "%s %s::%d DEBUG: Modifying DRAM values\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+#endif
 	if(dram){
-		dram_limit |= dram->bits | (1LL << 15) | (1LL << 16);	// enable clamping
+        // why was this setting bit 16? thats reserved -> caused i/o error.
+		dram_limit |= dram->bits | (1LL << 15); //| (1LL << 16);	// enable clamping
 		write_msr_by_coord( socket, 0, 0, MSR_DRAM_POWER_LIMIT, dram_limit );
 	}
 #endif
@@ -405,12 +413,18 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 	 *   take measurments at points A, B, C, C', B', A' using three separate
 	 *   rapl_data structs.
 	 */
-
+#ifdef RAPL_USE_DRAM
+    fprintf(stderr, "DEBUG: DRAM ENABLED\n");
+#endif
+    // previous state for calculating the delta?
 	struct rapl_data *p;	// Where the previous state lives.
+    // where did that number come from?
 	uint64_t  maxbits=4294967296;
 	double max_joules=0.0;
+    // rapl data for each physical processor?
 	static struct rapl_data s[NUM_SOCKETS];
 
+    // If r is null we store data locally, otherwise we put it in r. What is the point of only having it locally?
 	if( (r == NULL) || !(r->flags & RDF_REENTRANT) ){
 		p = &s[socket];
 	} else{
@@ -450,6 +464,7 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 	// Fill in the struct if present.
 	if(r && !(r->flags & RDF_INIT)){
 		// Get delta in seconds
+        // why do you add that second part to get the delta?
 		r->elapsed = (p->now.tv_sec - p->old_now.tv_sec) 
 			     +
 			     (p->now.tv_usec - p->old_now.tv_usec)/1000000.0;
@@ -475,7 +490,7 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 #endif
 
 		// Get watts.
-		// Does not check for div by 0.
+        assert(r->elapsed != 0);
 		if(r->elapsed > 0){
 			r->pkg_watts  = r->pkg_delta_joules  / r->elapsed;
 #ifdef RAPL_USE_DRAM
