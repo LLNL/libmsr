@@ -3,7 +3,8 @@
 #include <stdint.h>
 #include <sys/types.h>	// off_t
 #define NUM_SOCKETS 2
-#define NUM_CORES_PER_SOCKET 8 
+// catalyst has 12, cab has 8
+#define NUM_CORES_PER_SOCKET 12 
 #define NUM_THREADS_PER_CORE 1
 #define NUM_DEVS (NUM_SOCKETS * NUM_CORES_PER_SOCKET * NUM_THREADS_PER_CORE)
 #define NUM_CORES (NUM_CORES_PER_SOCKET * NUM_SOCKETS)
