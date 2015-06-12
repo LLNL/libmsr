@@ -26,6 +26,7 @@
 #define FILENAME_SIZE 1024
 static int core_fd[NUM_DEVS];
 
+// Initialize the MSR module file descriptors
 // return value 1 means could not stat or open msr_safe or msr
 // return value 2 means the files do not have the correct permissions
 // return value 3 means the file could not be opened
