@@ -54,6 +54,7 @@ int init_msr();
 void finalize_msr();
 
 void write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val );
+write_msr_by_idx_and_verify( int dev_idx, off_t msr, uint64_t  val );
 void read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val );
 
 void write_msr_by_coord( int socket, int core, int thread, off_t msr, uint64_t  val );

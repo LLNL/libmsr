@@ -1,6 +1,7 @@
 /* msr_core.c
  *
  * Low-level msr interface.
+ * Edited by Scott Walker
  */
 
 // Necessary for pread & pwrite.
