@@ -5,5 +5,7 @@ app
 *.so
 cab*
 pebs
-
+*.core
+*.btr
+*.out
 
