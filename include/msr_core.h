@@ -1,3 +1,6 @@
+/* 
+ * Edited by: Scott Walker
+ */
 #ifndef MSR_CORE_H
 #define MSR_CORE_H
 #include <stdint.h>
