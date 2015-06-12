@@ -20,294 +20,95 @@
 #include "msr_counters.h"
 #include <string.h>
 
-// somethin
-// stuff
 #define LIBMSR_DEBUG_TAG "LIBMSR"
 #define LIBMSR_DEBUG     1
 #define FILENAME_SIZE 1024
 static int core_fd[NUM_DEVS];
 
-void get_groups(gid_t ** usrgroups, unsigned * grparraysize)
-{
-    gid_t * temp = NULL;;
-
-    *usrgroups = (gid_t *) calloc(*grparraysize, sizeof(gid_t));
-    // check the user's groups. Currently you can not be in more than 65536 groups (between 3^10 and 3^11 -> 177147)
-    while(getgroups(*grparraysize, *usrgroups) == -1 && *grparraysize <= 177147)
-    {
-#ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: resizing array with size %d\n", *grparraysize);
-#endif
-        // expand the array exponentially to minimize calloc calls
-        *grparraysize = *grparraysize * *grparraysize;
-        temp = (gid_t *) calloc(*grparraysize, sizeof(gid_t));
-
-        if (temp != NULL)
-        {
-            free(*usrgroups);
-            *usrgroups = temp;
-        }
-        else
-        {
-            free(*usrgroups);
-            fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-        }
-    }
-    free(temp);
-    if (*grparraysize > 177147)
-    {
-        fprintf(stderr, "%s %s::%d ERROR: getgroups failed with %s\n", getenv("HOSTNAME"), __FILE__, __LINE__, strerror(errno));
-    }
-    if (*usrgroups == NULL)
-    {
-        fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-    }
-}
-
 // return value 1 means could not stat or open msr_safe or msr
-// return value 2 means you are not in the msr group
-// return value 3 means the files do not have the correct permissions
-// return value 4 means that the file is owned by root
+// return value 2 means the files do not have the correct permissions
+// return value 3 means the file could not be opened
 int init_msr()
 {
 	int dev_idx;
 	char filename[1025];
 	struct stat statbuf;
 	static int initialized = 0;
-    gid_t * usrgroups = NULL;
-<<<<<<< HEAD
-=======
-    gid_t * temp = NULL;
->>>>>>> 7bdfc97c99db75c7379b3ec85732bffab95aacb2
 	int retVal;
-    int groupitr;
-    unsigned grparraysize = 3;
-    int validgroup = 0;
-<<<<<<< HEAD
+    int kerneltype = 0; // 0 is msr_safe, 1 is msr
 
-    get_groups(&usrgroups, &grparraysize);
-=======
-	int whichKernel=0; //msr_safe=0, msr=1
-
-    usrgroups = (gid_t *) calloc(grparraysize, sizeof(gid_t));
-    // check the user's groups. Currently you can not be in more than 65536 groups (between 3^10 and 3^11 -> 177147)
-    while(getgroups(grparraysize, usrgroups) == -1 && grparraysize <= 177147)
-    {
-        // expand the array exponentially to minimize calloc calls
-        grparraysize = grparraysize * grparraysize;
-        temp = (gid_t *) calloc(grparraysize, sizeof(gid_t));
-
-        if (temp != NULL)
-        {
-            free(usrgroups);
-            usrgroups = temp;
-        }
-        else
-        {
-            free(usrgroups);
-            fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-        }
-    }
-    free(temp);
-    if (grparraysize > 177147)
-    {
-        fprintf(stderr, "%s %s::%d ERROR: getgroups failed with %s\n", getenv("HOSTNAME"), __FILE__, __LINE__, strerror(errno));
-    }
-    for (groupitr = 0; groupitr < grparraysize; ++groupitr)
-    {
-        if (statbuf.st_gid == usrgroups[groupitr])
-        {
-            validgroup = groupitr;
-        }
-    }
-
->>>>>>> 7bdfc97c99db75c7379b3ec85732bffab95aacb2
 #ifdef LIBMSR_DEBUG
 	fprintf(stderr, "%s Initializing %d device(s).\n", getenv("HOSTNAME"), NUM_DEVS);
 #endif
 	if( initialized ){
 		return 0;
 	}
+    // open the file descriptor for each device's msr interface
 	for (dev_idx=0; dev_idx < NUM_DEVS; dev_idx++)
     {
-		snprintf(filename, FILENAME_SIZE, "/dev/cpu/%d/msr_safe", dev_idx);
+        // use the msr_safe module, or default to the msr module
+        if (kerneltype)
+        {
+            snprintf(filename, FILENAME_SIZE, "/dev/cpu/%d/msr", dev_idx);    
+        }
+        else
+        {
+            snprintf(filename, FILENAME_SIZE, "/dev/cpu/%d/msr_safe", dev_idx);
+        }
+        // check if the module is there, if not return the appropriate error message.
 		retVal = stat(filename, &statbuf);
-		if (retVal == -1) {
-<<<<<<< HEAD
-            fprintf(stderr, "%s %s::%d ERROR: could not stat /dev/cpu/%d/msr_safe: %s, check if msr_safe module is loaded\n", 
-                    getenv("HOSTNAME"), __FILE__, __LINE__, dev_idx, strerror(errno));
-            return init_msr_type2();
-		}
-        // if we haven't already found the msr group, go look for it
-        if (statbuf.st_gid == 0)
+		if (retVal == -1)
         {
-            fprintf(stderr, "%s %s::%d ERROR: msr_safe is owned by root. Hint: Are you running on a login node?\n", getenv("HOSTNAME"), 
-                    __FILE__, __LINE__);
-            return 4;
-        }
-        if (statbuf.st_gid != usrgroups[validgroup])
-        {
-            for (groupitr = 0; groupitr < grparraysize && usrgroups[validgroup] != (gid_t) 0; ++groupitr)
+            if (kerneltype)
             {
-                if (statbuf.st_gid == usrgroups[groupitr] && usrgroups[groupitr] != (gid_t) 0)
-                {
-                    validgroup = groupitr;
-                }
+                fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s\n", 
+                        getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
+                fprintf(stderr, "%s %s::%d ERROR: could not stat any valid module. Aborting...\n", 
+                        getenv("HOSTNAME"), __FILE__, __LINE__);
+                // could not find any msr module so exit
+                return 1;
             }
-        }
-=======
-			/*
-			snprintf(filename, FILENAME_SIZE, "%s %s::%d  Error: stat failed on /dev/cpu/%d/msr_safe, check if msr module is loaded\n", 
-				getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
-			*/
-            fprintf(stderr, "%s %s::%d ERROR: could not stat /dev/cpu/%d/msr_safe, check if msr_safe module is loaded\n", 
-                    getenv("HOSTNAME"), __FILE__, __LINE__, dev_idx);
-			whichKernel =1;
-			break; 
+            // could not find msr_safe so try the msr module
+            fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s, Reverting to the msr module.\n", 
+                    getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
+            kerneltype = 1;
+            // restart loading file descriptors for each device
+            dev_idx = -1;
+            continue;
 		}
->>>>>>> 7bdfc97c99db75c7379b3ec85732bffab95aacb2
-#ifdef LIBMSR_DEBUG
-   fprintf(stderr, "%s %s::%d DEBUG: stat of /dev/cpu/%d/msr_safe has gid %d, you have %d\n", getenv("HOSTNAME"), 
-            __FILE__, __LINE__, dev_idx, statbuf.st_gid, usrgroups[validgroup]);
-#endif
-        if (statbuf.st_gid != usrgroups[validgroup])
-        {
-            fprintf(stderr, "%s %s::%d Error: you must be in the msr group to use libmsr.\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-<<<<<<< HEAD
-            return 2;
-        }
-=======
-        }
-#ifdef LIBMSR_DEBUG
-        fprintf(stderr, "%s %s::%d DEBUG: read perm is %d, write perm is %d\n", getenv("HOSTNAME"), __FILE__, __LINE__, 
-                !((int) statbuf.st_mode & S_IRUSR), !((int) statbuf.st_mode & S_IWUSR));
-#endif
->>>>>>> 7bdfc97c99db75c7379b3ec85732bffab95aacb2
+        // check to see if the module has the correct permissions
 		if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR) || !(statbuf.st_mode & S_IRGRP) || !(statbuf.st_mode & S_IWGRP))
         {
-			fprintf(stderr, "%s %s::%d  Read/write permissions denied on /dev/cpu/%d/msr_safe\n", 
-				getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
-<<<<<<< HEAD
-            return 3;
-		}
-		core_fd[dev_idx] = open( filename, O_RDWR );
-		if(core_fd[dev_idx] == -1){
-            return init_msr_type2();
-=======
-			whichKernel =1;
-		}
-		core_fd[dev_idx] = open( filename, O_RDWR );
-		if(core_fd[dev_idx] == -1){
-			/*
-			snprintf(filename, FILENAME_ZIE, "%s %s::%d  Error opening /dev/cpu/%d/msr_safe, check if msr module is loaded. \n", 
-				getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
-			perror(filename);
-			*/
-			whichKernel =1;
-			break;
-		}
-	}
-	if (whichKernel == 1){
-        fprintf(stderr, "%s %s::%d ERROR: Unable to find msr_safe module, reverting to msr module\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-		for (dev_idx=0; dev_idx < NUM_DEVS; dev_idx++){
-			snprintf(filename, FILENAME_SIZE, "/dev/cpu/%d/msr", dev_idx);
-			retVal = stat(filename, &statbuf);
-			if (retVal == -1) {
-				fprintf(stderr, "%s %s::%d  Error: could not stat /dev/cpu/%d/msr, check if msr module is loaded\n", 
-					getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
-				return 1; 
-			}	
-			if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR) || !(statbuf.st_mode & S_IRGRP) || !(statbuf.st_mode & S_IWGRP))
+			fprintf(stderr, "%s %s::%d  ERROR: Read/write permissions denied for %s, Reverting to the msr module.\n", 
+				    getenv("HOSTNAME"),__FILE__, __LINE__, filename);
+            kerneltype = 1;
+            dev_idx = -1;
+            if (kerneltype)
             {
-				fprintf(stderr, "%s %s::%d  Read/write permissions denied on /dev/cpu/%d/msr\n", 
-					getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
-				
-				return 1;
-			}
-		 
-			core_fd[dev_idx] = open( filename, O_RDWR );
-	
-			if(core_fd[dev_idx] == -1){
-				fprintf(stderr, "%s %s::%d  Error opening /dev/cpu/%d/msr, check if msr module is loaded. \n", 
-					getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
-				return 1;
-			}
->>>>>>> 7bdfc97c99db75c7379b3ec85732bffab95aacb2
-		}
-	}
-    free(usrgroups);
-	initialized = 1;
-	return 0;
-}
-
-// return value 1 means could not stat or open msr_safe or msr
-// return value 2 means you are not in the msr group
-// return value 3 means the files do not have the correct permissions
-// return value 4 means msr is owned by root
-int init_msr_type2()
-{
-	int dev_idx;
-	char filename[1025];
-<<<<<<< HEAD
-	struct stat statbuf;
-	static int initialized = 0;
-    gid_t * usrgroups = NULL;
-	int retVal;
-    int groupitr;
-    unsigned grparraysize = 3;
-    int validgroup = 0;
-    
-    get_groups(&usrgroups, &grparraysize);
-    fprintf(stderr, "%s %s::%d ERROR: Unable to find msr_safe module, reverting to msr module\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-    for (dev_idx=0; dev_idx < NUM_DEVS; dev_idx++)
-    {
-        snprintf(filename, FILENAME_SIZE, "/dev/cpu/%d/msr", dev_idx);
-        retVal = stat(filename, &statbuf);
-        if (retVal == -1) 
-        {
-            fprintf(stderr, "%s %s::%d  Error: could not stat /dev/cpu/%d/msr: %s, check if msr module is loaded.\n", 
-                getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx, strerror(errno));
-            return 1; 
-        }
-        if (statbuf.st_gid == 0)
-        {
-            fprintf(stderr, "%s %s::%d ERROR: msr is owned by root. Hint: Are you running on a login node?\n", getenv("HOSTNAME"), 
-                    __FILE__, __LINE__);
-            return 4;    
-        }
-        // if we havent already found the msr group, go look for it
-        if (statbuf.st_gid != usrgroups[validgroup])
-        {
-            for (groupitr = 0; groupitr < grparraysize && usrgroups[validgroup] != (gid_t) 0; ++groupitr)
-            {
-                if (statbuf.st_gid == usrgroups[groupitr] && usrgroups[groupitr] != (gid_t) 0)
-                {
-                    validgroup = groupitr;
-                }
+                fprintf(stderr, "%s %s::%d ERROR: could not find any valid module with correct permissions. Aborting...\n", 
+                        getenv("HOSTNAME"), __FILE__, __LINE__);
+                // could not find any msr module with RW permissions, so exit
+                return 2;
             }
-        }
-#ifdef LIBMSR_DEBUG
-        fprintf(stderr, "DEBUG: msr group is %d, your group is %d\n", statbuf.st_gid, usrgroups[validgroup]);
-#endif
-        if (statbuf.st_gid != usrgroups[validgroup])
+            continue;
+		}
+        // try to open the msr module, if you cant then return the appropriate error message
+		core_fd[dev_idx] = open( filename, O_RDWR );
+		if(core_fd[dev_idx] == -1)
         {
-            fprintf(stderr, "%s %s::%d Error: you must be in the msr group to use libmsr.\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-            return 2;
-        }
-        if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR) || !(statbuf.st_mode & S_IRGRP) || !(statbuf.st_mode & S_IWGRP))
-        {
-            fprintf(stderr, "%s %s::%d  Read/write permissions denied on /dev/cpu/%d/msr\n", 
-                getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx);
-            return 3;
-        }
-        core_fd[dev_idx] = open( filename, O_RDWR );
-        if(core_fd[dev_idx] == -1){
-            fprintf(stderr, "%s %s::%d  Error opening /dev/cpu/%d/msr: %s, check if msr module is loaded. \n", 
-                getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx, strerror(errno));
-            return 1;
-        }
-    }
-    free(usrgroups);
+            fprintf(stderr, "%s %s::%d  ERROR: could not open %s: %s.\n", 
+                getenv("HOSTNAME"),__FILE__, __LINE__, filename, strerror(errno));
+            if (kerneltype)
+            {
+                fprintf(stderr, "%s %s::%d ERROR: could not open any valid module. Aborting...\n", 
+                        getenv("HOSTNAME"), __FILE__, __LINE__);
+                // could not open any msr module, so exit
+                return 3;
+            }
+            kerneltype = 1;
+            dev_idx = -1;
+		}
+	}
 	initialized = 1;
 	return 0;
 }
@@ -329,17 +130,6 @@ void finalize_msr()
 			}
             else
             {
-=======
-    //close the file descriptors
-	for (dev_idx=0; dev_idx < NUM_DEVS; dev_idx++){
-		if(core_fd[dev_idx]){
-			rc = close(core_fd[dev_idx]);
-			if( rc != 0 ){
-				snprintf(filename, FILENAME_SIZE, "%s %s::%d  Error closing file /dev/cpu/%d/msr\n", 
-						getenv("HOSTNAME"),__FILE__, __LINE__, dev_idx); 
-				perror(filename);
-			}else{
->>>>>>> 7bdfc97c99db75c7379b3ec85732bffab95aacb2
 				core_fd[dev_idx] = 0;
 			}
 		}
@@ -506,16 +296,9 @@ read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val )
             __FILE__, __LINE__, msr, msr);
 #endif
 	rc = pread( core_fd[dev_idx], (void*)val, (size_t)sizeof(uint64_t), msr );
-<<<<<<< HEAD
 	if( rc != sizeof(uint64_t) )
     {
-=======
-	if( rc != sizeof(uint64_t) ){
-		//snprintf( error_msg, 1024, "%s %s::%d  pread returned %d.  core_fd[%d]=%d, msr=%ld (0x%lx).  errno=%d\n", 
-	//			getenv("HOSTNAME"),__FILE__, __LINE__, rc, dev_idx, core_fd[dev_idx], msr, msr, errno );
-	//	perror(error_msg);
->>>>>>> 7bdfc97c99db75c7379b3ec85732bffab95aacb2
-        fprintf(stderr, "%s %s:: %d ERROR: pread failed on core_fd[%d]=%d, msr=%ld (0x%lx) with %s\n", getenv("HOSTNAME"), 
+        fprintf(stderr, "%s %s:: %d ERROR: pread failed on core_fd[%d]=%d, msr=%ld (0x%lx): %s\n", getenv("HOSTNAME"), 
                 __FILE__, __LINE__, dev_idx, core_fd[dev_idx], msr, msr, strerror(errno));
 	}
 }
@@ -523,39 +306,19 @@ read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val )
 void
 write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val ){
 	int rc;
-<<<<<<< HEAD
-=======
-//	char error_msg[1025];
->>>>>>> 7bdfc97c99db75c7379b3ec85732bffab95aacb2
 #ifdef LIBMSR_DEBUG
 	fprintf(stderr, "%s %s %s::%d (write_msr_by_idx) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
 	rc = pwrite( core_fd[dev_idx], &val, (size_t)sizeof(uint64_t), msr );
-<<<<<<< HEAD
 	if( rc != sizeof(uint64_t) )
     {
-        fprintf(stderr, "%s %s::%d ERROR: pwrite failed on core_fd[%d]=%d, msr=%ld (0x%lx) with %s\n", getenv("HOSTNAME"), 
+        fprintf(stderr, "%s %s::%d ERROR: pwrite failed on core_fd[%d]=%d, msr=%ld (0x%lx): %s\n", getenv("HOSTNAME"), 
                 __FILE__, __LINE__, dev_idx, core_fd[dev_idx], msr, msr, strerror(errno));
-=======
-	if( rc != sizeof(uint64_t) ){
-		//snprintf( error_msg, 1024, "%s %s::%d  pwrite returned %d.  core_fd[%d]=%d, msr=%ld (0x%lx).  errno=%d\n", 
-	//			getenv("HOSTNAME"),__FILE__, __LINE__, rc, dev_idx, core_fd[dev_idx], msr, msr, errno );
-	//	perror(error_msg);
-        fprintf(stderr, "%s %s::%d ERROR: pwrite failed on core_fd[%d]=%d, msr=%ld (0x%lx) with %s\n", getenv("HOSTNAME"), 
-                __FILE__, __LINE__, dev_idx, core_fd[dev_idx], msr, msr, strerror(errno));
-#ifdef LIBMSR_DEBUG
-        uint64_t test = 0;
-        if(!pread(core_fd[dev_idx], (void *) test, (size_t) sizeof(uint64_t), msr))
-        {
-            fprintf(stderr, "DEBUG: failed to read 618 with %s\n", strerror(errno));
-        }
-        fprintf(stderr, "DEBUG: attempted to set value %lu and data is actually %lu\n", val, test);
-#endif
->>>>>>> 7bdfc97c99db75c7379b3ec85732bffab95aacb2
 	}
 }
 
+// This function does a read right after writing the msr to see if the write put in the correct data
 void
 write_msr_by_idx_and_verify( int dev_idx, off_t msr, uint64_t  val ){
 	int rc;
@@ -567,11 +330,11 @@ write_msr_by_idx_and_verify( int dev_idx, off_t msr, uint64_t  val ){
 	rc = pwrite( core_fd[dev_idx], &val, (size_t)sizeof(uint64_t), msr );
 	if( rc != sizeof(uint64_t) )
     {
-        fprintf(stderr, "%s %s::%d ERROR: pwrite failed on core_fd[%d]=%d, msr=%ld (0x%lx) with %s\n", getenv("HOSTNAME"), 
+        fprintf(stderr, "%s %s::%d ERROR: pwrite failed on core_fd[%d]=%d, msr=%ld (0x%lx): %s\n", getenv("HOSTNAME"), 
                 __FILE__, __LINE__, dev_idx, core_fd[dev_idx], msr, msr, strerror(errno));
         if(!pread(core_fd[dev_idx], (void *) test, (size_t) sizeof(uint64_t), msr))
         {
-            fprintf(stderr, "%s %s::%d ERROR: could not verify write for core_fd[%d]=%d, msr=%ld (0x%lx) with %s\n", getenv("HOSTNAME"), 
+            fprintf(stderr, "%s %s::%d ERROR: could not verify write for core_fd[%d]=%d, msr=%ld (0x%lx): %s\n", getenv("HOSTNAME"), 
                     __FILE__, __LINE__, dev_idx, core_fd[dev_idx], msr, msr, strerror(errno));
         }
         if (val != test)

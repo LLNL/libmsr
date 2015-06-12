@@ -49,10 +49,8 @@ enum{
 extern "C" {
 #endif
 
-void get_groups();
 
 int init_msr();
-int init_msr_type2();
 void finalize_msr();
 
 void write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val );

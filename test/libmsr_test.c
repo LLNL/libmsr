@@ -48,7 +48,7 @@ set_limits(){
 	l2.watts = 65;
 	l2.seconds = 0.2;
 	l2.bits = 0;
-    l3.watts = 30;
+    l3.watts = 35;
     l3.seconds = 0.2;
     l3.bits = 0;
 	set_rapl_limit(0, &l1, &l2, &l3);
