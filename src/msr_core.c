@@ -17,9 +17,9 @@
 #include <stdint.h>	
 #include <errno.h>
 #include <assert.h>
+#include <string.h>
 #include "msr_core.h"
 #include "msr_counters.h"
-#include <string.h>
 
 #define LIBMSR_DEBUG_TAG "LIBMSR"
 #define LIBMSR_DEBUG     1
