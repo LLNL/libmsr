@@ -1,5 +1,5 @@
-#ifndef SIGNALCOMBINED_H
-#define SIGNALCOMBINED_H
+#ifndef MSR_PROFILE_H
+#define MSR_PROFILE_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,5 +10,14 @@
 #include "msr_rapl.h"
 #include "msr_clocks.h"
 
-void msr_profile();
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+void msr_profile();
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // MSR_PROFILE_H
