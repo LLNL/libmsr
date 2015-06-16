@@ -278,15 +278,15 @@ void cpuid_printVendorID()
 	cpuid(leaf, &rax, &rbx, &rcx, &rdx);
 	for(i = 0; i < 32; i+=8)
 	{
-		printf("%c", MASK_VAL(rbx,7+i,0+i));
+		printf("%c", (int) MASK_VAL(rbx,7+i,0+i));
 	}
 	for(i = 0; i < 32; i+=8)
 	{
-		printf("%c", MASK_VAL(rdx,7+i,0+i));
+		printf("%lc", (int) MASK_VAL(rdx,7+i,0+i));
 	}
 	for(i = 0; i < 32; i+=8)
 	{
-		printf("%c", MASK_VAL(rcx,7+i,0+i));
+		printf("%lc", (int) MASK_VAL(rcx,7+i,0+i));
 	}
 	printf("\n");
 }

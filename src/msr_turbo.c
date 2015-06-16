@@ -6,14 +6,14 @@
 
 // MSRs common to 062A and 062D.
 #define MSR_MISC_ENABLE			0x1A0	// aka IA32_MISC_ENABLE
-						// setting bit 38 high DISABLES turbo mode. To be done in the BIOS. 
+						// setting bit 38 high DISABLES turbo mode. To be done in the BIOS.
 						//
-#define IA32_PERF_CTL			0x199   // setting bit 32 high DISABLES turbo mode. This is the software control. 
+#define IA32_PERF_CTL			0x199   // setting bit 32 high DISABLES turbo mode. This is the software control.
 
 void
 disable_turbo(){
 
-	int j;	
+	int j;
 	uint64_t val[NUM_DEVS];
 	// Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 0.
 	read_all_cores(IA32_PERF_CTL, &val[0] );
@@ -33,9 +33,10 @@ enable_turbo(){
 	// Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 1.
 	read_all_cores(IA32_PERF_CTL, &val[0] );
 	for(j=0; j<NUM_DEVS;j++){
-		val[j] &= ((uint64_t)1) ^ ((uint64_t)1) << 32;
+		val[j] &= ~(((uint64_t)1) << 32);
+    fprintf(stderr, "0x%016lx\t", val[j] & (((uint64_t)1)<<32));
 	}
-	
+
 	write_all_cores_v(IA32_PERF_CTL, &val[0] );
 }
 

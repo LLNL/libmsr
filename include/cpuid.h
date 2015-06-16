@@ -3,11 +3,15 @@
  *Author: Kathleen Shoga
  *
 */
-#ifndef CHECKCPUID_H
-#define CHECKCPUID_H
+#ifndef MSR_CHECKCPUID_H
+#define MSR_CHECKCPUID_H
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 bool cpuid_MPERF_and_APERF();
 bool cpuid_timeStampCounter_avail();
@@ -24,11 +28,15 @@ bool cpuid_therm_stat_powerlimit();
 bool cpuid_therm_stat_readout();
 bool cpuid_therm_interrupt_powerlimit();
 bool cpuid_pkg_therm_Stat_AND_Interrupt();
-int32_t cpuid_maxleaf();
+uint64_t cpuid_maxleaf();
 void cpuid_printVendorID();
 int cpuid_pkg_maxPhysicalProcessorCores();
 int cpuid_pkg_maxLogicalProcessors();
 int cpuid_num_fixed_perf_counters();
 int cpuid_width_fixed_perf_counters();
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif // CHECKCPUID_H

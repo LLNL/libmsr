@@ -34,10 +34,10 @@ get_limits(){
     printf("DRAM\n");
 	dump_rapl_limit(&l3, stdout);
     printf("done...\n\n");
-    printf("Reading back DRAM power use\n");
-    read_msr_by_coord(0, 0, 0, (off_t) 1561, &(l4.bits));
+    //printf("Reading back DRAM power use\n");
+    //read_msr_by_coord(0, 0, 0, (off_t) 1561, &(l4.bits));
     //get_rapl_limit(0, NULL, NULL, &l4);
-    dump_rapl_limit(&l4, stdout);
+    //dump_rapl_limit(&l4, stdout);
 }
 
 void
@@ -48,9 +48,9 @@ set_limits(){
 	l2.watts = 65;
 	l2.seconds = 0.2;
 	l2.bits = 0;
-    l3.watts = 35;
-    l3.seconds = 0.2;
-    l3.bits = 0;
+    l3.watts = 0; //4;
+    l3.seconds = 0; //0.01;
+    l3.bits = 0x681a8;
 	set_rapl_limit(0, &l1, &l2, &l3);
 	get_limits();
 }
@@ -92,7 +92,9 @@ void rapl_r_test(){
 }
 
 
-int main(int argc, char** argv){
+int main(int argc, char** argv)
+{
+    struct rapl_data rd;
 	#ifdef MPI
 	MPI_Init(&argc, &argv);
 	#endif
@@ -106,6 +108,10 @@ int main(int argc, char** argv){
     set_limits();
 	rapl_test();
 	rapl_r_test();
+    read_rapl_data(0, &rd);
+    printf("OUTPUT: The DRAM used %lf watts\n", rd.dram_watts);
+    dump_rapl_power_info(stdout);
+	get_limits();
 	finalize_msr();
 	#ifdef MPI
 	MPI_Finalize();

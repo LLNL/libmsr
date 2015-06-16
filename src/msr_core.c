@@ -127,7 +127,7 @@ void finalize_msr()
 			rc = close(core_fd[dev_idx]);
 			if( rc != 0 )
             {
-                fprintf(stderr, "%s %s::%d Error closing file /dev/cpu/%d/msr or msr_safe: %s\n", 
+                fprintf(stderr, "%s %s::%d ERROR: could not close file /dev/cpu/%d/msr or msr_safe: %s\n", 
                         getenv("HOSTNAME"), __FILE__, __LINE__, dev_idx, strerror(errno));
 			}
             else

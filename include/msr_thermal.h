@@ -1,6 +1,6 @@
 /* msr_thermal.h
  *
- * 
+ *
 */
 #ifndef MSR_THERMAL_H
 #define MSR_THERMAL_H
@@ -17,7 +17,7 @@ struct therm_stat{			//Scope is "core" for Sandy Bridge
 	uint64_t raw[NUM_CORES];
 	int status[NUM_CORES];				//Read only
 
-	int status_log[NUM_CORES];			//Read and Write (Sticky bit)  
+	int status_log[NUM_CORES];			//Read and Write (Sticky bit)
 							//Cleared by software to 0 or RESET
 
 	int PROCHOT_or_FORCEPR_event[NUM_CORES];	//Read only
@@ -31,7 +31,7 @@ struct therm_stat{			//Scope is "core" for Sandy Bridge
 
 	int therm_thresh1_status[NUM_CORES];		//Read only
 
-	int therm_thresh1_log[NUM_CORES];		//Read and Write 
+	int therm_thresh1_log[NUM_CORES];		//Read and Write
 							//Sticky bit
 
 	int therm_thresh2_status[NUM_CORES];		//Read only
@@ -54,7 +54,7 @@ struct therm_stat{			//Scope is "core" for Sandy Bridge
 struct therm_interrupt{			//Core scope
 	uint64_t raw[NUM_CORES];
 	//Below all read and write
-	int high_temp_enable[NUM_CORES];	
+	int high_temp_enable[NUM_CORES];
 	int low_temp_enable[NUM_CORES];
 	int PROCHOT_enable[NUM_CORES];
 	int FORCEPR_enable[NUM_CORES];
@@ -70,7 +70,7 @@ struct pkg_therm_stat{			//Package (socket) scope
 	uint64_t raw[NUM_SOCKETS];
 	int status[NUM_SOCKETS];		//Read only
 
-	int status_log[NUM_SOCKETS];		//Read or Write Sticky bit (default: clear) 
+	int status_log[NUM_SOCKETS];		//Read or Write Sticky bit (default: clear)
 						//Cleared by software to 0 or reset
 
 	int PROCHOT_event[NUM_SOCKETS];		//Read only
@@ -100,16 +100,20 @@ struct pkg_therm_stat{			//Package (socket) scope
 struct pkg_therm_interrupt{			//Package(socket) scope
 	uint64_t raw[NUM_SOCKETS];
 	//All read and write below
-	int high_temp_enable[NUM_SOCKETS];	
-	int low_temp_enable[NUM_SOCKETS];	
-	int PROCHOT_enable[NUM_SOCKETS];	
-	int crit_temp_enable[NUM_SOCKETS];	
-	int thresh1_val[NUM_SOCKETS];	
-	int thresh1_enable[NUM_SOCKETS];	
-	int thresh2_val[NUM_SOCKETS];	
+	int high_temp_enable[NUM_SOCKETS];
+	int low_temp_enable[NUM_SOCKETS];
+	int PROCHOT_enable[NUM_SOCKETS];
+	int crit_temp_enable[NUM_SOCKETS];
+	int thresh1_val[NUM_SOCKETS];
+	int thresh1_enable[NUM_SOCKETS];
+	int thresh2_val[NUM_SOCKETS];
 	int thresh2_enable[NUM_SOCKETS];
 	int pwr_limit_notification_enable[NUM_SOCKETS];
 };
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void dump_msr_temp_target();
 void get_temp_target(struct msr_temp_target *s);
@@ -134,4 +138,8 @@ void dump_thermal_terse(FILE *w);
 void dump_thermal_verbose_label(FILE *w);
 void dump_thermal_verbose(FILE *w);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif // MSR_THERMAL_H

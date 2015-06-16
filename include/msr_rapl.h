@@ -91,6 +91,7 @@ struct rapl_limit{
 #ifdef __cplusplus 
 extern "C" {
 #endif
+
 void set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
 void get_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
 void dump_rapl_limit( struct rapl_limit *L, FILE *w );

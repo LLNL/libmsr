@@ -241,6 +241,7 @@ calc_rapl_limit(const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 			limit2->bits |= seconds_bits << 49;
 		}
 	}
+    // ### something is going wrong here
 #ifdef RAPL_USE_DRAM
 	if(dram){
 		if (dram->bits){
@@ -294,12 +295,13 @@ set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 		write_msr_by_coord( socket, 0, 0, MSR_PKG_POWER_LIMIT, pkg_limit );
 	}
 #ifdef RAPL_USE_DRAM
+	if(dram){
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d DEBUG: Modifying DRAM values\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
-	if(dram){
         // why was this setting bit 16? thats reserved -> caused i/o error.
-		dram_limit |= dram->bits | (1LL << 15); //| (1LL << 16);	// enable clamping
+		dram_limit |= dram->bits | (1LL << 15); // | (1LL << 16);	// enable clamping
+        fprintf(stdout, "OUTPUT: dram_limit is %lx\n", dram_limit);
 		write_msr_by_coord( socket, 0, 0, MSR_DRAM_POWER_LIMIT, dram_limit );
 	}
 #endif
