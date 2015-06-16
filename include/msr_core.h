@@ -13,14 +13,14 @@
 #define NUM_THREADS (NUM_CORES * NUM_THREADS_PER_CORE)
 
 /* MASK_RANGE
- * Create a mask from bit m to n. 
+ * Create a mask from bit m to n.
  * 63 >= m >= n >= 0
- * Example:  MASK_RANGE(4,2) -->     (((1<<((4)-(2)+1))-1)<<(2)) 
+ * Example:  MASK_RANGE(4,2) -->     (((1<<((4)-(2)+1))-1)<<(2))
  *                                   (((1<<          3)-1)<<(2))
  *                                   ((               4-1)<<(2))
  *                                   (                  3)<<(2))
  *                                   (                       24) = b11000
- */ 
+ */
 #define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
 
 /* MASK_VAL
@@ -38,7 +38,7 @@ enum{
 
 // Depending on their function, MSRs can be addressed at either
 // the socket (aka cpu) or core level, and possibly the hardware
-// thread level.  
+// thread level.
 //
 //  read/write_msr reads from core 0.
 //  read/write_msr_all_cores_v uses a vector of values.
@@ -46,8 +46,8 @@ enum{
 //  read/write_msr_single_core contains all of the low-level logic.
 //	The rest of the functions are wrappers that call these
 //	two functions.
-//  
-#ifdef __cplusplus 
+//
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -73,7 +73,7 @@ void read_all_sockets(    off_t msr, uint64_t *val );
 void read_all_cores(      off_t msr, uint64_t *val );
 void read_all_threads(    off_t msr, uint64_t *val );
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 #endif //MSR_CORE_H
