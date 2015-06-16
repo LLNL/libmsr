@@ -28,7 +28,7 @@ bool cpuid_therm_stat_powerlimit();
 bool cpuid_therm_stat_readout();
 bool cpuid_therm_interrupt_powerlimit();
 bool cpuid_pkg_therm_Stat_AND_Interrupt();
-int32_t cpuid_maxleaf();
+uint64_t cpuid_maxleaf();
 void cpuid_printVendorID();
 int cpuid_pkg_maxPhysicalProcessorCores();
 int cpuid_pkg_maxLogicalProcessors();
@@ -39,4 +39,4 @@ int cpuid_width_fixed_perf_counters();
 }
 #endif
 
-#endif // MSR_CHECKCPUID_H
+#endif // CHECKCPUID_H

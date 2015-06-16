@@ -1,9 +1,12 @@
+/* 
+ * Edited by: Scott Walker
+ */
 #ifndef MSR_CORE_H
 #define MSR_CORE_H
 #include <stdint.h>
 #include <sys/types.h>	// off_t
 #define NUM_SOCKETS 2
-#define NUM_CORES_PER_SOCKET 8
+#define NUM_CORES_PER_SOCKET 12 
 #define NUM_THREADS_PER_CORE 1
 #define NUM_DEVS (NUM_SOCKETS * NUM_CORES_PER_SOCKET * NUM_THREADS_PER_CORE)
 #define NUM_CORES (NUM_CORES_PER_SOCKET * NUM_SOCKETS)
@@ -48,10 +51,12 @@ enum{
 extern "C" {
 #endif
 
+
 int init_msr();
 void finalize_msr();
 
 void write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val );
+void write_msr_by_idx_and_verify( int dev_idx, off_t msr, uint64_t  val );
 void read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val );
 
 void write_msr_by_coord( int socket, int core, int thread, off_t msr, uint64_t  val );
