@@ -241,13 +241,17 @@ calc_rapl_limit(const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 			limit2->bits |= seconds_bits << 49;
 		}
 	}
-    // ### something is going wrong here
 #ifdef RAPL_USE_DRAM
 	if(dram){
 		if (dram->bits){
+#ifdef LIBMSR_DEBUG
+            fprintf(stdout, "OUTPUT: forced bitfield\n");
+#endif
 			// We have been given the bits to be written to the msr.
 			// For sake of completeness, translate these into watts 
 			// and seconds.
+            
+            // Something is going wrong here -> skip
 			watts_bits   = MASK_VAL( dram->bits, 14,  0 );
 			seconds_bits = MASK_VAL( dram->bits, 23, 17 );
 
@@ -294,17 +298,15 @@ set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 	if(limit1 || limit2){
 		write_msr_by_coord( socket, 0, 0, MSR_PKG_POWER_LIMIT, pkg_limit );
 	}
-#ifdef RAPL_USE_DRAM
 	if(dram){
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: Modifying DRAM values\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+    fprintf(stderr, "%s %s::%d DEBUG: Modifying DRAM values. DRAM bits are %lx\n", getenv("HOSTNAME"), __FILE__, __LINE__, dram->bits);
 #endif
         // why was this setting bit 16? thats reserved -> caused i/o error.
 		dram_limit |= dram->bits | (1LL << 15); // | (1LL << 16);	// enable clamping
         fprintf(stdout, "OUTPUT: dram_limit is %lx\n", dram_limit);
 		write_msr_by_coord( socket, 0, 0, MSR_DRAM_POWER_LIMIT, dram_limit );
 	}
-#endif
 }
 
 void 
@@ -393,7 +395,26 @@ dump_rapl_power_info( FILE *writeFile){
 	}
 }
 
-void
+//static int read_perf_status()
+//{
+    
+//    return 0;
+//}
+
+//static int read_power_info(){}
+
+//static int read_pp_policy(){}
+
+//static int read_pkg_power_limit(){}
+
+//static int read_dram_power_limit(){}
+
+//static int read_pp_power_limit(){}
+
+//static int read_pp_policy(){}
+
+
+int
 read_rapl_data( const int socket, struct rapl_data *r ){
 	/* 
 	 * If r is null, measurments are recorded into the local static struct s.
@@ -448,19 +469,50 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 	p->old_pkg_joules	= p->pkg_joules;
 	p->old_now.tv_sec 	= p->now.tv_sec;
 	p->old_now.tv_usec	= p->now.tv_usec;
+    p->old_dram_perf    = p->dram_perf_count;
 
 	// Get current timestamp
 	gettimeofday( &(p->now), NULL );
 
 	// Get raw joules
-	read_msr_by_coord( socket, 0, 0, MSR_PKG_ENERGY_STATUS,  &(p->pkg_bits)  );
+	if(read_msr_by_coord( socket, 0, 0, MSR_PKG_ENERGY_STATUS,  &(p->pkg_bits)  ))
+    {
+        return -1;
+    }
 	translate( socket, &(p->pkg_bits),  &(p->pkg_joules),  BITS_TO_JOULES );
+
+    /* read PP registers
+    if(read_msr_by_coord(socket, 0, 0, MSR_PPO_POWER_LIMIT, &(p->pp0_power_limit)))
+    {
+        return -1;
+    }
+    if(read_msr_by_coord(socket, 0, 0, MSR_PPO_ENERGY_STATUS, &(p->pp0_energy_status)))
+    {
+        return -1;
+    }
+    if(read_msr_by_coord(socket, 0, 0, MSR_PPO_POLICY, &(p->pp0_policy)))
+    {
+        return -1;
+    }
+    if(read_msr_by_coord(socket, 0, 0, MSR_PPO_PERF_STATUS, &(p->pp0_perf_status)))
+    {
+        return -1;
+    }
+    */
+
 	
 #ifdef RAPL_USE_DRAM
 	p->old_dram_bits	= p->dram_bits;
 	p->old_dram_joules	= p->dram_joules;
-	read_msr_by_coord( socket, 0, 0, MSR_DRAM_ENERGY_STATUS, &(p->dram_bits) );
+	if(read_msr_by_coord( socket, 0, 0, MSR_DRAM_ENERGY_STATUS, &(p->dram_bits) ))
+    {
+        return -1;
+    }
 	translate( socket, &(p->dram_bits), &(p->dram_joules), BITS_TO_JOULES );
+    if (read_msr_by_coord( socket, 0, 0, MSR_DRAM_PERF_STATUS, &(p->dram_perf_count)))
+    {
+        return -1;
+    }
 #endif
 	
 	// Fill in the struct if present.
@@ -505,5 +557,6 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 #endif
 		}
 	}
+    return 0;
 }
 

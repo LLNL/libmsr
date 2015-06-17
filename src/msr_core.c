@@ -27,16 +27,15 @@
 static int core_fd[NUM_DEVS];
 
 // Initialize the MSR module file descriptors
-// return value 1 means could not stat or open msr_safe or msr
-// return value 2 means the files do not have the correct permissions
-// return value 3 means the file could not be opened
+// exit value 1 means could not stat or open msr_safe or msr
+// exit value 2 means the files do not have the correct permissions
+// exit value 3 means the file could not be opened
 int init_msr()
 {
 	int dev_idx;
 	char filename[1025];
 	struct stat statbuf;
 	static int initialized = 0;
-	int retVal;
     int kerneltype = 0; // 0 is msr_safe, 1 is msr
 
 #ifdef LIBMSR_DEBUG
@@ -58,20 +57,19 @@ int init_msr()
             snprintf(filename, FILENAME_SIZE, "/dev/cpu/%d/msr_safe", dev_idx);
         }
         // check if the module is there, if not return the appropriate error message.
-		retVal = stat(filename, &statbuf);
-		if (retVal == -1)
+        if (stat(filename, &statbuf))
         {
             if (kerneltype)
             {
                 fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s\n", 
                         getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
-                fprintf(stderr, "%s %s::%d ERROR: could not stat any valid module. Aborting...\n", 
+                fprintf(stderr, "%s %s::%d FATAL ERROR: could not stat any valid module. Aborting...\n", 
                         getenv("HOSTNAME"), __FILE__, __LINE__);
                 // could not find any msr module so exit
-                return 1;
+                exit(1);
             }
             // could not find msr_safe so try the msr module
-            fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s, Reverting to the msr module.\n", 
+            fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s.\n", 
                     getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
             kerneltype = 1;
             // restart loading file descriptors for each device
@@ -81,16 +79,16 @@ int init_msr()
         // check to see if the module has the correct permissions
 		if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR) || !(statbuf.st_mode & S_IRGRP) || !(statbuf.st_mode & S_IWGRP))
         {
-			fprintf(stderr, "%s %s::%d  ERROR: Read/write permissions denied for %s, Reverting to the msr module.\n", 
+			fprintf(stderr, "%s %s::%d  ERROR: Read/write permissions denied for %s.\n", 
 				    getenv("HOSTNAME"),__FILE__, __LINE__, filename);
             kerneltype = 1;
             dev_idx = -1;
             if (kerneltype)
             {
-                fprintf(stderr, "%s %s::%d ERROR: could not find any valid module with correct permissions. Aborting...\n", 
+                fprintf(stderr, "%s %s::%d FATAL ERROR: could not find any valid module with correct permissions. Aborting...\n", 
                         getenv("HOSTNAME"), __FILE__, __LINE__);
                 // could not find any msr module with RW permissions, so exit
-                return 2;
+                exit(2);
             }
             continue;
 		}
@@ -102,10 +100,10 @@ int init_msr()
                 getenv("HOSTNAME"),__FILE__, __LINE__, filename, strerror(errno));
             if (kerneltype)
             {
-                fprintf(stderr, "%s %s::%d ERROR: could not open any valid module. Aborting...\n", 
+                fprintf(stderr, "%s %s::%d FATAL ERROR: could not open any valid module. Aborting...\n", 
                         getenv("HOSTNAME"), __FILE__, __LINE__);
                 // could not open any msr module, so exit
-                return 3;
+                exit(3);
             }
             kerneltype = 1;
             dev_idx = -1;
@@ -115,7 +113,7 @@ int init_msr()
 	return 0;
 }
 
-void finalize_msr()
+int finalize_msr()
 {
 	int dev_idx;
     int rc;
@@ -129,6 +127,7 @@ void finalize_msr()
             {
                 fprintf(stderr, "%s %s::%d ERROR: could not close file /dev/cpu/%d/msr or msr_safe: %s\n", 
                         getenv("HOSTNAME"), __FILE__, __LINE__, dev_idx, strerror(errno));
+                return -1;
 			}
             else
             {
@@ -136,18 +135,20 @@ void finalize_msr()
 			}
 		}
 	}
+    return 0;
 }
 
-void
+int
 write_msr_by_coord( int socket, int core, int thread, off_t msr, uint64_t  val ){
 #ifdef LIBMSR_DEBUG
 	fprintf(stderr, "%s %s %s::%d (write_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx) val=%lu\n", 
             getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr, val);
+	return write_msr_by_idx_and_verify( socket * NUM_CORES_PER_SOCKET + core * NUM_THREADS_PER_CORE + thread, msr, val );
 #endif
-	write_msr_by_idx( socket * NUM_CORES_PER_SOCKET + core * NUM_THREADS_PER_CORE + thread, msr, val );
+	return write_msr_by_idx( socket * NUM_CORES_PER_SOCKET + core * NUM_THREADS_PER_CORE + thread, msr, val );
 }
 
-void
+int
 read_msr_by_coord(  int socket, int core, int thread, off_t msr, uint64_t *val ){
 #ifdef LIBMSR_DEBUG
 	fprintf(stderr, "%s %s %s::%d (read_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx)\n", 
@@ -159,10 +160,10 @@ read_msr_by_coord(  int socket, int core, int thread, off_t msr, uint64_t *val )
 	assert(socket >= 0 );
 	assert(core   >= 0 );
 	assert(thread >= 0 );
-	read_msr_by_idx( socket * NUM_CORES_PER_SOCKET + core * NUM_THREADS_PER_CORE + thread, msr, val );
+	return read_msr_by_idx( socket * NUM_CORES_PER_SOCKET + core * NUM_THREADS_PER_CORE + thread, msr, val );
 }
 
-void
+int
 write_all_sockets(   off_t msr, uint64_t  val )
 {
 	int dev_idx;
@@ -172,11 +173,15 @@ write_all_sockets(   off_t msr, uint64_t  val )
 #endif
 	for(dev_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_CORES_PER_SOCKET * NUM_THREADS_PER_CORE )
     {
-		write_msr_by_idx( dev_idx, msr, val );
+		if(write_msr_by_idx( dev_idx, msr, val ))
+        {
+            return -1;
+        }
 	}
+    return 0;
 }
 
-void
+int
 write_all_cores(     off_t msr, uint64_t  val )
 {
 	int dev_idx;
@@ -186,11 +191,15 @@ write_all_cores(     off_t msr, uint64_t  val )
 #endif
 	for(dev_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_THREADS_PER_CORE )
     {
-		write_msr_by_idx( dev_idx, msr, val );
+		if(write_msr_by_idx( dev_idx, msr, val ))
+        {
+            return -1;
+        }
 	}
+    return 0;
 }
 
-void
+int
 write_all_threads(   off_t msr, uint64_t  val )
 {
 	int dev_idx;
@@ -200,11 +209,15 @@ write_all_threads(   off_t msr, uint64_t  val )
 #endif
 	for(dev_idx=0; dev_idx<NUM_DEVS; dev_idx++)
     {
-		write_msr_by_idx( dev_idx, msr, val );
+		if(write_msr_by_idx( dev_idx, msr, val ))
+        {
+            return -1;
+        }
 	}
+    return 0;
 }
 
-void
+int
 write_all_sockets_v( off_t msr, uint64_t *val )
 {
 	int dev_idx, val_idx;
@@ -214,11 +227,15 @@ write_all_sockets_v( off_t msr, uint64_t *val )
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_CORES_PER_SOCKET*NUM_THREADS_PER_CORE, val_idx++ )
     {
-		write_msr_by_idx( dev_idx, msr, val[val_idx] );
+		if(write_msr_by_idx( dev_idx, msr, val[val_idx] ))
+        {
+            return -1;
+        }
 	}
+    return 0;
 }
 
-void
+int
 write_all_cores_v(   off_t msr, uint64_t *val )
 {
 	int dev_idx, val_idx;
@@ -228,11 +245,15 @@ write_all_cores_v(   off_t msr, uint64_t *val )
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_THREADS_PER_CORE, val_idx++ )
     {
-		write_msr_by_idx( dev_idx, msr, val[val_idx] );
+		if (write_msr_by_idx( dev_idx, msr, val[val_idx] ))
+        {
+            return -1;
+        }
 	}
+    return 0;
 }
 
-void
+int
 write_all_threads_v( off_t msr, uint64_t *val )
 {
 	int dev_idx, val_idx;
@@ -242,12 +263,16 @@ write_all_threads_v( off_t msr, uint64_t *val )
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx++, val_idx++ )
     {
-		write_msr_by_idx( dev_idx, msr, val[val_idx] );
+		if(write_msr_by_idx( dev_idx, msr, val[val_idx] ))
+        {
+            return -1;
+        }
 	}
+    return 0;
 }
 
 
-void
+int
 read_all_sockets(    off_t msr, uint64_t *val )
 {
 	int dev_idx, val_idx;
@@ -257,11 +282,15 @@ read_all_sockets(    off_t msr, uint64_t *val )
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_CORES_PER_SOCKET*NUM_THREADS_PER_CORE, val_idx++ )
     {
-		read_msr_by_idx( dev_idx, msr, &val[val_idx] );
+		if (read_msr_by_idx( dev_idx, msr, &val[val_idx] ))
+        {
+            return -1;
+        }
 	}
+    return 0;
 }
 
-void
+int
 read_all_cores(      off_t msr, uint64_t *val )
 {
 	int dev_idx, val_idx;
@@ -271,11 +300,15 @@ read_all_cores(      off_t msr, uint64_t *val )
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx += NUM_THREADS_PER_CORE, val_idx++ )
     {
-		read_msr_by_idx( dev_idx, msr, &val[val_idx] );
+		if (read_msr_by_idx( dev_idx, msr, &val[val_idx] ))
+        {
+            return -1;
+        }
 	}
+    return 0;
 }
 
-void
+int 
 read_all_threads(    off_t msr, uint64_t *val )
 {
 	int dev_idx, val_idx;
@@ -285,11 +318,15 @@ read_all_threads(    off_t msr, uint64_t *val )
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<NUM_DEVS; dev_idx++, val_idx++ )
     {
-		read_msr_by_idx( dev_idx, msr, &val[val_idx] );
+		if(read_msr_by_idx( dev_idx, msr, &val[val_idx] ))
+        {
+            return -1;
+        }
 	}
+    return 0;
 }
 
-void
+int
 read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val )
 {
 	int rc;
@@ -302,10 +339,12 @@ read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val )
     {
         fprintf(stderr, "%s %s:: %d ERROR: pread failed on core_fd[%d]=%d, msr=%ld (0x%lx): %s\n", getenv("HOSTNAME"), 
                 __FILE__, __LINE__, dev_idx, core_fd[dev_idx], msr, msr, strerror(errno));
+        return -1;
 	}
+    return 0;
 }
 
-void
+int
 write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val ){
 	int rc;
 #ifdef LIBMSR_DEBUG
@@ -317,11 +356,13 @@ write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val ){
     {
         fprintf(stderr, "%s %s::%d ERROR: pwrite failed on core_fd[%d]=%d, msr=%ld (0x%lx): %s\n", getenv("HOSTNAME"), 
                 __FILE__, __LINE__, dev_idx, core_fd[dev_idx], msr, msr, strerror(errno));
+        return -1;
 	}
+    return 0;
 }
 
 // This function does a read right after writing the msr to see if the write put in the correct data
-void
+int
 write_msr_by_idx_and_verify( int dev_idx, off_t msr, uint64_t  val ){
 	int rc;
     uint64_t test = 0;
@@ -334,15 +375,19 @@ write_msr_by_idx_and_verify( int dev_idx, off_t msr, uint64_t  val ){
     {
         fprintf(stderr, "%s %s::%d ERROR: pwrite failed on core_fd[%d]=%d, msr=%ld (0x%lx): %s\n", getenv("HOSTNAME"), 
                 __FILE__, __LINE__, dev_idx, core_fd[dev_idx], msr, msr, strerror(errno));
-        if(!pread(core_fd[dev_idx], (void *) test, (size_t) sizeof(uint64_t), msr))
-        {
-            fprintf(stderr, "%s %s::%d ERROR: could not verify write for core_fd[%d]=%d, msr=%ld (0x%lx): %s\n", getenv("HOSTNAME"), 
-                    __FILE__, __LINE__, dev_idx, core_fd[dev_idx], msr, msr, strerror(errno));
-        }
-        if (val != test)
-        {
-            fprintf(stderr, "%s %s::%d ERROR: write core_fd[%d]=%d, msr=%ld (0x%lx) unsuccessful. %lu expected, had %lu\n", getenv("HOSTNAME"), 
-                    __FILE__, __LINE__, dev_idx, core_fd[dev_idx], msr, msr, test, val);
-        }
-	}
+    }
+    if(!pread(core_fd[dev_idx], (void *) &test, (size_t) sizeof(uint64_t), msr))
+    {
+        fprintf(stderr, "%s %s::%d ERROR: could not verify write for core_fd[%d]=%d, msr=%ld (0x%lx): %s\n", getenv("HOSTNAME"), 
+                __FILE__, __LINE__, dev_idx, core_fd[dev_idx], msr, msr, strerror(errno));
+        return -1;
+    }
+    if (val != test)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: write core_fd[%d]=%d, msr=%ld (0x%lx) unsuccessful. %lx expected, had %lx. Diff %lx\n", 
+        getenv("HOSTNAME"), __FILE__, __LINE__, dev_idx, core_fd[dev_idx], msr, msr, val, test, val ^ test);
+        return -1;
+    }
+
+    return 0;
 }
