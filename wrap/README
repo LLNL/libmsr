@@ -1,4 +1,4 @@
-The example gremlins are architeted using the MPI profiling interface
+The example gremlins are depend on the MPI profiling interface
 and depend on the wrap.py script.  The script may be downloaded from
 github using the following command:
 
