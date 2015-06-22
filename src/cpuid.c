@@ -25,6 +25,14 @@ void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t 
 		);
 }
 
+void cpuid_get_model(uint64_t * model)
+{
+    uint64_t leaf = 0, rax = 0, rbx = 0, rcx = 0, rdx = 0;
+
+    cpuid(leaf, &rax, &rbx, &rcx, &rdx);
+    *model = (rax >> 4) & 0xF;
+}
+
 void cpuidInput_rax_rcx(uint64_t leafa, uint64_t leafc, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t *rdx)
 {
 	asm volatile(

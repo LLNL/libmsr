@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include "msr_core.h"
+#include "cpuid.h"
 #include "msr_rapl.h"
 #define LIBMSR_DEBUG 1
 #define RAPL_USE_DRAM 1
@@ -91,6 +92,28 @@
 #define MSR_DRAM_POWER_INFO 		(0x61C) //
 #endif
 
+// Processor specific rapl flags (see rapl_init function)
+#define MF_06_37
+#define MF_06_4A
+#define MF_06_5A
+#define MF_06_4D
+#define MF_06_4C
+#define MF_06_2A // note tbl 16 and 17
+#define MF_06_2D // note tbl 16 and 18
+#define MF_06_3A
+#define MF_06_3E
+#define MF_06_3C
+#define MF_06_45
+#define MF_06_46
+#define MF_06_3F
+#define MF_06_3D
+#define MF_06_47
+#define MF_06_4F
+#define MF_06_56
+#define MF_06_4E
+#define MF_06_5E
+#define MF_06_57
+
 enum{
 	BITS_TO_WATTS,
 	WATTS_TO_BITS,
@@ -107,6 +130,56 @@ struct rapl_units{
 	double joules;
 	double watts;
 };
+
+// rapl flags
+// 0: 606h, MSR_RAPL_POWER_UNIT
+// 1: 610h, MSR_PKG_POWER_LIMIT
+// 2: 611h, MSR_PKG_ENERGY_STATUS
+// 3: 613h, MSR_PKG_PERF_STATUS
+// 4: 614h, MSR_PKG_POWER_INFO
+// 5: 618h, MSR_DRAM_POWER_LIMIT
+// 6: 619h, MSR_DRAM_ENERGY_STATUS
+// 7: 61Bh, MSR_DRAM_PERF_STATUS
+// 8: 61Ch, MSR_DRAM_POWER_INFO
+// 9: 638h, MSR_PP0_POWER_LIMIT
+// 10: 639h, MSR_PP0_ENERGY_STATUS
+// 11: 63Ah, MSR_PP0_POLICY
+// 12: 63Bh, MSR_PP0_PERF_STATUS
+// 13: 640h, MSR_PP1_POWER_LIMIT
+// 14: 641h, MSR_PP1_ENERGY_STATUS
+// 15: 642h, MSR_PP1_POLICY
+// 16: 64Ch, ?
+// 17: 690h, ?
+int rapl_init(struct rapl_data ** rapl, uint64_t * rapl_flags)
+{
+    static int initialized = 0;
+    uint64_t model;
+
+    cpuid_get_model(&model);
+
+    if (!initialized)
+    {
+        *rapl = (struct rapl_data *) calloc(NUM_SOCKETS, sizeof(struct rapl_data));
+        if (!*rapl)
+        {
+            fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+            return -1;
+        }
+    }
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "DEBUG: rapl initialized at %p\n", *rapl);
+#endif
+    return 0;
+}
+
+int rapl_finalize(struct rapl_data ** rapl)
+{
+    free(*rapl);
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "DEBUG: rapl finalized\n");
+#endif
+    return 0;
+}
 
 static void
 translate( const int socket, uint64_t* bits, double* units, int type ){
@@ -208,11 +281,21 @@ get_rapl_power_info( const int socket, struct rapl_power_info *info){
 #endif
 }
 
-static int check_power_limit(uint64_t * watts_bits, char limit, uint64_t * pkgmax)
+// TODO: fix this function
+static int check_power_limit(uint64_t * watts_bits, char limit)
 {
     uint64_t power_limit_check_mask = 0;
-    uint64_t power_max = MASK_VAL(pkgmax, 46, 32);
-    uint64_t power_min = MASK_VAL(pkgmax, 30, 16);
+    int init = 0, i;
+    static struct rapl_power_info rpi[NUM_SOCKETS];
+
+    if (!init)
+    {
+        init = 1;
+        for (i = 0; i < NUM_SOCKETS; i++)
+        {
+            get_rapl_power_info(i, &(rpi[NUM_SOCKETS]));
+        }
+    }
 
     // set the mask to upper or lower 32 bits of register
     if (limit == '2')
@@ -250,14 +333,16 @@ static int check_power_limit(uint64_t * watts_bits, char limit, uint64_t * pkgma
     {
         // incorrect bits were flipped, use the complement of the mask to AND them off
         *watts_bits &= ~power_limit_check_mask;
-        fprintf(stderr, "%s %s::%d WARNING: RAPL power limit %c out of bounds, value has been truncated.\n", 
+        fprintf(stderr, "%s %s::%d ERROR: RAPL power limit %c out of bounds,\n", 
                 getenv("HOSTNAME"), __FILE__, __LINE__, limit);
+        return -1;
     }
 
     return 0;
 }
 
-static int check_time_limit(uint64_t * seconds_bits, char limit, uint64_t * pkgmax)
+// TODO: fix this function
+static int check_time_limit(uint64_t * seconds_bits, char limit)
 {
     uint64_t time_limit_check_mask = 0;
     uint64_t time_max = MASK_VAL(pkgmax, 53, 47) << 17;
@@ -289,12 +374,14 @@ static int check_time_limit(uint64_t * seconds_bits, char limit, uint64_t * pkgm
     {
         // incorrect bits were flipped, use the complement of the mask to AND them off
         *seconds_bits &= ~time_limit_check_mask;
-        fprintf(stderr, "%s %s::%d WARNING: RAPL time frame %c out of bounds, value has been truncated.\n", 
+        fprintf(stderr, "%s %s::%d ERROR: RAPL time frame %c out of bounds.\n", 
                 getenv("HOSTNAME"), __FILE__, __LINE__, limit);
+        return -1;
     }
     return 0;
 }
 
+// TODO: what is this here for?
 static int read_pkg_power_limit(uint64_t * val)
 {
     return read_msr_by_coord(0, 0, 0, MSR_PKG_POWER_INFO, val);
@@ -306,10 +393,6 @@ calc_rapl_limit(const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 	static int initialized=0;
 	uint64_t watts_bits=0, seconds_bits=0;
 	int i;
-
-    uint64_t pkgmax = 0;
-
-    read_pkg_power_limit(&pkgmax);
 
 	if(!initialized){
 		initialized=1;
@@ -337,9 +420,9 @@ calc_rapl_limit(const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 			fprintf(stderr, "Converted %lf seconds into %lx bits.\n", limit1->seconds, seconds_bits);
 #endif
             watts_bits <<= 0;
-            check_power_limit(&watts_bits, '1', &pkgmax);
+            check_power_limit(&watts_bits, '1');
             seconds_bits <<= 17;
-            check_time_limit(&seconds_bits, '1', &pkgmax);
+            check_time_limit(&seconds_bits, '1');
 			limit1->bits |= watts_bits;
 			limit1->bits |= seconds_bits;
 		}
@@ -356,9 +439,9 @@ calc_rapl_limit(const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 			translate( socket, &watts_bits,   &limit2->watts,   WATTS_TO_BITS   );
 			translate( socket, &seconds_bits, &limit2->seconds, SECONDS_TO_BITS );
             watts_bits <<= 32;
-            check_power_limit(&watts_bits, '2', &pkgmax);
+            check_power_limit(&watts_bits, '2');
             seconds_bits <<= 49;
-            check_time_limit(&seconds_bits, '2', &pkgmax);
+            check_time_limit(&seconds_bits, '2');
 			limit2->bits |= watts_bits;
 			limit2->bits |= seconds_bits;
 		}
@@ -382,9 +465,9 @@ calc_rapl_limit(const int socket, struct rapl_limit* limit1, struct rapl_limit* 
 			translate( socket, &watts_bits,   &dram->watts,   WATTS_TO_BITS   );
 			translate( socket, &seconds_bits, &dram->seconds, SECONDS_TO_BITS );
             watts_bits <<= 0;
-            check_power_limit(&watts_bits, 'D', &pkgmax);
+            check_power_limit(&watts_bits, 'D');
             seconds_bits <<= 17;
-            check_time_limit(&seconds_bits, 'D', &pkgmax);
+            check_time_limit(&seconds_bits, 'D');
 			dram->bits |= watts_bits;
 			dram->bits |= seconds_bits;
 		}
@@ -467,9 +550,9 @@ dump_rapl_terse( FILE * writeFile ){
 #ifdef LIBMSR_DEBUG
         fprintf(writeFile, "%s %s::%d Writing terse label\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
-    // ###  based on how read_rapl_data works this seems wrong
+    // TODO:  based on how read_rapl_data works this seems wrong
 	for(socket=0; socket<NUM_SOCKETS; socket++){
-		read_rapl_data(socket, &r);
+		read_rapl_data_old(socket, &r);
 		fprintf(writeFile,"%8.4lf %8.4lf ", r.pkg_watts, r.dram_watts);
 	}
 }
@@ -483,6 +566,10 @@ dump_rapl_data( struct rapl_data *r, FILE *writeFile ){
 		initialized=1;
 		gettimeofday( &start, NULL );
 	}
+#ifdef LIBMSR_DEBUG
+    fprintf(writeFile, "At address %p\n", r);
+    fprintf(writeFile, "pkg_bits = %8.4lx   pkg_joules= %8.4lf\n", r->pkg_bits, r->pkg_joules);
+#endif
 	gettimeofday( &now, NULL );
 	fprintf(writeFile, "pkg_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
 			r->pkg_watts,
@@ -521,34 +608,181 @@ dump_rapl_power_info( FILE *writeFile){
 	}
 }
 
-//static int read_perf_status()
-//{
+// TODO: does not work, fix later: might defer to end user
+int rapl_delta_point(const int socket, struct rapl_data ** rapl, struct rapl_data * datapoint)
+{
+    struct rapl_data * p;
+
+    if (!*rapl)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: rapl init has either failed or has not been called\n", 
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
+    }
+
+    p = &((*rapl)[socket]);
+
+    // TODO: handle wraparound
+    datapoint->old_pkg_bits = datapoint->pkg_bits;
+    datapoint->old_dram_bits = datapoint->dram_bits;
+    datapoint->pkg_bits = p->pkg_bits;
+    datapoint->dram_bits = p->dram_bits;
+
+    delta_rapl_data(datapoint, NULL);
+
     
-//    return 0;
-//}
+    return 0;
+}
 
-//static int read_power_info(){}
+int poll_rapl_data(const int socket, struct rapl_data ** rapl, struct rapl_data * result)
+{
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "%s %s::%d DEBUG: (poll_rapl_data) socket=%d\n", getenv("HOSTNAME"), __FILE__, __LINE__, socket);
+#endif
+    struct rapl_data * p;
+    if (!*rapl)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: rapl init has either failed or has not been called\n", 
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
+    }
 
-//static int read_pp_policy(){}
+    p = &((*rapl)[socket]);
+    read_rapl_data(socket, rapl); //, p);
+    delta_rapl_data(socket, p, result);
+    return 0;
+}
 
-//static int read_pkg_power_limit(){}
+// TODO: should probably be static
+int delta_rapl_data(const int socket, struct rapl_data * p, struct rapl_data * result)
+{
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "%s %s::%d (delta_rapl_data)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+#endif
+    // where did that number come from? -> max possible energy value?
+	uint64_t  maxbits=4294967296;
+    // why is this zero? does not seem right
+	double max_joules=0.0;
 
-//static int read_dram_power_limit(){}
+    p->elapsed = (p->now.tv_sec - p->old_now.tv_sec) 
+             +
+             (p->now.tv_usec - p->old_now.tv_usec)/1000000.0;
+    // Get delta joules.
+    // Now handles wraparound.
+    if(p->pkg_joules - p->old_pkg_joules < 0)
+    {
+        translate(socket, &maxbits, &max_joules, BITS_TO_JOULES); 
+        p->pkg_delta_joules = ( p->pkg_joules + max_joules) - p->old_pkg_joules;
+    } else {
+        p->pkg_delta_joules  = p->pkg_joules  - p->old_pkg_joules;		
+    }
+#ifdef RAPL_USE_DRAM
+    if(p->dram_joules - p->old_dram_joules < 0)
+    {
+        translate(socket, &maxbits, &max_joules, BITS_TO_JOULES); 
+        p->dram_delta_joules = (p->dram_joules + max_joules) - p->old_dram_joules;
+    } else {
+        p->dram_delta_joules = p->dram_joules - p->old_dram_joules;	
+    }	
+#endif
+    // Get watts.
+    assert(p->elapsed != 0.0);
+    if(p->elapsed > 0.0){
+        p->pkg_watts  = p->pkg_delta_joules  / p->elapsed;
+#ifdef RAPL_USE_DRAM
+        p->dram_watts = p->dram_delta_joules / p->elapsed;
+#endif
+    }else{
+        p->pkg_watts  = -999.0;
+#ifdef RAPL_USE_DRAM
+        p->dram_watts = -999.0;
+#endif
+    }
+    if (result)
+    {
+        result = p;
+    }
+    return 0;
+}
 
-//static int read_pp_power_limit(){}
+// TODO: should probably be static
+int read_rapl_data(const int socket, struct rapl_data ** rapl)
+{
+    struct rapl_data * p;
+    p = &((*rapl)[socket]);
 
-//static int read_pp_policy(){}
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "%s %s::%d (read_rapl_data): socket=%d at address %p\n", getenv("HOSTNAME"), __FILE__, __LINE__, socket, p);
+#endif
 
+    // Move current variables to "old" variables.
+    p->old_pkg_bits		= p->pkg_bits;
+    p->old_pkg_joules	= p->pkg_joules;
+    p->old_now.tv_sec 	= p->now.tv_sec;
+    p->old_now.tv_usec	= p->now.tv_usec;
+    p->old_dram_perf    = p->dram_perf_count;
+
+    // grab a timestamp
+	gettimeofday( &(p->now), NULL );
+
+    // Get raw joules
+    if(read_msr_by_coord( socket, 0, 0, MSR_PKG_ENERGY_STATUS,  &(p->pkg_bits)  ))
+    {
+        return -1;
+    }
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "DEBUG: pkg_bits %lx\n", p->pkg_bits);
+#endif
+    translate( socket, &(p->pkg_bits), &(p->pkg_joules), BITS_TO_JOULES );
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "DEBUG: pkg_joules %lf\n", p->pkg_joules);
+    fprintf(stderr, "DEBUG: pkg_watts %lf\n", p->pkg_watts);
+#endif
+
+    /* read PP registers
+    if(read_msr_by_coord(socket, 0, 0, MSR_PPO_POWER_LIMIT, &(p->pp0_power_limit)))
+    {
+        return -1;
+    }
+    if(read_msr_by_coord(socket, 0, 0, MSR_PPO_ENERGY_STATUS, &(p->pp0_energy_status)))
+    {
+        return -1;
+    }
+    if(read_msr_by_coord(socket, 0, 0, MSR_PPO_POLICY, &(p->pp0_policy)))
+    {
+        return -1;
+    }
+    if(read_msr_by_coord(socket, 0, 0, MSR_PPO_PERF_STATUS, &(p->pp0_perf_status)))
+    {
+        return -1;
+    }
+    */
+    
+#ifdef RAPL_USE_DRAM
+    p->old_dram_bits	= p->dram_bits;
+    p->old_dram_joules	= p->dram_joules;
+    if(read_msr_by_coord( socket, 0, 0, MSR_DRAM_ENERGY_STATUS, &(p->dram_bits) ))
+    {
+        return -1;
+    }
+    translate( socket, &(p->dram_bits), &(p->dram_joules), BITS_TO_JOULES );
+    if (read_msr_by_coord( socket, 0, 0, MSR_DRAM_PERF_STATUS, &(p->dram_perf_count)))
+    {
+        return -1;
+    }
+#endif
+    return 0;
+}
 
 int
-read_rapl_data( const int socket, struct rapl_data *r ){
-	/* 
-	 * If r is null, measurments are recorded into the local static struct s.
+read_rapl_data_old( const int socket, struct rapl_data *r ){
+/*
+	 * If r is null, measurments are recorded into the local static struct s.           // poll rapl data
 	 *
-	 * If r is not null and r->flags == 0, measurements are also recorded 
+	 * If r is not null and r->flags == 0, measurements are also recorded               // read rapl data(null)
 	 *   into the local static struct s and the delta is recorded in r.
 	 *
-	 * If r is not null and r->flags & RDF_REENTRANT, measurements are recorded in
+	 * If r is not null and r->flags & RDF_REENTRANT, measurements are recorded in      // read rapl data(result)
 	 *   r only and the delta is calculated relative to the difference in 
 	 *   the values passed in with r.  old_* values are destroyed and * values
 	 *   are moved to old_* values.  
@@ -561,14 +795,14 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 	 * This functionality allows for the case where the user wishes to, e.g., 
 	 *   take measurments at points A, B, C, C', B', A' using three separate
 	 *   rapl_data structs.
-	 */
+*/
     fprintf(stderr, "\nREADING RAPL DATA\n");
     // previous state for calculating the delta?
 	struct rapl_data *p;	// Where the previous state lives.
-    // where did that number come from?
+    // where did that number come from? -> max possible energy value?
 	uint64_t  maxbits=4294967296;
+    // why is this zero? does not seem right
 	double max_joules=0.0;
-    // rapl data for each physical processor?
 	static struct rapl_data s[NUM_SOCKETS];
 
     // If r is null we store data locally, otherwise we put it in r. What is the point of only having it locally?
@@ -579,6 +813,7 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 	}
 
 
+    // why doesn't this zero out old data
 	// Zero out values on init.
 	if(p->flags & RDF_INIT){
 		p->pkg_bits=0;
@@ -623,7 +858,6 @@ read_rapl_data( const int socket, struct rapl_data *r ){
         return -1;
     }
     */
-
 	
 #ifdef RAPL_USE_DRAM
 	p->old_dram_bits	= p->dram_bits;
@@ -642,7 +876,6 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 	// Fill in the struct if present.
 	if(r && !(r->flags & RDF_INIT)){
 		// Get delta in seconds
-        // why do you add that second part to get the delta?
 		r->elapsed = (p->now.tv_sec - p->old_now.tv_sec) 
 			     +
 			     (p->now.tv_usec - p->old_now.tv_usec)/1000000.0;
@@ -668,8 +901,8 @@ read_rapl_data( const int socket, struct rapl_data *r ){
 #endif
 
 		// Get watts.
-        assert(r->elapsed != 0);
-		if(r->elapsed > 0){
+        assert(r->elapsed != 0.0);
+		if(r->elapsed > 0.0){
 			r->pkg_watts  = r->pkg_delta_joules  / r->elapsed;
 #ifdef RAPL_USE_DRAM
 			r->dram_watts = r->dram_delta_joules / r->elapsed;

@@ -140,11 +140,20 @@ struct rapl_limit{
 extern "C" {
 #endif
 
+int rapl_init(struct rapl_data ** rapl, uint64_t * rapl_flags);
+int rapl_finalize(struct rapl_data ** rapl);
+
 void set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
 void get_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
 void dump_rapl_limit( struct rapl_limit *L, FILE *w );
 
-int read_rapl_data( const int socket, struct rapl_data *r );
+int read_rapl_data_old( const int socket, struct rapl_data *r );
+//int read_rapl_data(const int socket, struct rapl_data * p);
+int read_rapl_data(const int socket, struct rapl_data ** rapl);
+int poll_rapl_data(const int socket, struct rapl_data ** rapl, struct rapl_data * result);
+//int delta_rapl_data(const int socket, struct rapl_data ** rapl, struct rapl_data * result);
+int delta_rapl_data(struct rapl_data * p, struct rapl_data * result);
+int rapl_delta_point(const int socket, struct rapl_data ** rapl,  struct rapl_data * p);
 void dump_rapl_data( struct rapl_data *r, FILE *w );
 
 void dump_rapl_terse(FILE *w);
