@@ -29,6 +29,7 @@ if (NOT libmsr_CONFIG_LOADED)
     set(libmsr_CONFIG_LOADED TRUE)
 
     #Install layout
+<<<<<<< HEAD
     set(libmsr_INSTALL_PREFIX   @CMAKE_INSTALL_PREFIX@)
     set(libmsr_INCLUDE_DIR      ${libmsr_INSTALL_PREFIX}/include)
     set(libmsr_LIB_DIR          ${libmsr_INSTALL_PREFIX}/lib)
@@ -38,6 +39,17 @@ if (NOT libmsr_CONFIG_LOADED)
     set(libmsr_LIB_PATH         @{libmsr_LIB_DIR})
     #Whether the library was bulit with MPI
     set(libmsr_HAVE_MPI         @LIBMSR_HAVE_MPI@)
+=======
+    set(libmsr_INSTALL_PREFIX	@CMAKE_INSTALL_PREFIX@)
+    set(libmsr_INCLUDE_DIR	${libmsr_INSTALL_PREFIX}/include)
+    set(libmsr_LIB_DIR		${libmsr_INSTALL_PREFIX}/lib)
+
+    #Includes needed to use callpath
+    set(libmsr_INCLUDE_PATH	${libmsr_INCLUDE_DIR})
+    set(libmsr_LIB_PATH		@{libmsr_LIB_DIR})
+    #Whether the library was bulit with MPI
+    set(libmsr_HAVE_MPI 	@LIBMSR_HAVE_MPI@)
+>>>>>>> cmake config files created
     #Library targets imported from file
     include(${libmsr_CMAKE_DIR}/libmsr-libs.cmake)
 endif()
