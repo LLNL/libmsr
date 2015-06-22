@@ -8,7 +8,7 @@ libmsr_mpi_test: libmsr_test.c
 	mpicc -Wall -DMPI -o libmsr_mpi_test libmsr_test.c -L ../lib -lmsr
 
 mpi: mpi_test.c
-	mpicc -Wall -o mpi_test mpi_test.c -L../lib -lgaramond 
+	mpicc -Wall -o mpi_test mpi_test.c -L../lib -lPowThermTest -lmsr
 
 rzoz: 
 	srun -p quad_sb -n 32 --auto-affinity=start=0,verbose,cpt=1 ./mpi_test | grep QQQ > QQQ

@@ -1,9 +1,9 @@
 CFLAGS=-fPIC -Wall -O3 -I../include -g
 CC=gcc
-MYLIBDIR=${HOME}/libmsr/lib
+MYLIBDIR=${HOME}/Projects/libmsr-walker/lib
 WRAP=../wrap/wrap.py
 
-all: helloWorldMPI.o libPowThermTest 
+all: libPowThermTest 
 
 libPowThermTest: exampleFile.c
 	mpicc $(CFLAGS) -shared -Wl,-soname,libPowThermTest.so -o ../lib/libPowThermTest.so $^

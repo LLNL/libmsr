@@ -1,5 +1,24 @@
 /* 
  * Edited by: Scott Walker
+ * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
+ * Produced at the Lawrence Livermore National Laboratory  
+ * Written by Barry Rountree, rountree@llnl.gov.
+ * All rights reserved. 
+ * 
+ * This file is part of libmsr.
+ * 
+ * libmsr is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ * 
+ * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+ * details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License along
+ * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
  */
 #ifndef MSR_CORE_H
 #define MSR_CORE_H
@@ -47,31 +66,32 @@ enum{
 //	The rest of the functions are wrappers that call these
 //	two functions.
 //
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
 int init_msr();
-void finalize_msr();
+int finalize_msr();
 
-void write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val );
-void write_msr_by_idx_and_verify( int dev_idx, off_t msr, uint64_t  val );
-void read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val );
+int write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val );
+int write_msr_by_idx_and_verify( int dev_idx, off_t msr, uint64_t  val );
+int read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val );
 
-void write_msr_by_coord( int socket, int core, int thread, off_t msr, uint64_t  val );
-void read_msr_by_coord(  int socket, int core, int thread, off_t msr, uint64_t *val );
+int write_msr_by_coord( int socket, int core, int thread, off_t msr, uint64_t  val );
+int read_msr_by_coord(  int socket, int core, int thread, off_t msr, uint64_t *val );
 
-void write_all_sockets(   off_t msr, uint64_t  val  );
-void write_all_sockets_v( off_t msr, uint64_t *val );
-void write_all_cores(     off_t msr, uint64_t  val  );
-void write_all_cores_v(   off_t msr, uint64_t *val );
-void write_all_threads(   off_t msr, uint64_t  val  );
-void write_all_threads_v( off_t msr, uint64_t *val );
+int write_all_sockets(   off_t msr, uint64_t  val  );
+int write_all_sockets_v( off_t msr, uint64_t *val );
+int write_all_cores(     off_t msr, uint64_t  val  );
+int write_all_cores_v(   off_t msr, uint64_t *val );
+int write_all_threads(   off_t msr, uint64_t  val  );
+int write_all_threads_v( off_t msr, uint64_t *val );
 
-void read_all_sockets(    off_t msr, uint64_t *val );
-void read_all_cores(      off_t msr, uint64_t *val );
-void read_all_threads(    off_t msr, uint64_t *val );
+int read_all_sockets(    off_t msr, uint64_t *val );
+int read_all_cores(      off_t msr, uint64_t *val );
+int read_all_threads(    off_t msr, uint64_t *val );
 
 #ifdef __cplusplus
 }
