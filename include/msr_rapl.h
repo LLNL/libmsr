@@ -94,6 +94,8 @@ struct rapl_data{
 
     double old_pp0_joules;
 
+    double pp0_delta_joules;
+
     uint64_t pp0_policy;
 
     uint64_t pp0_perf_status;
@@ -106,6 +108,8 @@ struct rapl_data{
     double  pp1_joules; // energy
 
     double old_pp1_joules; // old energy
+
+    double pp1_delta_joules; // delta energy
 
     uint64_t pp1_policy; // policy
 
@@ -148,29 +152,31 @@ struct rapl_limit{
 extern "C" {
 #endif
 
-int rapl_init(struct rapl_data ** rapl, uint64_t * rapl_flags);
-int rapl_finalize(struct rapl_data ** rapl);
+int rapl_storage(struct rapl_data ** data, uint64_t ** flags);
+int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags);
+int rapl_finalize();
 
-int set_pkg_rapl_limit(const int socket, struct rapl_limit * limit1, struct rapl_limit * limit2, const uint64_t * rapl_flags);
-int set_dram_rapl_limit(const int socket, struct rapl_limit * limit, const uint64_t * rapl_flags);
-int set_pp_rapl_limit(const int socket, struct rapl_limit * limit0, struct rapl_limit * limit1, const uint64_t * rapl_flags);
-int set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram,
-                    const uint64_t * rapl_flags);
-int get_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram,
-                    const uint64_t * rapl_flags);
+int set_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1, struct rapl_limit * limit2);
+int set_dram_rapl_limit(const unsigned socket, struct rapl_limit * limit);
+int set_pp_rapl_limit(const unsigned socket, struct rapl_limit * limit0, struct rapl_limit * limit1);
+int set_pp_rapl_policies(const unsigned socket, uint64_t * pp0, uint64_t * pp1);
+int get_pp_rapl_policies(const unsigned socket, uint64_t * pp0, uint64_t * pp1);
+int get_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1, struct rapl_limit * limit2);
+int get_dram_rapl_limit(const unsigned socket, struct rapl_limit * limit);
+int get_pp_rapl_limit(const unsigned socket, struct rapl_limit * limit0, struct rapl_limit * limit1);
 void dump_rapl_limit( struct rapl_limit *L, FILE *w );
 
-//int read_rapl_data_old( const int socket, struct rapl_data *r);
-//int read_rapl_data(const int socket, struct rapl_data * p);
-int read_rapl_data(const int socket, struct rapl_data ** rapl, const uint64_t * rapl_flags);
-int poll_rapl_data(const int socket, struct rapl_data ** rapl, struct rapl_data * result, const uint64_t * rapl_flags);
-//int delta_rapl_data(const int socket, struct rapl_data ** rapl, struct rapl_data * result);
-int delta_rapl_data(const int socket, struct rapl_data * p, struct rapl_data * result, const uint64_t * rapl_flags);
+//int read_rapl_data_old( const unsigned socket, struct rapl_data *r);
+//int read_rapl_data(const unsigned socket, struct rapl_data * p);
+int read_rapl_data(const unsigned socket);
+int poll_rapl_data(const unsigned socket, struct rapl_data * result);
+//int delta_rapl_data(const unsigned socket, struct rapl_data ** rapl, struct rapl_data * result);
+int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_data * result);
 void dump_rapl_data( struct rapl_data *r, FILE *w );
 
-void dump_rapl_terse(FILE *w, struct rapl_data ** rapl, const uint64_t * rapl_flags);
+int dump_rapl_terse(FILE *w);
 void dump_rapl_terse_label(FILE *w);
-void dump_rapl_power_info(FILE *w, const uint64_t * rapl_flags);
+int dump_rapl_power_info(FILE *w);
 #ifdef __cplusplus 
 }
 #endif

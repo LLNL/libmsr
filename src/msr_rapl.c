@@ -117,6 +117,24 @@
 #define MF_06_5E (0x1EFE17)
 #define MF_06_57 (0x507FF)
 
+// Register flag
+#define POWER_UNIT (0x1L)
+#define PKG_POWER_LIMIT (0x2L)
+#define PKG_ENERGY_STATUS (0x4L)
+#define PKG_PERF_STATUS (0x8L)
+#define PKG_POWER_INFO (0x10L)
+#define DRAM_POWER_LIMIT (0x20L)
+#define DRAM_ENERGY_STATUS (0x40L)
+#define DRAM_PERF_STATUS (0x80L)
+#define DRAM_POWER_INFO (0x100L)
+#define PP0_POWER_LIMIT (0x200L)
+#define PP0_ENERGY_STATUS (0x400L)
+#define PP0_POLICY (0x800L)
+#define PP0_PERF_STATUS (0x1000L)
+#define PP1_POWER_LIMIT (0x2000L)
+#define PP1_ENERGY_STATUS (0x4000L)
+#define PP1_POLICY (0x8000L)
+
 enum{
 	BITS_TO_WATTS,
 	WATTS_TO_BITS,
@@ -136,6 +154,21 @@ struct rapl_units{
 	double watts;
 };
 
+struct rapl_power_info{
+	uint64_t msr_pkg_power_info;	// raw msr values
+
+	double pkg_max_power;		// watts
+	double pkg_min_power;
+	double pkg_max_window;		// seconds
+	double pkg_therm_power;		// watts
+
+	uint64_t msr_dram_power_info;
+	double dram_max_power;		// watts
+	double dram_min_power;
+	double dram_max_window;		// seconds
+	double dram_therm_power;	// watts
+};
+
 // rapl flags
 // 0: 606h, MSR_RAPL_POWER_UNIT
 // 1: 610h, MSR_PKG_POWER_LIMIT
@@ -153,14 +186,14 @@ struct rapl_units{
 // 13: 640h, MSR_PP1_POWER_LIMIT
 // 14: 641h, MSR_PP1_ENERGY_STATUS
 // 15: 642h, MSR_PP1_POLICY
-// 16: 64Ch, ?
-// 17: 66Eh, pkg power info?
-// 18: 690h, ?
-// 19: 6B0h, ?
-// 20: 6b1h, ?
-int rapl_init(struct rapl_data ** rapl, uint64_t * rapl_flags)
+// 16: 64Ch, MSR_TURBO_ACTIVATION_RATIO
+// 17: 66Eh, MSR_PKG_POWER_INFO // only has thermal spec. TODO: fix this
+// 18: 690h, MSR_CORE_PERF_LIMIT_REASONS
+// 19: 6B0h, MSR_GRAPHICS_PERF_LIMIT_REASONS
+// 20: 6b1h, MSR_RING_PERF_LIMIT_REASONS
+
+static int setflags(uint64_t * rapl_flags)
 {
-    static int initialized = 0;
     uint64_t model = 0;
 
     cpuid_get_model(&model);
@@ -239,33 +272,108 @@ int rapl_init(struct rapl_data ** rapl, uint64_t * rapl_flags)
             __FILE__, __LINE__, model, *rapl_flags);
 #endif
 
-    if (!(*rapl_flags && 0x1L))
+    if (!(*rapl_flags && POWER_UNIT))
     {
         fprintf(stderr, "%s %s::%d ERROR: no rapl power unit register, rapl is probably not supported on this architecture\n",
                 getenv("HOSTNAME"), __FILE__, __LINE__);
         return -1;
     }
+    return 0;
+}
 
-    if (!initialized)
+int rapl_storage(struct rapl_data ** data, uint64_t ** flags)
+{
+    static struct rapl_data * rapl = NULL;
+    static uint64_t * rapl_flags = NULL;
+    static int init = 1;
+
+#ifdef STORAGE_DEBUG
+    if (rapl_flags)
     {
-        *rapl = (struct rapl_data *) calloc(NUM_SOCKETS, sizeof(struct rapl_data));
-        if (!*rapl)
+        fprintf(stderr, "%s %s::%d DEBUG: (rapl_storage) data pointer is %p, flags pointer is %p, data is at %p, flags are %lx at %p\n",
+                getenv("HOSTNAME"), __FILE__, __LINE__, data, flags, rapl, *rapl_flags, rapl_flags);
+    }
+#endif
+
+    if (init)
+    {
+        init = 0;
+        rapl = (struct rapl_data *) calloc(NUM_SOCKETS, sizeof(struct rapl_data));
+        if (!rapl)
         {
             fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
             return -1;
         }
-    }
+        rapl_flags = (uint64_t *) calloc(1, sizeof(uint64_t));
+        if (!rapl_flags)
+        {
+            fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+            return -1;
+        }
+        if (setflags(rapl_flags))
+        {
+            return -1;
+        }
+        *data = rapl;
+        *flags = rapl_flags;
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: rapl initialized at %p\n", *rapl);
+        fprintf(stderr, "%s %s::%d DEBUG: (storage) initialized rapl data at %p, flags are %lx, (flags at %p, rapl_flags at %p\n", 
+                getenv("HOSTNAME"), __FILE__, __LINE__, rapl, **flags, flags, rapl_flags);
 #endif
+    }
+    if (data)
+    {
+        *data = rapl;
+    }
+    if (flags)
+    {
+        *flags = rapl_flags;
+    }
+
     return 0;
 }
 
-int rapl_finalize(struct rapl_data ** rapl)
+// TODO: have this save rapl register data so it can be restored later in finalize
+int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
 {
-    if (*rapl)
+    static int initialize = 1;
+    if (initialize)
     {
-        free(*rapl);
+        initialize = 0;
+        if (rapl_storage(rapl, rapl_flags))
+        {
+            return -1;
+        }
+#ifdef LIBMSR_DEBUG
+        fprintf(stderr, "DEBUG: (init) rapl initialized at %p, flags are %lx at %p\n", *rapl, **rapl_flags, *rapl_flags);
+#endif
+    }
+    else
+    {
+        fprintf(stderr, "%s %s::%d ERROR: rapl has already been initialized\n", getenv("HOSTNAME"),
+                __FILE__, __LINE__);
+    }
+
+    return 0;
+}
+
+int rapl_finalize()
+{
+    struct rapl_data * rapl = NULL;
+    uint64_t * rapl_flags = NULL;
+
+    if (rapl_storage(&rapl, &rapl_flags))
+    {
+        return -1;
+    }
+
+    if (rapl)
+    {
+       free(rapl);
+    }
+    if (rapl_flags)
+    {
+        free(rapl_flags);
     }
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "DEBUG: rapl finalized\n");
@@ -273,14 +381,16 @@ int rapl_finalize(struct rapl_data ** rapl)
     return 0;
 }
 
-// TODO: fix the translate for time window
+// TODO: make sure the translation works for all architectures
+// TODO: change the DRAM ones to STD
 static int
-translate( const int socket, uint64_t* bits, double* units, int type){
+translate( const unsigned socket, uint64_t* bits, double* units, int type){
 	static int initialized=0;
 	static struct rapl_units ru[NUM_SOCKETS];
 	uint64_t val[NUM_SOCKETS];
 	int i;
     uint64_t timeval_x = 0, timeval_y = 0;
+    assert(socket < NUM_SOCKETS);
 
 	if(!initialized){
 		initialized=1;
@@ -351,31 +461,23 @@ translate( const int socket, uint64_t* bits, double* units, int type){
     return 0;
 }
 
-struct rapl_power_info{
-	uint64_t msr_pkg_power_info;	// raw msr values
-
-	double pkg_max_power;		// watts
-	double pkg_min_power;
-	double pkg_max_window;		// seconds
-	double pkg_therm_power;		// watts
-
-	uint64_t msr_dram_power_info;
-	double dram_max_power;		// watts
-	double dram_min_power;
-	double dram_max_window;		// seconds
-	double dram_therm_power;	// watts
-};
-
-static void
-get_rapl_power_info( const int socket, struct rapl_power_info *info, const uint64_t * rapl_flags){
+static int
+get_rapl_power_info( const unsigned socket, struct rapl_power_info *info){
 	uint64_t val = 0;
+    uint64_t * rapl_flags = NULL;
+    assert(socket < NUM_SOCKETS);
+
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
 	//info->msr_pkg_power_info  = 0x6845000148398;
 	//info->msr_dram_power_info = 0x682d0001482d0;
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d DEBUG: (get_rapl_power_info)\n", getenv("HOSTNAME"),
             __FILE__, __LINE__);
 #endif
-    if (*rapl_flags & 0x10L)
+    if (*rapl_flags & PKG_POWER_INFO)
     {
         read_msr_by_coord( socket, 0, 0, MSR_PKG_POWER_INFO, &(info->msr_pkg_power_info) );
         val = MASK_VAL( info->msr_pkg_power_info,  53, 48 );
@@ -390,7 +492,7 @@ get_rapl_power_info( const int socket, struct rapl_power_info *info, const uint6
         val = MASK_VAL( info->msr_pkg_power_info,  14,  0 );
         translate( socket, &val, &(info->pkg_therm_power), BITS_TO_WATTS );
     }
-    if (*rapl_flags & 0x100L)
+    if (*rapl_flags & DRAM_POWER_INFO)
     {
         read_msr_by_coord( socket, 0, 0, MSR_DRAM_POWER_INFO, &(info->msr_dram_power_info) );
         // Note that the same units are used in both the PKG and DRAM domains.
@@ -407,11 +509,13 @@ get_rapl_power_info( const int socket, struct rapl_power_info *info, const uint6
         val = MASK_VAL( info->msr_dram_power_info, 14,  0 );
         translate( socket, &val, &(info->dram_therm_power), BITS_TO_WATTS );
     }
+    return 0;
 }
 
-static int calc_rapl_from_bits(const int socket, struct rapl_limit * limit, const unsigned offset)
+static int calc_rapl_from_bits(const unsigned socket, struct rapl_limit * limit, const unsigned offset)
 {
 	uint64_t watts_bits=0, seconds_bits=0;
+    assert(socket < NUM_SOCKETS);
 
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d DEBUG: (calc_rapl_from_bits)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
@@ -427,9 +531,10 @@ static int calc_rapl_from_bits(const int socket, struct rapl_limit * limit, cons
     return 0;
 }
 
-static int calc_rapl_bits(const int socket, struct rapl_limit * limit, const unsigned offset)
+static int calc_rapl_bits(const unsigned socket, struct rapl_limit * limit, const unsigned offset)
 {
 	uint64_t watts_bits=0, seconds_bits=0;
+    assert(socket < NUM_SOCKETS);
 
     watts_bits   = MASK_VAL( limit->bits, 14 + offset,  0 + offset);
     seconds_bits = MASK_VAL( limit->bits, 23 + offset, 17 + offset);
@@ -463,19 +568,23 @@ static int calc_rapl_bits(const int socket, struct rapl_limit * limit, const uns
     return 0;
 }
 
-static int calc_pkg_rapl_limit(const int socket, struct rapl_limit * limit1, struct rapl_limit * limit2,
-                               const uint64_t * rapl_flags)
+static int calc_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1, struct rapl_limit * limit2)
 {
+    assert(socket < NUM_SOCKETS);
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d DEBUG: (calc_pkg_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
+
     if (limit1->bits)
     {
         calc_rapl_from_bits(socket, limit1, 0);
     }
     else
     {
-        calc_rapl_bits(socket, limit1, 0);
+        if(calc_rapl_bits(socket, limit1, 0))
+        {
+            return -1;
+        }
     }
     if (limit2->bits)
     {
@@ -483,40 +592,56 @@ static int calc_pkg_rapl_limit(const int socket, struct rapl_limit * limit1, str
     }
     else
     {
-        calc_rapl_bits(socket, limit2, 32);
+        if(calc_rapl_bits(socket, limit2, 32))
+        {
+            return -1;
+        }
     }
     return 0;
 }
 
-static int calc_std_rapl_limit(const int socket, struct rapl_limit * limit, const uint64_t * rapl_flags)
+static int calc_std_rapl_limit(const unsigned socket, struct rapl_limit * limit)
 {
+    assert(socket < NUM_SOCKETS);
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d DEBUG: (calc_std_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
+
     if (limit->bits)
     {
         calc_rapl_from_bits(socket, limit, 0);
     }
     else
     {
-        calc_rapl_bits(socket, limit, 0);
+        if(calc_rapl_bits(socket, limit, 0))
+        {
+            return -1;
+        }
     }
     return 0;
 }
 
-// TODO: check against LIMIT registers when translate is fixed
-int set_pkg_rapl_limit(const int socket, struct rapl_limit * limit1, struct rapl_limit * limit2,
-                       const uint64_t * rapl_flags)
+int set_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1, struct rapl_limit * limit2)
 {
     uint64_t pkg_limit = 0;
+    uint64_t * rapl_flags = NULL;
+    assert(socket < NUM_SOCKETS);
 
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (set_pkg_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+    fprintf(stderr, "%s %s::%d DEBUG: (set_pkg_rapl_limit) flags are at %p\n", getenv("HOSTNAME"), __FILE__, __LINE__,
+            rapl_flags);
 #endif
 
-    if (*rapl_flags & 0x2L)
+    if (*rapl_flags & PKG_POWER_LIMIT)
     {
-        calc_pkg_rapl_limit(socket, limit1, limit2, rapl_flags);
+        if(calc_pkg_rapl_limit(socket, limit1, limit2))
+        {
+            return -1;
+        }
         if (limit1)
         {
             pkg_limit |= limit1->bits | (1LL << 15) | (1LL << 16);
@@ -539,18 +664,28 @@ int set_pkg_rapl_limit(const int socket, struct rapl_limit * limit1, struct rapl
     return 0;
 }
 
-int set_dram_rapl_limit(const int socket, struct rapl_limit * limit, const uint64_t * rapl_flags)
+// TODO: make sure the values are not too large/small
+int set_dram_rapl_limit(const unsigned socket, struct rapl_limit * limit)
 {
     uint64_t dram_limit = 0;
+    uint64_t * rapl_flags = NULL;
+    assert(socket < NUM_SOCKETS);
 
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d DEBUG: (set_dram_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
-    if (*rapl_flags & 0x20L)
+    if (*rapl_flags & DRAM_POWER_LIMIT)
     {
         if (limit)
         {
-            calc_std_rapl_limit(socket, limit, rapl_flags);
+            if(calc_std_rapl_limit(socket, limit))
+            {
+                return -1;
+            }
             dram_limit |= limit->bits | (1LL << 15);
             write_msr_by_coord(socket, 0, 0, MSR_DRAM_POWER_LIMIT, dram_limit); 
         }
@@ -564,18 +699,28 @@ int set_dram_rapl_limit(const int socket, struct rapl_limit * limit, const uint6
     return 0;
 }
 
-int set_pp_rapl_limit(const int socket, struct rapl_limit * limit0, struct rapl_limit * limit1,
-                const uint64_t * rapl_flags)
+// TODO: make sure the values are not too large/small
+int set_pp_rapl_limit(const unsigned socket, struct rapl_limit * limit0, struct rapl_limit * limit1)
 {
     uint64_t pp0_limit = 0;
     uint64_t pp1_limit = 0;
+    uint64_t * rapl_flags = NULL;
+    assert(socket < NUM_SOCKETS);
+
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
 
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d DEBUG: (set_pp_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
-    if (limit0 && (*rapl_flags & 0x200L))
+    if (limit0 && (*rapl_flags & PP0_POWER_LIMIT))
     {
-        calc_std_rapl_limit(socket, limit0, rapl_flags);
+        if(calc_std_rapl_limit(socket, limit0))
+        {
+            return -1;
+        }
         pp0_limit |= limit0->bits | (1LL << 15);
         write_msr_by_coord(socket, 0, 0, MSR_PP0_POWER_LIMIT, pp0_limit);
     }
@@ -583,11 +728,13 @@ int set_pp_rapl_limit(const int socket, struct rapl_limit * limit0, struct rapl_
     {
         fprintf(stderr, "%s %s::%d ERROR: pp0 rapl limit not supported on this architecture\n",
                 getenv("HOSTNAME"), __FILE__, __LINE__);
-        return -1;
     }
-    if (limit1 && (*rapl_flags & 0x2000L))
+    if (limit1 && (*rapl_flags & PP1_POWER_LIMIT))
     {
-        calc_std_rapl_limit(socket, limit1, rapl_flags);
+        if(calc_std_rapl_limit(socket, limit1))
+        {
+            return -1;
+        }
         pp1_limit |= limit1->bits | (1LL << 15);
         write_msr_by_coord(socket, 0, 0, MSR_PP1_POWER_LIMIT, pp1_limit);
     }
@@ -595,27 +742,167 @@ int set_pp_rapl_limit(const int socket, struct rapl_limit * limit0, struct rapl_
     {
         fprintf(stderr, "%s %s::%d ERROR: pp1 rapl limit not supported on this architecture\n",
                 getenv("HOSTNAME"), __FILE__, __LINE__);
-        return -1;
     }
     return 0;
 }
 
-int 
-get_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram,
-                const uint64_t * rapl_flags){
-	assert(socket < NUM_SOCKETS);
-	assert(socket >=0 );
-	if(limit1){
-		read_msr_by_coord( socket, 0, 0, MSR_PKG_POWER_LIMIT, &(limit1->bits) );
-	}
-	if(limit2){
-		read_msr_by_coord( socket, 0, 0, MSR_PKG_POWER_LIMIT, &(limit2->bits) );
-	}
-	if(dram){
-		read_msr_by_coord( socket, 0, 0, MSR_DRAM_POWER_LIMIT, &(dram->bits) );
-	}
-	// Fill in whatever values are necessary.
-	//calc_rapl_limit( socket, limit1, limit2, dram , rapl_flags);
+// TODO: make sure the values are not too large/small
+int set_pp_rapl_policies(const unsigned socket, uint64_t * pp0, uint64_t * pp1)
+{
+    uint64_t * rapl_flags = NULL;
+    assert(socket < NUM_SOCKETS);
+
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
+
+    if (pp0 && (*rapl_flags & PP0_POLICY))
+    {
+        if (*pp0 & 0xFFFFFFFFFFFFFFE0)
+        {
+            fprintf(stderr, "%s %s::%d ERROR: PP0 policy is too large, valid values are 0-31\n",
+                    getenv("HOSTNAME"), __FILE__, __LINE__);
+        }
+        write_msr_by_coord(socket, 0, 0, MSR_PP0_POLICY, *pp0);
+    }
+    else if (pp0)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: PP0 policy not supported on this architecture\n",
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+    }
+    if (pp1 && (*rapl_flags & PP1_POLICY))
+    {
+        if (*pp1 & 0xFFFFFFFFFFFFFFE0)
+        {
+            fprintf(stderr, "%s %s::%d ERROR: PP1 policy is too large, valid values are 0-31\n",
+                    getenv("HOSTNAME"), __FILE__, __LINE__);
+        }
+        write_msr_by_coord(socket, 0, 0, MSR_PP1_POLICY, *pp1);
+    }
+    else if (pp1)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: PP1 policy not supported on this architecture\n",
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+    }
+    return 0;
+
+}
+
+int get_pp_rapl_policies(const unsigned socket, uint64_t * pp0, uint64_t * pp1)
+{
+    uint64_t * rapl_flags = NULL;
+    assert(socket < NUM_SOCKETS);
+
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
+
+    if (pp0 && (*rapl_flags & PP0_POLICY))
+    {
+        read_msr_by_coord(socket, 0, 0, MSR_PP0_POLICY, pp0);
+    }
+    else if (pp0)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: PP0 policy not supported on this architecture\n",
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+    }
+    if (pp1 && (*rapl_flags & PP1_POLICY))
+    {
+        read_msr_by_coord(socket, 0, 0, MSR_PP1_POLICY, pp1);
+    }
+    else if (pp1)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: PP1 policy not supported on this architecture\n",
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+    }
+    return 0;
+}
+
+int get_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1, struct rapl_limit * limit2)
+{
+    uint64_t * rapl_flags;
+    assert(socket < NUM_SOCKETS);
+
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
+
+    if (*rapl_flags & PKG_POWER_LIMIT)
+    {
+        if (limit1)
+        {
+            read_msr_by_coord(socket, 0, 0, MSR_PKG_POWER_LIMIT, &(limit1->bits));
+        }
+        if (limit2)
+        {
+            read_msr_by_coord(socket, 0, 0, MSR_PKG_POWER_LIMIT, &(limit2->bits));
+        }
+        calc_pkg_rapl_limit(socket, limit1, limit2);
+    }
+    else
+    {
+        fprintf(stderr, "%s %s::%d ERROR: PKG power limit not supported on this architecture\n",
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+    }
+    return 0;
+}
+
+int get_dram_rapl_limit(const unsigned socket, struct rapl_limit * limit)
+{
+    uint64_t * rapl_flags;
+    assert(socket < NUM_SOCKETS);
+
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
+
+    if (limit && (*rapl_flags & DRAM_POWER_LIMIT))
+    {
+        read_msr_by_coord(socket, 0, 0, MSR_DRAM_POWER_LIMIT, &(limit->bits));
+        calc_std_rapl_limit(socket, limit);
+    }
+    else if (limit)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: DRAM rapl limit is not supported on this architecture\n",
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+    }
+    return 0;
+}
+
+int get_pp_rapl_limit(const unsigned socket, struct rapl_limit * limit0, struct rapl_limit * limit1)
+{
+    uint64_t * rapl_flags;
+    assert(socket < NUM_SOCKETS);
+
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
+
+    if (limit0 && (*rapl_flags & PP0_POWER_LIMIT))
+    {
+        read_msr_by_coord(socket, 0, 0, MSR_PP0_POWER_LIMIT, &(limit0->bits));
+        calc_std_rapl_limit(socket, limit0);
+    }
+    else if (limit0)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: PP0 rapl limit not supported on this architecture\n",
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+    }
+    if (limit1 && (*rapl_flags & PP1_POWER_LIMIT))
+    {
+        read_msr_by_coord(socket, 0, 0, MSR_PP1_POWER_LIMIT, &(limit1->bits));
+        calc_std_rapl_limit(socket, limit1);
+    }
+    else if (limit1)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: PP1 rapl limit is not supported on this architecture\n",
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+    }
     return 0;
 }
 
@@ -635,18 +922,18 @@ dump_rapl_terse_label( FILE *writeFile ){
 	}
 }
 
-void
-dump_rapl_terse( FILE * writeFile, struct rapl_data ** rapl, const uint64_t * rapl_flags ){
+int
+dump_rapl_terse( FILE * writeFile){
 	int socket;
 
 #ifdef LIBMSR_DEBUG
         fprintf(writeFile, "%s %s::%d Writing terse label\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
-    // TODO: fix this up
 	for(socket=0; socket<NUM_SOCKETS; socket++){
-		read_rapl_data(socket, rapl, rapl_flags);
-		fprintf(writeFile,"%8.4lf %8.4lf ", (*rapl)[socket].pkg_watts, (*rapl)[socket].dram_watts);
+		read_rapl_data(socket);
+		fprintf(writeFile,"%8.4lf %8.4lf ", rapl[socket].pkg_watts, rapl[socket].dram_watts);
 	}
+    return 0;
 }
 
 void 
@@ -659,7 +946,6 @@ dump_rapl_data( struct rapl_data *r, FILE *writeFile ){
 		gettimeofday( &start, NULL );
 	}
 #ifdef LIBMSR_DEBUG
-    fprintf(writeFile, "At address %p\n", r);
     fprintf(writeFile, "pkg_bits = %8.4lx   pkg_joules= %8.4lf\n", r->pkg_bits, r->pkg_joules);
 #endif
 	gettimeofday( &now, NULL );
@@ -675,13 +961,19 @@ dump_rapl_data( struct rapl_data *r, FILE *writeFile ){
 			);
 }
 
-void
-dump_rapl_power_info( FILE *writeFile, const uint64_t * rapl_flags){
+int
+dump_rapl_power_info( FILE *writeFile){
 	int socket;
+    uint64_t * rapl_flags = NULL;
 	struct rapl_power_info info;
+
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
 	for(socket = 0; socket < NUM_SOCKETS; socket++)
 	{
-		get_rapl_power_info(socket, &info, rapl_flags);
+		get_rapl_power_info(socket, &info);
 		fprintf(writeFile, "Socket= %d pkg_max_power= %8.4lf pkg_min_power=%8.4lf pkg_max_window=%8.4lf pkg_therm_power=%8.4lf\n",
 				socket,
 				info.pkg_max_power,
@@ -689,7 +981,7 @@ dump_rapl_power_info( FILE *writeFile, const uint64_t * rapl_flags){
 				info.pkg_max_window,
 				info.pkg_therm_power);
 
-        if (*rapl_flags & 0x20L)
+        if (*rapl_flags & DRAM_POWER_LIMIT)
         {
             fprintf(writeFile, 
                     "Socket= %d dram_max_power= %8.4lf dram_min_power=%8.4lf dram_max_window=%8.4lf dram_therm_power=%8.4lf\n",
@@ -700,35 +992,44 @@ dump_rapl_power_info( FILE *writeFile, const uint64_t * rapl_flags){
                     info.dram_therm_power);
         }
 	}
+    return 0;
 }
 
-int poll_rapl_data(const int socket, struct rapl_data ** rapl, struct rapl_data * result, const uint64_t * rapl_flags)
+int poll_rapl_data(const unsigned socket, struct rapl_data * result)
 {
+    struct rapl_data * p;
+    assert(socket < NUM_SOCKETS);
+
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d DEBUG: (poll_rapl_data) socket=%d\n", getenv("HOSTNAME"), __FILE__, __LINE__, socket);
 #endif
-    struct rapl_data * p;
-    if (!*rapl)
+
+    if (!rapl)
     {
         fprintf(stderr, "%s %s::%d ERROR: rapl init has either failed or has not been called\n", 
                 getenv("HOSTNAME"), __FILE__, __LINE__);
         return -1;
     }
 
-    p = &((*rapl)[socket]);
-    read_rapl_data(socket, rapl, rapl_flags); //, p);
-    delta_rapl_data(socket, p, result, rapl_flags);
+    p = &(rapl[socket]);
+    read_rapl_data(socket); //, p);
+    delta_rapl_data(socket, p, result);
     return 0;
 }
 
-int delta_rapl_data(const int socket, struct rapl_data * p, struct rapl_data * result, const uint64_t * rapl_flags)
+int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_data * result)
 {
     // where did that number come from? -> max possible energy value?
 	uint64_t  maxbits=4294967296;
-    // why is this zero? does not seem right
 	double max_joules=0.0;
-    static int first = 0;
+    static int first = 1;
+    uint64_t * rapl_flags = NULL;
+    assert(socket < NUM_SOCKETS);
 
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d (delta_rapl_data)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
@@ -736,6 +1037,7 @@ int delta_rapl_data(const int socket, struct rapl_data * p, struct rapl_data * r
     {
         p->elapsed = 0;
         first = 0;
+        return 0;
     }
     else
     {
@@ -745,14 +1047,17 @@ int delta_rapl_data(const int socket, struct rapl_data * p, struct rapl_data * r
     }
     // Get delta joules.
     // Now handles wraparound.
-    if(p->pkg_joules - p->old_pkg_joules < 0)
+    if (*rapl_flags & PKG_ENERGY_STATUS)
     {
-        translate(socket, &maxbits, &max_joules, BITS_TO_JOULES); 
-        p->pkg_delta_joules = ( p->pkg_joules + max_joules) - p->old_pkg_joules;
-    } else {
-        p->pkg_delta_joules  = p->pkg_joules  - p->old_pkg_joules;		
+        if(p->pkg_joules - p->old_pkg_joules < 0)
+        {
+            translate(socket, &maxbits, &max_joules, BITS_TO_JOULES); 
+            p->pkg_delta_joules = ( p->pkg_joules + max_joules) - p->old_pkg_joules;
+        } else {
+            p->pkg_delta_joules  = p->pkg_joules  - p->old_pkg_joules;		
+        }
     }
-    if (*rapl_flags & 0x20L)
+    if (*rapl_flags & DRAM_ENERGY_STATUS)
     {
         if(p->dram_joules - p->old_dram_joules < 0)
         {
@@ -762,17 +1067,44 @@ int delta_rapl_data(const int socket, struct rapl_data * p, struct rapl_data * r
             p->dram_delta_joules = p->dram_joules - p->old_dram_joules;	
         }	
     }
+    if (*rapl_flags & PP0_ENERGY_STATUS)
+    {
+        if (p->pp0_joules - p->old_pp0_joules < 0)
+        {
+            translate(socket, &maxbits, &max_joules, BITS_TO_JOULES);
+            p->pp0_delta_joules = (p->pp0_joules + max_joules) - p->old_pp0_joules;
+        }
+        else
+        {
+            p->pp0_delta_joules = p->pp0_joules - p->old_pp0_joules;
+        }
+    }
+    if (*rapl_flags & PP1_ENERGY_STATUS)
+    {
+        if (p->pp1_joules - p->old_pp1_joules)
+        {
+            translate(socket, &maxbits, &max_joules, BITS_TO_JOULES);
+            p->pp1_delta_joules = (p->pp1_joules + max_joules) - p->old_dram_joules;
+        }
+        else
+        {
+            p->pp1_delta_joules = p->pp1_joules - p->old_pp1_joules;
+        }
+    }
     // Get watts.
     assert(p->elapsed != 0.0 && !first);
     if(p->elapsed > 0.0){
-        p->pkg_watts  = p->pkg_delta_joules  / p->elapsed;
-        if (*rapl_flags & 0x20L)
+        if (*rapl_flags & PKG_POWER_LIMIT)
+        {
+            p->pkg_watts  = p->pkg_delta_joules  / p->elapsed;
+        }
+        if (*rapl_flags & DRAM_POWER_LIMIT)
         {
             p->dram_watts = p->dram_delta_joules / p->elapsed;
         }
     }else{
         p->pkg_watts  = -999.0;
-        if (*rapl_flags & 0x20L)
+        if (*rapl_flags & DRAM_POWER_LIMIT)
         {
             p->dram_watts = -999.0;
         }
@@ -784,27 +1116,31 @@ int delta_rapl_data(const int socket, struct rapl_data * p, struct rapl_data * r
     return 0;
 }
 
-int read_rapl_data(const int socket, struct rapl_data ** rapl, const uint64_t * rapl_flags)
+int read_rapl_data(const unsigned socket)
 {
     struct rapl_data * p;
-    p = &((*rapl)[socket]);
+    uint64_t * rapl_flags = NULL;
+    assert(socket < NUM_SOCKETS);
+
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
+    p = &(rapl[socket]);
 
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d (read_rapl_data): socket=%d at address %p\n", getenv("HOSTNAME"), __FILE__, __LINE__, socket, p);
 #endif
 
     // Move current variables to "old" variables.
-    p->old_pkg_bits		= p->pkg_bits;
-    p->old_pkg_joules	= p->pkg_joules;
     p->old_now.tv_sec 	= p->now.tv_sec;
     p->old_now.tv_usec	= p->now.tv_usec;
-    p->old_dram_perf    = p->dram_perf_count;
 
     // grab a timestamp
 	gettimeofday( &(p->now), NULL );
 
     // PKG
-    if (*rapl_flags & 0x4L) // there is pkg energy status
+    if (*rapl_flags & PKG_ENERGY_STATUS) // there is pkg energy status
     {
         // Get raw joules
         p->old_pkg_bits = p->pkg_bits;
@@ -815,7 +1151,7 @@ int read_rapl_data(const int socket, struct rapl_data ** rapl, const uint64_t * 
         }
         translate( socket, &(p->pkg_bits), &(p->pkg_joules), BITS_TO_JOULES );
     }
-    if (*rapl_flags & 0x8L) // there is pkg perf status
+    if (*rapl_flags & PKG_PERF_STATUS) // there is pkg perf status
     {
         if (read_msr_by_coord(socket, 0, 0, MSR_PKG_PERF_STATUS, &(p->pkg_perf_count)))
         {
@@ -831,7 +1167,7 @@ int read_rapl_data(const int socket, struct rapl_data ** rapl, const uint64_t * 
 #endif
 
     // PP0
-    if (*rapl_flags & 0x400L) // there is pp0 energy status
+    if (*rapl_flags & PP0_ENERGY_STATUS) // there is pp0 energy status
     {
         p->old_pp0_joules = p->pp0_joules;
         p->old_pp0_bits   = p->pp0_bits;
@@ -841,14 +1177,14 @@ int read_rapl_data(const int socket, struct rapl_data ** rapl, const uint64_t * 
         }
         translate(socket, &(p->pp0_bits), &(p->pp0_joules), BITS_TO_JOULES);
     }
-    if (*rapl_flags & 0x1000L) // there is pp0 perf status
+    if (*rapl_flags & PP0_PERF_STATUS) // there is pp0 perf status
     {
         if (read_msr_by_coord(socket, 0, 0, MSR_PP0_PERF_STATUS, &(p->pp0_perf_status)))
         {
             return -1;
         }
     }
-    if (*rapl_flags & 0x800L)
+    if (*rapl_flags & PP0_POLICY) // there is pp0 policy
     {
         if (read_msr_by_coord(socket, 0, 0, MSR_PP0_POLICY, &(p->pp0_policy)))
         {
@@ -857,7 +1193,7 @@ int read_rapl_data(const int socket, struct rapl_data ** rapl, const uint64_t * 
     }
 
     // PP1
-    if (*rapl_flags & 0x4000L) // there is pp1 energy status
+    if (*rapl_flags & PP1_ENERGY_STATUS) // there is pp1 energy status
     {
         // pp1
         p->old_pp1_bits   = p->pp1_bits;
@@ -868,7 +1204,7 @@ int read_rapl_data(const int socket, struct rapl_data ** rapl, const uint64_t * 
         }
         translate(socket, &(p->pp1_bits), &(p->pp1_joules), BITS_TO_JOULES);
     }
-    if (*rapl_flags & 0x8000L)
+    if (*rapl_flags & PP1_POLICY) // there is pp1 policy
     {
         if(read_msr_by_coord(socket, 0, 0, MSR_PP1_POLICY, &(p->pp1_policy)))
         {
@@ -877,7 +1213,7 @@ int read_rapl_data(const int socket, struct rapl_data ** rapl, const uint64_t * 
     }
 
     // DRAM   
-    if (*rapl_flags & 0x40L) // there is dram energy status
+    if (*rapl_flags & DRAM_ENERGY_STATUS) // there is dram energy status
     {
         p->old_dram_bits	= p->dram_bits;
         p->old_dram_joules	= p->dram_joules;
@@ -887,7 +1223,7 @@ int read_rapl_data(const int socket, struct rapl_data ** rapl, const uint64_t * 
         }
         translate( socket, &(p->dram_bits), &(p->dram_joules), BITS_TO_JOULES );
     }
-    if (*rapl_flags & 0x80) // there is dram perf status
+    if (*rapl_flags & DRAM_PERF_STATUS) // there is dram perf status
     {
         if (read_msr_by_coord( socket, 0, 0, MSR_DRAM_PERF_STATUS, &(p->dram_perf_count)))
         {
