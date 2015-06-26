@@ -10,6 +10,7 @@
 #define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
 #define MASK_VAL(x,m,n) (((uint64_t)(x)&MASK_RANGE((m),(n)))>>(n))
 
+uint64_t pp_policy = 0x5;
 struct rapl_limit l1, l2, l3, l4;
 
 void 
@@ -28,21 +29,117 @@ void
 get_limits()
 {
 	int i;
+    uint64_t pp_result;
     fprintf(stderr, "\nGetting limits...\n");
 	for(i=0; i<NUM_SOCKETS; i++){
-        fprintf(stderr, "\nSocket %d:\n", i);
-		//get_rapl_limit(i, &l1, &l2, &l3);
+        fprintf(stdout, "\nSocket %d:\n", i);
+        printf("PKG\n");
         get_pkg_rapl_limit(i, &l1, &l2);
-        get_dram_rapl_limit(i, &l3);
 		dump_rapl_limit(&l1, stdout);
 		dump_rapl_limit(&l2, stdout);
         printf("DRAM\n");
+        get_dram_rapl_limit(i, &l3);
         dump_rapl_limit(&l3, stdout);
-        printf("done...\nPower Plane\n");
+        printf("PP\n");
         get_pp_rapl_limit(i, &l4, NULL);
         dump_rapl_limit(&l4, stdout);
-        printf("done...\n");
+        //get_pp_rapl_policies(i, &pp_result, NULL);
+        //printf("PP policy\n%ld\n", pp_result);
+        //printf("done...\n");
 	}
+}
+
+void test_pkg_lower_limit(unsigned s)
+{
+    printf("\n Testing pkg %u lower limit\n", s);
+    l1.watts = 95;
+    l1.seconds = 1;
+    l1.bits = 0;
+    set_pkg_rapl_limit(s, &l1, NULL);
+    get_limits();
+}
+
+void test_pkg_upper_limit(unsigned s)
+{
+    printf("\n Testing pkg %u upper limit\n", s);
+    l2.watts = 120;
+    l2.seconds = 9;
+    l2.bits = 0;
+    set_pkg_rapl_limit(s, NULL, &l2);
+    get_limits();
+}
+
+void test_socket_1_limits()
+{
+    printf("\n Testing socket 1 limits\n");
+    l1.watts = 100;
+	l1.seconds = 2;
+	l1.bits = 0;
+	l2.watts =  180;
+	l2.seconds =  3;
+	l2.bits = 0;
+    set_pkg_rapl_limit(1, &l1, &l2);
+    l3.watts = 25;
+    l3.seconds = 2;
+    l3.bits = 0;
+    set_dram_rapl_limit(1, &l3);
+    l4.watts = 115;
+    l4.seconds = 1;
+    l4.bits = 0;
+    set_pp_rapl_limit(1, &l4, NULL);
+    pp_policy = 8;
+    //set_pp_rapl_policies(1, &pp_policy, NULL);
+    get_limits();
+}
+
+void test_socket_0_limits()
+{
+    printf("\n Testing socket 0 limits\n");
+    l1.watts = 110;
+	l1.seconds = 1;
+	l1.bits = 0;
+	l2.watts =  135;
+	l2.seconds =  5;
+	l2.bits = 0;
+    set_pkg_rapl_limit(0, &l1, &l2);
+    l3.watts = 35;
+    l3.seconds = 1;
+    l3.bits = 0;
+    set_dram_rapl_limit(0, &l3);
+    l4.watts = 132;
+    l4.seconds = 2;
+    l4.bits = 0;
+    set_pp_rapl_limit(0, &l4, NULL);
+    pp_policy = 1;
+ //   set_pp_rapl_policies(0, &pp_policy, NULL);
+    get_limits();
+}
+
+void test_all_limits()
+{
+    printf("\n Testing all limits\n");
+    l1.watts = 120;
+	l1.seconds = 4;
+	l1.bits = 0;
+	l2.watts =  155;
+	l2.seconds =  6;
+	l2.bits = 0;
+    set_pkg_rapl_limit(0, &l1, &l2);
+    set_pkg_rapl_limit(1, &l1, &l2);
+    l3.watts = 50;
+    l3.seconds = 6;
+    l3.bits = 0;
+    set_dram_rapl_limit(0, &l3);
+    set_dram_rapl_limit(1, &l3);
+    l4.watts = 110;
+    l4.seconds = 8;
+    l4.bits = 0;
+    set_pp_rapl_limit(0, &l4, NULL);
+    set_pp_rapl_limit(1, &l4, NULL);
+    pp_policy = 31;
+//    set_pp_rapl_policies(0, &pp_policy, NULL);
+//    set_pp_rapl_policies(1, &pp_policy, NULL);
+    get_limits();
 }
 
 void
@@ -145,16 +242,21 @@ int main(int argc, char** argv)
         return -1;
     }
     printf("init done\n");
-	//set_limits();
-	//get_limits();
-    set_limits();
+	get_limits();
+    test_pkg_lower_limit(0);
+    test_pkg_upper_limit(0);
+    test_pkg_lower_limit(1);
+    test_pkg_upper_limit(1);
+    test_socket_0_limits();
+    test_socket_1_limits();
+    test_all_limits();
     printf("set limits done\n");
-	//rapl_test();
 	rapl_r_test(&rd);
     printf("rapl_r_test done\n");
     //read_rapl_data(0, NULL);
     //read_rapl_data(0, &rd);
     //dump_rapl_data(&rd, stdout);
+    //test_all_limits();
     //printf("\nOUTPUT: The DRAM used %lf watts. Throttled %lu\n", rd.dram_watts, MASK_VAL(rd.dram_perf_count, 31, 0) - MASK_VAL(rd.old_dram_perf, 31, 0));
     printf("\n\nPOWER INFO\n");
     dump_rapl_power_info(stdout);

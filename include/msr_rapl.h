@@ -100,6 +100,8 @@ struct rapl_data{
 
     uint64_t pp0_perf_status;
 
+    double pp0_watts;
+
     // PP1
     uint64_t pp1_bits; // energy bits
 
@@ -112,6 +114,8 @@ struct rapl_data{
     double pp1_delta_joules; // delta energy
 
     uint64_t pp1_policy; // policy
+
+    double pp1_watts;
 
 };
 
@@ -172,10 +176,10 @@ int read_rapl_data(const unsigned socket);
 int poll_rapl_data(const unsigned socket, struct rapl_data * result);
 //int delta_rapl_data(const unsigned socket, struct rapl_data ** rapl, struct rapl_data * result);
 int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_data * result);
-void dump_rapl_data( struct rapl_data *r, FILE *w );
+int dump_rapl_data( struct rapl_data *r, FILE *w );
 
 int dump_rapl_terse(FILE *w);
-void dump_rapl_terse_label(FILE *w);
+int dump_rapl_terse_label(FILE *w);
 int dump_rapl_power_info(FILE *w);
 #ifdef __cplusplus 
 }
