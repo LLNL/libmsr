@@ -26,6 +26,19 @@ void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t 
 		);
 }
 
+void cpuid_detect_cores(uint64_t * cores)
+{
+    uint64_t rax = 0xb, rbx = 0, rcx = 0, rdx = 0;
+    asm volatile("cpuid"
+                    : "=a" (rax),
+                      "=b" (rbx),
+                      "=c" (rcx),
+                      "=d" (rdx)
+                    : "0" (rax), "2"(rcx));
+    *cores = ((rbx) & 0xFFFF);
+    fprintf(stderr, "%s::%d DEBUG: number of cores is %ld, and register has %lx\n", __FILE__, __LINE__,*cores, rbx);
+}
+
 void cpuid_get_model(uint64_t * model)
 {
     // set rax to 1 which indicates we want processor info and feature bits

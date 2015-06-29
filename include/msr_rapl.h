@@ -2,6 +2,7 @@
  * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
  * Written by Barry Rountree, rountree@llnl.gov.
+ * Edited by Scott Walker, walker91@llnl.gov.
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -64,7 +65,7 @@ struct rapl_data{
 
     uint64_t pkg_perf_count; // pkg performance counter
 
-    uint64_t old_pkg_perf; // old pkg performance counter
+    //uint64_t old_pkg_perf; // old pkg performance counter
 
     // this does ?
 	uint64_t flags;
@@ -73,7 +74,7 @@ struct rapl_data{
     // this is a count of how many times dram performance was capped due to imposed limits
     uint64_t dram_perf_count;
 
-    uint64_t old_dram_perf;
+    // uint64_t old_dram_perf;
     
     // this represents the change in energy for DRAM between rapl data measurements
 	double dram_delta_joules;
@@ -98,7 +99,7 @@ struct rapl_data{
 
     uint64_t pp0_policy;
 
-    uint64_t pp0_perf_status;
+    uint64_t pp0_perf_count;
 
     double pp0_watts;
 
@@ -170,11 +171,8 @@ int get_dram_rapl_limit(const unsigned socket, struct rapl_limit * limit);
 int get_pp_rapl_limit(const unsigned socket, struct rapl_limit * limit0, struct rapl_limit * limit1);
 void dump_rapl_limit( struct rapl_limit *L, FILE *w );
 
-//int read_rapl_data_old( const unsigned socket, struct rapl_data *r);
-//int read_rapl_data(const unsigned socket, struct rapl_data * p);
 int read_rapl_data(const unsigned socket);
 int poll_rapl_data(const unsigned socket, struct rapl_data * result);
-//int delta_rapl_data(const unsigned socket, struct rapl_data ** rapl, struct rapl_data * result);
 int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_data * result);
 int dump_rapl_data( struct rapl_data *r, FILE *w );
 
