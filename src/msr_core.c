@@ -44,6 +44,7 @@
 #define LIBMSR_DEBUG_TAG "LIBMSR"
 #define LIBMSR_DEBUG     1
 #define FILENAME_SIZE 1024
+
 static int core_fd[NUM_DEVS];
 
 // Initialize the MSR module file descriptors

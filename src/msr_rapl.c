@@ -156,6 +156,10 @@
 #define PP1_ENERGY_STATUS (0x4000L)
 #define PP1_POLICY (0x8000L)
 
+#ifdef LIBMSR_DEBUG
+FILE * rapldebug;
+#endif
+
 enum{
 	BITS_TO_WATTS,
 	WATTS_TO_BITS,
@@ -266,8 +270,8 @@ static int setflags(uint64_t * rapl_flags)
     }
 
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (rapl_init) model is %lx, flags are %lx\n", getenv("HOSTNAME"),
-            __FILE__, __LINE__, model, *rapl_flags);
+    fprintf(rapldebug, "%s %s::%d DEBUG: (set_flags) model is %lx, flags are %lx at %p\n", getenv("HOSTNAME"),
+            __FILE__, __LINE__, model, *rapl_flags, rapl_flags);
 #endif
 
     // Every rapl enabled CPU so far has this register
@@ -291,7 +295,7 @@ int rapl_storage(struct rapl_data ** data, uint64_t ** flags)
 #ifdef STORAGE_DEBUG
     if (rapl_flags)
     {
-        fprintf(stderr, "%s %s::%d DEBUG: (rapl_storage) data pointer is %p, flags pointer is %p, data is at %p, flags are %lx at %p\n",
+        fprintf(rapldebug, "%s %s::%d DEBUG: (rapl_storage) data pointer is %p, flags pointer is %p, data is at %p, flags are %lx at %p\n",
                 getenv("HOSTNAME"), __FILE__, __LINE__, data, flags, rapl, *rapl_flags, rapl_flags);
     }
 #endif
@@ -300,13 +304,13 @@ int rapl_storage(struct rapl_data ** data, uint64_t ** flags)
     {
         init = 0;
         rapl = (struct rapl_data *) calloc(NUM_SOCKETS, sizeof(struct rapl_data));
-        if (!rapl)
+        if (rapl == NULL)
         {
             fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
             return -1;
         }
         rapl_flags = (uint64_t *) calloc(1, sizeof(uint64_t));
-        if (!rapl_flags)
+        if (rapl_flags == NULL)
         {
             fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
             return -1;
@@ -315,10 +319,16 @@ int rapl_storage(struct rapl_data ** data, uint64_t ** flags)
         {
             return -1;
         }
-        *data = rapl;
-        *flags = rapl_flags;
+        if (data)
+        {
+            *data = rapl;
+        }
+        if (flags)
+        {
+            *flags = rapl_flags;
+        }
 #ifdef LIBMSR_DEBUG
-        fprintf(stderr, "%s %s::%d DEBUG: (storage) initialized rapl data at %p, flags are %lx, (flags at %p, rapl_flags at %p\n", 
+        fprintf(rapldebug, "%s %s::%d DEBUG: (storage) initialized rapl data at %p, flags are %lx, (flags at %p, rapl_flags at %p\n", 
                 getenv("HOSTNAME"), __FILE__, __LINE__, rapl, **flags, flags, rapl_flags);
 #endif
     }
@@ -336,6 +346,72 @@ int rapl_storage(struct rapl_data ** data, uint64_t ** flags)
     return 0;
 }
 
+static int check_for_locks()
+{
+    static uint64_t * rapl_flags = NULL;
+    static struct rapl_data * rapl = NULL;
+    struct rapl_limit rl1, rl2;
+    unsigned i;
+
+#ifdef LIBMSR_DEBUG
+    fprintf(rapldebug, "DEBUG: CHECKING FOR LOCKS\n");
+#endif
+
+    if (rapl_flags == NULL || rapl == NULL)
+    {
+        if (rapl_storage(&rapl, &rapl_flags))
+        {
+            return -1;
+        }
+    }
+
+    for (i = 0; i < NUM_SOCKETS; i++)
+    {
+        if (*rapl_flags & PKG_POWER_LIMIT)
+        {
+            get_pkg_rapl_limit(i, &rl1, &rl2);
+            if (rl1.bits & 0x80000000)
+            {
+                fprintf(stderr, "%s %s::%d ERROR: package power limit (0x610) [0:31] on socket %u is locked\n",
+                        getenv("HOSTNAME"), __FILE__, __LINE__, i);
+            }
+        }
+        if (rl2.bits & 0x80000000)
+        {
+            fprintf(stderr, "%s %s::%d ERROR: package power limit (0x610) [32:63] on socket %u is locked\n",
+                    getenv("HOSTNAME"), __FILE__, __LINE__, i);
+        }
+        if (*rapl_flags & DRAM_POWER_LIMIT)
+        {
+            get_dram_rapl_limit(i, &rl1);
+            if (rl1.bits & 0x80000000)
+            {
+                fprintf(stderr, "%s %s::%d ERROR: dram power limit (0x618) [0:31] on socket %u is locked\n",
+                        getenv("HOSTNAME"), __FILE__, __LINE__, i);
+            }
+        }
+        if (*rapl_flags & PP0_POWER_LIMIT)
+        {
+            get_pp_rapl_limit(i, &rl1, NULL);
+            if (rl1.bits & 0x80000000)
+            {
+                fprintf(stderr, "%s %s::%d ERROR: pp0 power limit (0x638) [0:31] on socket %u is locked\n",
+                        getenv("HOSTNAME"), __FILE__, __LINE__, i);
+            }
+        }
+        if (*rapl_flags & PP1_POWER_LIMIT)
+        {
+            get_pp_rapl_limit(i, NULL, &rl2);
+            if (rl2.bits & 0x80000000)
+            {
+                fprintf(stderr, "%s %s::%d ERROR: pp1 power limit (0x640) [0:31] on socket %u is locked\n",
+                        getenv("HOSTNAME"), __FILE__, __LINE__, i);
+            }
+        }
+    }
+    return 0;
+}
+
 // TODO: have this save rapl register data so it can be restored later in finalize
 // TODO: have this look for registers that are locked so the user can be warned
 // This initalizes the rapl data items. You can either use this or make a call to rapl storage.
@@ -345,6 +421,10 @@ int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
 {
     static int initialize = 1;
     uint64_t cores = 0;
+#ifdef LIBMSR_DEBUG
+    rapldebug = fopen("libmsr-rapl.debug", "w");
+    fprintf(stdout, "INFO: Debugging Enabled, generated debug file: libmsr-rapl.debug\n");
+#endif
     cpuid_detect_cores(&cores);
     if (initialize)
     {
@@ -354,8 +434,12 @@ int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
             return -1;
         }
 #ifdef LIBMSR_DEBUG
-        fprintf(stderr, "DEBUG: (init) rapl initialized at %p, flags are %lx at %p\n", *rapl, **rapl_flags, *rapl_flags);
+        fprintf(rapldebug, "DEBUG: (init) rapl initialized at %p, flags are %lx at %p\n", *rapl, **rapl_flags, *rapl_flags);
 #endif
+    }
+    if (check_for_locks())
+    {
+        return -1;
     }
     else
     {
@@ -386,7 +470,8 @@ int rapl_finalize()
         free(rapl_flags);
     }
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: rapl finalized\n");
+    fclose(rapldebug);
+    fprintf(rapldebug, "DEBUG: rapl finalized\n");
 #endif
     return 0;
 }
@@ -438,14 +523,14 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 	switch(type){
 		case BITS_TO_WATTS: 	
 #ifdef LIBMSR_DEBUG
-            fprintf(stderr, "%s %s::%d DEBUG: the watts unit is %lf, the bits are %lx\n", getenv("HOSTNAME"),
+            fprintf(rapldebug, "%s %s::%d DEBUG: the watts unit is %lf, the bits are %lx\n", getenv("HOSTNAME"),
                     __FILE__, __LINE__, ru[socket].watts, *bits);
 #endif
             *units = (double)(*bits)  * ru[socket].watts; 			
             break;
 		case BITS_TO_JOULES:	
 #ifdef LIBMSR_DEBUG
-            fprintf(stderr, "%s %s::%d DEBUG: the joules unit is %lf, the bits are %lx\n", getenv("HOSTNAME"),
+            fprintf(rapldebug, "%s %s::%d DEBUG: the joules unit is %lf, the bits are %lx\n", getenv("HOSTNAME"),
                     __FILE__, __LINE__, ru[socket].joules, *bits);
 #endif
             //*units = (double)(*bits)  * ru[socket].joules; 		
@@ -463,14 +548,17 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
             timeval_x = (*bits & 0x60) >> 5;
             *units = ((1 + 0.25 * timeval_x) * pow(2.0, (double) timeval_y)) / ru[socket].seconds;
 #ifdef LIBMSR_DEBUG
-            fprintf(stderr, "%s %s::%d DEBUG: timeval_x is %lx, timeval_y is %lx, units is %lf, bits is %lx\n",
+            fprintf(rapldebug, "%s %s::%d DEBUG: timeval_x is %lx, timeval_y is %lx, units is %lf, bits is %lx\n",
                     getenv("HOSTNAME"), __FILE__, __LINE__, timeval_x, timeval_y, *units, *bits);
 #endif
             break;
         case SECONDS_TO_BITS_STD:
-            timeval_y = (uint64_t) log2(*units * ru[socket].seconds); //log(tempunit) / log(2);
+            // store the whole number part of the log2
+            timeval_y = (uint64_t) log2(*units * ru[socket].seconds);
+            // store the mantissa of the log2
             logremainder = (double) log2(*units * ru[socket].seconds) - (double) timeval_y;
             timeval_x = 0;
+            // based on the mantissa, we can choose the appropriate multiplier
             if (logremainder > 0.15 && logremainder <= 0.45)
             {
                 timeval_x = 1;
@@ -483,9 +571,10 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
             {
                 timeval_x = 3;
             }
+            // store the bits in the Intel specified format
             *bits = (uint64_t) (timeval_y | (timeval_x << 5));
 #ifdef LIBMSR_DEBUG
-            fprintf(stderr, "%s %s::%d DEBUG: timeval_x is %lx, timeval_y is %lx, units is %lf, bits is %lx, remainder is %lf\n",
+            fprintf(rapldebug, "%s %s::%d DEBUG: timeval_x is %lx, timeval_y is %lx, units is %lf, bits is %lx, remainder is %lf\n",
                     getenv("HOSTNAME"), __FILE__, __LINE__, timeval_x, timeval_y, *units, *bits, logremainder);
 #endif
             break;
@@ -516,7 +605,7 @@ get_rapl_power_info( const unsigned socket, struct rapl_power_info *info){
 	//info->msr_pkg_power_info  = 0x6845000148398;
 	//info->msr_dram_power_info = 0x682d0001482d0;
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (get_rapl_power_info)\n", getenv("HOSTNAME"),
+    fprintf(rapldebug, "%s %s::%d DEBUG: (get_rapl_power_info)\n", getenv("HOSTNAME"),
             __FILE__, __LINE__);
 #endif
     if (*rapl_flags & PKG_POWER_INFO)
@@ -561,7 +650,7 @@ static int calc_rapl_from_bits(const unsigned socket, struct rapl_limit * limit,
     assert(socket < NUM_SOCKETS);
 
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (calc_rapl_from_bits)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+    fprintf(rapldebug, "%s %s::%d DEBUG: (calc_rapl_from_bits)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
     watts_bits   = MASK_VAL( limit->bits, 14 + offset,  0 + offset);
     seconds_bits = MASK_VAL( limit->bits, 23 + offset, 17 + offset);
@@ -592,7 +681,7 @@ static int calc_rapl_bits(const unsigned socket, struct rapl_limit * limit, cons
     seconds_bits = MASK_VAL( limit->bits, 23 + offset, 17 + offset);
     
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (calc_rapl_bits)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+    fprintf(rapldebug, "%s %s::%d DEBUG: (calc_rapl_bits)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
     // We have been given watts and seconds and need to translate
     // these into bit values.
@@ -639,7 +728,7 @@ static int calc_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1
 {
     assert(socket < NUM_SOCKETS);
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (calc_pkg_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+    fprintf(rapldebug, "%s %s::%d DEBUG: (calc_pkg_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
 
     // If we have been given a lower rapl limit
@@ -683,7 +772,7 @@ static int calc_std_rapl_limit(const unsigned socket, struct rapl_limit * limit)
 {
     assert(socket < NUM_SOCKETS);
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (calc_std_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+    fprintf(rapldebug, "%s %s::%d DEBUG: (calc_std_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
 
     if (limit->bits)
@@ -716,7 +805,7 @@ int set_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1, struct
         }
     }
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (set_pkg_rapl_limit) flags are at %p\n", getenv("HOSTNAME"), __FILE__, __LINE__,
+    fprintf(rapldebug, "%s %s::%d DEBUG: (set_pkg_rapl_limit) flags are at %p\n", getenv("HOSTNAME"), __FILE__, __LINE__,
             rapl_flags);
 #endif
 
@@ -727,7 +816,7 @@ int set_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1, struct
         if (limit1 == NULL)
         {
 #ifdef LIBMSR_DEBUG
-            fprintf(stderr, "%s %s::%d DEBUG: only one rapl limit, retrieving any existing power limits\n",
+            fprintf(rapldebug, "%s %s::%d DEBUG: only one rapl limit, retrieving any existing power limits\n",
                     getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
             read_msr_by_coord(socket, 0, 0, MSR_PKG_POWER_LIMIT, &currentval);
@@ -737,7 +826,7 @@ int set_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1, struct
         else if (limit2 == NULL)
         {
 #ifdef LIBMSR_DEBUG
-            fprintf(stderr, "%s %s::%d DEBUG: only one rapl limit, retrieving any existing power limits\n",
+            fprintf(rapldebug, "%s %s::%d DEBUG: only one rapl limit, retrieving any existing power limits\n",
                     getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
             read_msr_by_coord(socket, 0, 0, MSR_PKG_POWER_LIMIT, &currentval);
@@ -789,7 +878,7 @@ int set_dram_rapl_limit(const unsigned socket, struct rapl_limit * limit)
         }
     }
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (set_dram_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+    fprintf(rapldebug, "%s %s::%d DEBUG: (set_dram_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
     // Check to make sure the dram power limit register exists
     if (*rapl_flags & DRAM_POWER_LIMIT)
@@ -829,7 +918,7 @@ int set_pp_rapl_limit(const unsigned socket, struct rapl_limit * limit0, struct 
         }
     }
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (set_pp_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+    fprintf(rapldebug, "%s %s::%d DEBUG: (set_pp_rapl_limit)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
     // Check to make sure the PP0 power limit register exists
     if (limit0 && (*rapl_flags & PP0_POWER_LIMIT))
@@ -1147,6 +1236,11 @@ dump_rapl_data( struct rapl_data *r, FILE *writeFile ){
 	static struct timeval start;
 	struct timeval now;
 
+    if (r == NULL)
+    {
+        return -1;
+    }
+
     if (rapl == NULL || rapl_flags == NULL)
     {
         if (rapl_storage(&rapl, &rapl_flags))
@@ -1247,7 +1341,7 @@ int poll_rapl_data(const unsigned socket, struct rapl_data * result)
     assert(socket < NUM_SOCKETS);
 
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (poll_rapl_data) socket=%d\n", getenv("HOSTNAME"), __FILE__, __LINE__, socket);
+    fprintf(rapldebug, "%s %s::%d DEBUG: (poll_rapl_data) socket=%d\n", getenv("HOSTNAME"), __FILE__, __LINE__, socket);
 #endif
     
     if (rapl == NULL)
@@ -1289,7 +1383,7 @@ int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_dat
         }
     }
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d (delta_rapl_data)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+    fprintf(rapldebug, "%s %s::%d DEBUG: (delta_rapl_data)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
     if (first)
     {
@@ -1399,7 +1493,7 @@ int read_rapl_data(const unsigned socket)
     p = &(rapl[socket]);
 
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d (read_rapl_data): socket=%d at address %p\n", getenv("HOSTNAME"), __FILE__, __LINE__, socket, p);
+    fprintf(rapldebug, "%s %s::%d DEBUG: (read_rapl_data): socket=%d at address %p\n", getenv("HOSTNAME"), __FILE__, __LINE__, socket, p);
 #endif
 
     // Move current variables to "old" variables.
@@ -1431,9 +1525,9 @@ int read_rapl_data(const unsigned socket)
         }
     }
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: pkg_bits %lx\n", p->pkg_bits);
-    fprintf(stderr, "DEBUG: pkg_joules %lf\n", p->pkg_joules);
-    fprintf(stderr, "DEBUG: pkg_watts %lf\n", p->pkg_watts);
+    fprintf(rapldebug, "DEBUG: pkg_bits %lx\n", p->pkg_bits);
+    fprintf(rapldebug, "DEBUG: pkg_joules %lf\n", p->pkg_joules);
+    fprintf(rapldebug, "DEBUG: pkg_watts %lf\n", p->pkg_watts);
 #endif
 
     // make sure pp0 energy status register exits

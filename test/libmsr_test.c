@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "../include/msr_core.h"
 #include "../include/msr_rapl.h"
 #include "../include/msr_thermal.h"
@@ -12,18 +13,6 @@
 
 uint64_t pp_policy = 0x5;
 struct rapl_limit l1, l2, l3, l4;
-
-void 
-rapl_test(const uint64_t * rapl_flags){
-//	read_rapl_data(0, NULL, rapl_flags);	// Initialize
-//	sleep(3);
-
-//	dump_rapl_terse_label(stdout);
-//	fprintf(stdout, "\n");
-//	dump_rapl_terse(stdout, rapl_flags);		// Read and dump.
-//	fprintf(stdout, "\n");
-
-}
 
 void
 get_limits()
@@ -43,9 +32,8 @@ get_limits()
         printf("PP\n");
         get_pp_rapl_limit(i, &l4, NULL);
         dump_rapl_limit(&l4, stdout);
-        //get_pp_rapl_policies(i, &pp_result, NULL);
-        //printf("PP policy\n%ld\n", pp_result);
-        //printf("done...\n");
+        get_pp_rapl_policies(i, &pp_result, NULL);
+        printf("PP policy\n%ld\n", pp_result);
 	}
 }
 
@@ -69,98 +57,77 @@ void test_pkg_upper_limit(unsigned s)
     get_limits();
 }
 
-void test_socket_1_limits()
+void test_socket_1_limits(unsigned s)
 {
-    printf("\n Testing socket 1 limits\n");
+    printf("\n Testing socket %u limits with new values\n", s);
     l1.watts = 100;
 	l1.seconds = 2;
 	l1.bits = 0;
 	l2.watts =  180;
 	l2.seconds =  3;
 	l2.bits = 0;
-    set_pkg_rapl_limit(1, &l1, &l2);
+    set_pkg_rapl_limit(s, &l1, &l2);
     l3.watts = 25;
     l3.seconds = 2;
     l3.bits = 0;
-    set_dram_rapl_limit(1, &l3);
+    set_dram_rapl_limit(s, &l3);
     l4.watts = 115;
     l4.seconds = 1;
     l4.bits = 0;
-    set_pp_rapl_limit(1, &l4, NULL);
+    set_pp_rapl_limit(s, &l4, NULL);
     pp_policy = 8;
-    //set_pp_rapl_policies(1, &pp_policy, NULL);
+    set_pp_rapl_policies(1, &pp_policy, NULL);
     get_limits();
 }
 
-void test_socket_0_limits()
+void test_socket_0_limits(unsigned s)
 {
-    printf("\n Testing socket 0 limits\n");
+    printf("\n Testing socket %u limits\n", s);
     l1.watts = 110;
 	l1.seconds = 1;
 	l1.bits = 0;
 	l2.watts =  135;
 	l2.seconds =  5;
 	l2.bits = 0;
-    set_pkg_rapl_limit(0, &l1, &l2);
+    set_pkg_rapl_limit(s, &l1, &l2);
     l3.watts = 35;
     l3.seconds = 1;
     l3.bits = 0;
-    set_dram_rapl_limit(0, &l3);
+    set_dram_rapl_limit(s, &l3);
     l4.watts = 132;
     l4.seconds = 2;
     l4.bits = 0;
-    set_pp_rapl_limit(0, &l4, NULL);
+    set_pp_rapl_limit(s, &l4, NULL);
     pp_policy = 1;
- //   set_pp_rapl_policies(0, &pp_policy, NULL);
+    set_pp_rapl_policies(0, &pp_policy, NULL);
     get_limits();
 }
 
 void test_all_limits()
 {
-    printf("\n Testing all limits\n");
+    printf("\n Testing all sockets\n");
     l1.watts = 120;
 	l1.seconds = 4;
 	l1.bits = 0;
 	l2.watts =  155;
 	l2.seconds =  6;
 	l2.bits = 0;
-    set_pkg_rapl_limit(0, &l1, &l2);
-    set_pkg_rapl_limit(1, &l1, &l2);
     l3.watts = 50;
     l3.seconds = 6;
     l3.bits = 0;
-    set_dram_rapl_limit(0, &l3);
-    set_dram_rapl_limit(1, &l3);
     l4.watts = 110;
     l4.seconds = 8;
     l4.bits = 0;
-    set_pp_rapl_limit(0, &l4, NULL);
-    set_pp_rapl_limit(1, &l4, NULL);
     pp_policy = 31;
-//    set_pp_rapl_policies(0, &pp_policy, NULL);
-//    set_pp_rapl_policies(1, &pp_policy, NULL);
+    int i;
+    for (i = 0; i < NUM_SOCKETS; i++)
+    {
+        set_pkg_rapl_limit(i, &l1, &l2);
+        set_pp_rapl_limit(i, &l4, NULL);
+        set_dram_rapl_limit(i, &l3);
+        set_pp_rapl_policies(i, &pp_policy, NULL);
+    }
     get_limits();
-}
-
-void
-set_limits()
-{
-	l1.watts = 100;
-	l1.seconds = 2;
-	l1.bits = 0;
-	l2.watts =  130;
-	l2.seconds =  2;
-	l2.bits = 0;
-    set_pkg_rapl_limit(0, &l1, &l2);
-    //set_pkg_rapl_limit(1, &l1, &l2);
-    l3.watts = 25; //30; //4;
-    l3.seconds = 2; // 0.01; //0.01;
-    l3.bits = 0; //0x4480b0;
-    set_dram_rapl_limit(0, &l3);
-    //set_dram_rapl_limit(1, &l3);
-	//set_rapl_limit(0, &l1, &l2, &l3);
-	//set_rapl_limit(1, &l1, &l2, &l3);
-	get_limits();
 }
 
 void thermal_test(){
@@ -175,49 +142,20 @@ void thermal_test(){
 	fprintf(stdout, "\n");
 }
 
-void perform_rapl_measurement(struct rapl_data* r) {
-	//read_rapl_data_old(0, r);
-
-    if (r != NULL)
-    {
-        fprintf(stdout, "old_pkg_joules=%lf pkg_joules=%lf pkg_delta_joules=%lf elapsed=%lf pkg_watts=%lf\n", 
-                r->old_pkg_joules, r->pkg_joules, r->pkg_delta_joules, r->elapsed, r->pkg_watts);
-    }
-}
-
 void rapl_r_test(struct rapl_data ** rd)
 {
 	// Initialize two separate state objects and read rapl data into them during overlapping time windows
-	struct rapl_data * r1; 
-	struct rapl_data r2, r3; 
-
-    //perform_rapl_measurement(NULL);
-    // set r1/r2.flags to 1 | 2 -> 3
-	//r2.flags = RDF_INIT | RDF_REENTRANT;
-    //r1.flags = RDF_REENTRANT | RDF_INIT;
-
-
-    //fprintf(stdout, "\nOLD\n\n");
-	//perform_rapl_measurement(&r2);  // Initialize r1
-    //dump_rapl_data(&r2, stderr);
-	//r2.flags = RDF_REENTRANT;
-	//sleep(1);
-
-	//perform_rapl_measurement(&r2);
-    //dump_rapl_data(&r2, stderr);
-	//sleep(1);
+    struct rapl_data * r1;// = (struct rapl_data *) malloc(sizeof(struct rapl_data));
 
     fprintf(stdout, "\nNEW\n\n");
     r1 = &((*rd)[0]);
     poll_rapl_data(0, r1);
-    //delta_rapl_data(0, rd, r1);
-    dump_rapl_data(r1, stderr);
+    dump_rapl_data(r1, stdout);
     sleep(1);
 
 
     poll_rapl_data(0, r1);
-    //delta_rapl_data(0, rd, r1);
-    dump_rapl_data(r1, stderr);
+    dump_rapl_data(r1, stdout);
     sleep(1);
 }
 
@@ -243,25 +181,24 @@ int main(int argc, char** argv)
     }
     printf("init done\n");
 	get_limits();
-    test_pkg_lower_limit(0);
-    test_pkg_upper_limit(0);
-    test_pkg_lower_limit(1);
-    test_pkg_upper_limit(1);
-    test_socket_0_limits();
-    test_socket_1_limits();
+    unsigned i;
+    for(i = 0; i < NUM_SOCKETS; i++)
+    {
+        fprintf(stdout, "BEGINNING SOCKET %u TEST\n", i);
+	    test_pkg_lower_limit(i);
+	    test_pkg_upper_limit(i);
+	    test_socket_0_limits(i);
+	    test_socket_1_limits(i);
+        fprintf(stdout, "FINISHED SOCKET %u TEST\n", i);
+    }
+    fprintf(stdout, "TESTING ALL SETTINGS\n");
     test_all_limits();
     printf("set limits done\n");
 	rapl_r_test(&rd);
     printf("rapl_r_test done\n");
-    //read_rapl_data(0, NULL);
-    //read_rapl_data(0, &rd);
-    //dump_rapl_data(&rd, stdout);
-    //test_all_limits();
-    //printf("\nOUTPUT: The DRAM used %lf watts. Throttled %lu\n", rd.dram_watts, MASK_VAL(rd.dram_perf_count, 31, 0) - MASK_VAL(rd.old_dram_perf, 31, 0));
     printf("\n\nPOWER INFO\n");
     dump_rapl_power_info(stdout);
     printf("\nEND POWER INFO\n\n");
-	//get_limits();
     rapl_finalize(&rd);
 	finalize_msr();
 	#ifdef MPI
