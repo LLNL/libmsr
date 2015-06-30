@@ -25,6 +25,17 @@ int read_msr_single_core(int socket, int core, off_t msr, uint64_t *val);
 	the special case of writing the same value to all
 	core-level MSRs on the socket.
 	
+int rapl_init(struct rapl_data ** rapl, uint64_t * rapl_flags);
+int rapl_finalize();
+
+    You must encase all non init/finalize rapl functions between 
+    these two rapl functions. Since users will not always use
+    rapl, this ensures rapl data is allocated dynamically. The
+    init function must be used because it will detect the hardware
+    that it is running on to discover the available MSR's. In
+    the future these functions will restore rapl registers to
+    their state prior to execution. You must remember to use
+    rapl_finalize to avoid any memory leaks. 
 
 struct rapl_data{
 	uint64_t old_pkg_bits;

@@ -413,10 +413,7 @@ static int check_for_locks()
 }
 
 // TODO: have this save rapl register data so it can be restored later in finalize
-// TODO: have this look for registers that are locked so the user can be warned
-// This initalizes the rapl data items. You can either use this or make a call to rapl storage.
-// You must put either of these functions before you can call any other rapl function.
-// This function is merely a convenience.
+// This initalizes the rapl data items. Be sure to put this function before any other rapl functions.
 int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
 {
     static int initialize = 1;
@@ -451,6 +448,7 @@ int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
 }
 
 // This will free the rapl and rapl flags data
+// You want to put this function after you are done using rapl functions.
 int rapl_finalize()
 {
     struct rapl_data * rapl = NULL;
