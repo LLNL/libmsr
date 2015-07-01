@@ -1,11 +1,11 @@
 /* msr_core.c
  *
  * Low-level msr interface.
- * Edited by: Scott Walker
  *
  * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
  * Written by Barry Rountree, rountree@llnl.gov.
+ * Edited by Scott Walker, walker91@llnl.gov
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -44,6 +44,7 @@
 #define LIBMSR_DEBUG_TAG "LIBMSR"
 #define LIBMSR_DEBUG     1
 #define FILENAME_SIZE 1024
+
 static int core_fd[NUM_DEVS];
 
 // Initialize the MSR module file descriptors

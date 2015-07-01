@@ -13,6 +13,7 @@
 #define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
 #define MASK_VAL(x,m,n) (((uint64_t)(x)&MASK_RANGE((m),(n)))>>(n))
 
+#define CPUID_DEBUG
 
 void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t *rdx)
 {
@@ -23,6 +24,40 @@ void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t 
 	        	:"=a" (*rax), "=D" (*rbx), "=c" (*rcx), "=d" (*rdx)
 	        	:"a" (leaf)
 		);
+}
+
+void cpuid_detect_cores(uint64_t * cores)
+{
+    uint64_t rax = 0xb, rbx = 0, rcx = 0, rdx = 0;
+    asm volatile("cpuid"
+                    : "=a" (rax),
+                      "=b" (rbx),
+                      "=c" (rcx),
+                      "=d" (rdx)
+                    : "0" (rax), "2"(rcx));
+    *cores = ((rbx) & 0xFFFF);
+    fprintf(stderr, "%s::%d DEBUG: number of cores is %ld, and register has %lx\n", __FILE__, __LINE__,*cores, rbx);
+}
+
+void cpuid_get_model(uint64_t * model)
+{
+    // set rax to 1 which indicates we want processor info and feature bits
+    uint64_t rax = 1, rbx = 0, rcx = 0, rdx = 0;
+
+    // this is how the linux kernel does it
+    asm volatile("cpuid"
+                    : "=a" (rax),
+                      "=b" (rbx),
+                      "=c" (rcx),
+                      "=d" (rdx)
+                    : "0" (rax), "2"(rcx));
+
+#ifdef CPUID_DEBUG
+    fprintf(stderr, "%s::%d DEBUG: rax is %lx\n", __FILE__, __LINE__, rax);
+    fprintf(stderr, "%s::%d DEBUG: model is %lx, family is %lx, extd model is %lx, extd family ix %lx\n",
+            __FILE__, __LINE__, (rax >> 4) & 0xF, (rax >> 8) & 0xF, (rax >> 16) & 0xF, (rax >> 20) & 0xFF);
+#endif
+    *model = ((rax >> 4) & 0xF) | ((rax >> 12) & 0xF0);
 }
 
 void cpuidInput_rax_rcx(uint64_t leafa, uint64_t leafc, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t *rdx)

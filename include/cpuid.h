@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+void cpuid_get_model(uint64_t * model);
+void cpuid_detect_cores(uint64_t * cores);
 bool cpuid_MPERF_and_APERF();
 bool cpuid_timeStampCounter_avail();
 int cpuid_PMC_num();
