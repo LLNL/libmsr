@@ -57,8 +57,9 @@ void printData(int i)
 	dump_thermal_terse(stdout);	
 	fprintf(stdout, "\n");
 
-	read_rapl_data(0,&r1);
-	read_rapl_data(1,&r2);
+    // TODO: fix this later
+	//read_rapl_data(0,&r1);
+	//read_rapl_data(1,&r2);
 	fprintf(stdout, "Power Socket/PKG/DRAM: %d %8.4lf %8.4lf \n", 0, r1.pkg_watts, r1.dram_watts);
 	fprintf(stdout, "Power Socket/PKG/DRAM: %d %8.4lf %8.4lf \n", 1, r2.pkg_watts, r2.dram_watts);
 

@@ -2,6 +2,7 @@
  * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
  * Written by Barry Rountree, rountree@llnl.gov.
+ * Edited by Scott Walker, walker91@llnl.gov.
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -33,6 +34,8 @@
 // scaled values.  The bit vector is the 64-bit values that is
 // read from/written to the msr.
 struct rapl_data{
+
+    // PKG
     // holds the bits previously stored in the MSR_PKG_ENERGY_STATUS register
 	uint64_t old_pkg_bits;
     // holds the bits currently stored in the MSR_PKG_ENERGY_STATUS register
@@ -48,11 +51,6 @@ struct rapl_data{
     // this holds the current energy value stored in MSR_PKG_ENERGY_STATUS register represented in joules
 	double pkg_joules;
 
-    // this holds the current energy value stored in MSR_DRAM_ENERGY_STATUS register represented in joules
-	double old_dram_joules;
-    // this holds the current energy value stored in MSR_DRAM_ENERGY_STATUS register represented in joules
-	double dram_joules;
-
     // this holds the timestamp of the previous rapl data measurement
 	struct timeval old_now;
     // this holds the timestamp of the current rapl data measurement
@@ -64,11 +62,10 @@ struct rapl_data{
 	double pkg_delta_joules;
     // this represents the change in power for PKG between rapl data measurements
 	double pkg_watts;
-    // this represents the change in energy for DRAM between rapl data measurements
-	double dram_delta_joules;
-    // this represents change in power for DRAM between rapl data measurements
-	double dram_watts;
 
+    uint64_t pkg_perf_count; // pkg performance counter
+
+    //uint64_t old_pkg_perf; // old pkg performance counter
 
     // this does ?
 	uint64_t flags;
@@ -77,30 +74,50 @@ struct rapl_data{
     // this is a count of how many times dram performance was capped due to imposed limits
     uint64_t dram_perf_count;
 
-    uint64_t old_dram_perf;
+    // uint64_t old_dram_perf;
     
-    // PKG
-    uint64_t pkg_perf_count;
+    // this represents the change in energy for DRAM between rapl data measurements
+	double dram_delta_joules;
+    // this represents change in power for DRAM between rapl data measurements
+	double dram_watts;
 
-    uint64_t old_pkg_perf;
+    // this holds the current energy value stored in MSR_DRAM_ENERGY_STATUS register represented in joules
+	double old_dram_joules;
+    // this holds the current energy value stored in MSR_DRAM_ENERGY_STATUS register represented in joules
+	double dram_joules;
 
-    // PP
-    uint64_t pp0_power_limit;
+    // PP0
+    uint64_t pp0_bits;
 
-    uint64_t pp1_power_limit;
+    uint64_t old_pp0_bits;
 
-    uint64_t pp0_energy_status;
+    double pp0_joules;
 
-    uint64_t pp1_energy_status;
+    double old_pp0_joules;
+
+    double pp0_delta_joules;
 
     uint64_t pp0_policy;
 
-    uint64_t pp1_policy;
+    uint64_t pp0_perf_count;
 
-    uint64_t pp0_perf_status;
+    double pp0_watts;
 
-    uint64_t pp1_perf_status;
-    
+    // PP1
+    uint64_t pp1_bits; // energy bits
+
+    uint64_t old_pp1_bits; // old energy bits
+
+    double  pp1_joules; // energy
+
+    double old_pp1_joules; // old energy
+
+    double pp1_delta_joules; // delta energy
+
+    uint64_t pp1_policy; // policy
+
+    double pp1_watts;
+
 };
 
 enum rapl_data_flags{
@@ -140,16 +157,28 @@ struct rapl_limit{
 extern "C" {
 #endif
 
-void set_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
-void get_rapl_limit( const int socket, struct rapl_limit* limit1, struct rapl_limit* limit2, struct rapl_limit* dram );
+int rapl_storage(struct rapl_data ** data, uint64_t ** flags);
+int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags);
+int rapl_finalize();
+
+int set_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1, struct rapl_limit * limit2);
+int set_dram_rapl_limit(const unsigned socket, struct rapl_limit * limit);
+int set_pp_rapl_limit(const unsigned socket, struct rapl_limit * limit0, struct rapl_limit * limit1);
+int set_pp_rapl_policies(const unsigned socket, uint64_t * pp0, uint64_t * pp1);
+int get_pp_rapl_policies(const unsigned socket, uint64_t * pp0, uint64_t * pp1);
+int get_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1, struct rapl_limit * limit2);
+int get_dram_rapl_limit(const unsigned socket, struct rapl_limit * limit);
+int get_pp_rapl_limit(const unsigned socket, struct rapl_limit * limit0, struct rapl_limit * limit1);
 void dump_rapl_limit( struct rapl_limit *L, FILE *w );
 
-int read_rapl_data( const int socket, struct rapl_data *r );
-void dump_rapl_data( struct rapl_data *r, FILE *w );
+int read_rapl_data(const unsigned socket);
+int poll_rapl_data(const unsigned socket, struct rapl_data * result);
+int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_data * result);
+int dump_rapl_data( struct rapl_data *r, FILE *w );
 
-void dump_rapl_terse(FILE *w);
-void dump_rapl_terse_label(FILE *w);
-void dump_rapl_power_info(FILE *w);
+int dump_rapl_terse(FILE *w);
+int dump_rapl_terse_label(FILE *w);
+int dump_rapl_power_info(FILE *w);
 #ifdef __cplusplus 
 }
 #endif
