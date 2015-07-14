@@ -74,8 +74,12 @@ FILE* getFileID();
 		FILE *writeFile = getFileID();
 		fprintf(writeFile, "Hostname: %s\n", hname);
 	
+        struct rapl_data * rd;
+        uint64_t * rapl_flags;
 		init_msr();	
+        rapl_init(&rd, &rapl_flags);
 
+        printf("qqq1\n");
 		retVal = get_env_int("POWER_CAP", &watts);
 		if(retVal==-1) {
 			fprintf(writeFile, "No power cap specified. Using default of 115W per socket\n");
@@ -84,31 +88,55 @@ FILE* getFileID();
 		if(retVal ==0){
 			fprintf(writeFile, "Power cap specified. Setting limit1 on both sockets to %d W for minimal time window\n", watts);
 		
+            fprintf(writeFile, "Setting limit to:\n");
+            dump_rapl_limit(&lim, writeFile);
 			lim.watts = watts;
-          		lim.seconds = 0.0009766;
-                	lim.bits = 0;
-          		set_rapl_limit(0, &lim, NULL, NULL);
-          		set_rapl_limit(1, &lim, NULL, NULL);
+            lim.seconds = 1;
+            lim.bits = 0;
+            set_pkg_rapl_limit(0, &lim, NULL);
+            set_pkg_rapl_limit(1, &lim, NULL);
 		}
 	
-		get_rapl_limit(0,&P0_1, &P0_2, &P0_DRAM);
-		get_rapl_limit(1, &P1_1, &P1_2, &P1_DRAM);
+
+        printf("qqq2\n");
+        get_pkg_rapl_limit(1, &P1_1, &P1_2);
+        get_pkg_rapl_limit(0, &P0_1, &P0_2);
+		//get_rapl_limit(0,&P0_1, &P0_2, &P0_DRAM);
+		//get_rapl_limit(1, &P1_1, &P1_2, &P1_DRAM, &rapl_flags);
 		
+        printf("qqq2.1\n");
 		fprintf(writeFile, "PKG0, Limit1\n");
 		dump_rapl_limit(&P0_1, writeFile);
 
+        printf("qqq2.2\n");
 		fprintf(writeFile, "PKG1, Limit1\n");
 		dump_rapl_limit(&P1_1, writeFile);
 
-		fclose(writeFile);
+        printf("qqq2.3\n");
+        poll_rapl_data(0, NULL);
+        poll_rapl_data(1, NULL);
+        sleep(10);
+        poll_rapl_data(0, NULL);
+        poll_rapl_data(1, NULL);
+
+        printf("qqq2.4\n");
+        // TODO: why???
+		//fclose(writeFile);
 	
+        printf("qqq2.5\n");
+        fprintf(writeFile, "Made 2\n");
 		//Initial Dump
 		char str[5]="Init";
 		printDataUninterrupted(str);       
+        fprintf(writeFile, "Made 3\n");
 	
+        printf("qqq2.6\n");
 		setitimer(ITIMER_REAL, &tout_val, 0);
 		signal(SIGALRM, printData);
 	}
+
+    printf("qqq3\n");
+    rapl_finalize();
 
 	PMPI_Barrier(MPI_COMM_WORLD);
 
@@ -133,6 +161,7 @@ FILE* getFileID();
 
 		finalize_msr();
 	}
+    printf("qqq4\n");
 	{{callfn}}
 {{endfn}}
 
@@ -191,7 +220,8 @@ void printData(int i)
 	dump_thermal_terse(writeFile);	
 	fprintf(writeFile, "\n");
 
-	fprintf(writeFile, "Power PKG0/DRAM0/PKG1/DRAM1: ");
+	fprintf(writeFile, "Power PKG0/DRAM0/PKG1/DRAM1: TODO");
+    // TODO: fix this
 	dump_rapl_terse(writeFile);
 	fprintf(writeFile, "\n");
 
@@ -236,7 +266,8 @@ void printDataUninterrupted(char *foo)
 	dump_thermal_terse(writeFile);	
 	fprintf(writeFile, "\n");
 
-	fprintf(writeFile, "Power PKG0/DRAM0/PKG1/DRAM1: ");
+	fprintf(writeFile, "Power PKG0/DRAM0/PKG1/DRAM1: TODO");
+    // TODO: fix this
 	dump_rapl_terse(writeFile);
 	fprintf(writeFile, "\n");
 

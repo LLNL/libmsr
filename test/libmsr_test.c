@@ -1,6 +1,8 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/wait.h>
 #include <stdlib.h>
+#include "../include/cpuid.h"
 #include "../include/msr_core.h"
 #include "../include/msr_rapl.h"
 #include "../include/msr_thermal.h"
@@ -106,14 +108,14 @@ void test_socket_0_limits(unsigned s)
 void test_all_limits()
 {
     printf("\n Testing all sockets\n");
-    l1.watts = 120;
-	l1.seconds = 4;
+    l1.watts = 160;
+	l1.seconds = 1;
 	l1.bits = 0;
-	l2.watts =  155;
-	l2.seconds =  6;
+	l2.watts =  180;
+	l2.seconds =  1;
 	l2.bits = 0;
-    l3.watts = 50;
-    l3.seconds = 6;
+    l3.watts = 53;
+    l3.seconds = 1;
     l3.bits = 0;
     l4.watts = 110;
     l4.seconds = 8;
@@ -142,21 +144,41 @@ void thermal_test(){
 	fprintf(stdout, "\n");
 }
 
+char * args[] = {"--cpu", "24", "--io", "32", "--vm", "64", "--vm-bytes", "1G", "--timeout", "10s"};
+
 void rapl_r_test(struct rapl_data ** rd)
 {
-	// Initialize two separate state objects and read rapl data into them during overlapping time windows
     struct rapl_data * r1;// = (struct rapl_data *) malloc(sizeof(struct rapl_data));
+    struct rapl_data * r2;
 
     fprintf(stdout, "\nNEW\n\n");
     r1 = &((*rd)[0]);
+    r2 = &((*rd)[1]);
     poll_rapl_data(0, r1);
+    poll_rapl_data(1, r2);
+    printf("pkg 1\n");
     dump_rapl_data(r1, stdout);
-    sleep(1);
+    printf("pkg 2\n");
+    dump_rapl_data(r2, stdout);
 
+    int status = 0;
+    pid_t pid;
+    pid = fork();
+    if (pid == 0)
+    {
+        execve("/g/g19/walker91/Projects/libmsr-walker/test/stress-ng", args, NULL);
+    }
+    else if (pid > 0)
+    {
+        wait(&status);
+    }
 
     poll_rapl_data(0, r1);
+    poll_rapl_data(1, r2);
+    printf("pkg 1\n");
     dump_rapl_data(r1, stdout);
-    sleep(1);
+    printf("pkg 2\n");
+    dump_rapl_data(r2, stdout);
 }
 
 
@@ -165,6 +187,8 @@ int main(int argc, char** argv)
 {
     struct rapl_data * rd = NULL;
     uint64_t * rapl_flags = NULL;
+    uint64_t cores = 0, threads = 0, sockets = 0;
+    int HTenabled = 0;
 	#ifdef MPI
 	MPI_Init(&argc, &argv);
     printf("mpi init done\n");
@@ -200,7 +224,21 @@ int main(int argc, char** argv)
     dump_rapl_power_info(stdout);
     printf("\nEND POWER INFO\n\n");
     rapl_finalize(&rd);
-	finalize_msr();
+    //printf("testing CSR read\n");
+    //read_csr(&test);
+    //printf("CSR has %lx\n", test);
+    printf("testing core count\n");
+    cpuid_detect_core_conf(&cores, &threads, &sockets, &HTenabled);
+    printf("the number of cores is %ld\n", cores);
+    if (HTenabled)
+    {
+        printf("hyper threading is enabled\n");
+    }
+    else
+    {
+        printf("hyper threading is not enabled\n");
+    }
+	finalize_msr(1);
 	#ifdef MPI
 	MPI_Finalize();
 	#endif

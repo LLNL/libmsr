@@ -8,6 +8,7 @@
  */
 #include <stdio.h>
 #include <stdint.h>
+#include <sys/sysinfo.h>
 #include <stdbool.h>
 // Two defines below from Barry Rountree
 #define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
@@ -26,17 +27,78 @@ void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t 
 		);
 }
 
-void cpuid_detect_cores(uint64_t * cores)
+/* may be in its own function some day
+void read_csr(uint64_t * val)
 {
-    uint64_t rax = 0xb, rbx = 0, rcx = 0, rdx = 0;
+    uint32_t bus = 1, device = 0x30, function = 2, offset = 0x2;
+    uint32_t rax = 0;
+    //register uint64_t mmio asm("rsi") = 0xC8 + (0x132000);
+    //uint64_t rcx = 0x90 + (0x132000);
+    uint32_t rcx = 0xe0000000 + (uint32_t)((bus << 20) | (device << 15) | (function << 12)) + offset;
+    asm volatile(
+                "mov (%%rcx), %%rax"
+                    :"=a" (rax)
+                    :"c" (rcx));
+                    //:"%rcx", "%rax");
+                    //: "0" (rax), "2" (rsi));
+    *val = (uint64_t) rax; 
+}*/
+
+void read_csr(uint64_t * val)
+{
+    unsigned bus = 1, device = 30, function = 2, offset = 0x2; // device id //0x90; rapl
+    uint32_t address = (bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000;
+    uint16_t data = 0;
+    uint32_t port = 0xCF8;
+    asm volatile("outl %%eax, %%dx" : : "d" (port), "a" (address));
+    port = 0xCFC;
+    asm volatile("inl %%dx, %%eax" : "=a" (data) : "dN" (port));
+    //data = (uint16_t) ((sysInLong(0xCFC) >> ((offset & 2) * 8)) & 0xFFFFFFFFFFFFFFFF);
+    *val = data;
+}
+
+void cpuid_detect_core_conf(uint64_t * coresPerSocket, uint64_t * hyperThreads, uint64_t * sockets, int * HTenabled)
+{
+    // use rcx = 0 to see if hyper threading is supported. If > 1 then there is HT
+    // use rcx = 1 to see how many cores are avaiable per socket (including HT if supported)
+    uint64_t rax = 0xb, rbx = 0, rcx = 0x0, rdx = 0;
     asm volatile("cpuid"
                     : "=a" (rax),
                       "=b" (rbx),
                       "=c" (rcx),
                       "=d" (rdx)
                     : "0" (rax), "2"(rcx));
-    *cores = ((rbx) & 0xFFFF);
-    fprintf(stderr, "%s::%d DEBUG: number of cores is %ld, and register has %lx\n", __FILE__, __LINE__,*cores, rbx);
+    *hyperThreads = ((rbx) & 0xFFFF);
+    rax = 0xb;
+    rbx = 0;
+    rcx = 0x1;
+    rdx = 0;
+    asm volatile("cpuid"
+                    : "=a" (rax),
+                      "=b" (rbx),
+                      "=c" (rcx),
+                      "=d" (rdx)
+                    : "0" (rax), "2"(rcx));
+    *coresPerSocket = ((rbx) & 0xFFFF) / *hyperThreads;
+    //*coresPerSocket = ((rbx) & 0xFFFF);
+    int allcores = 0, availcores = 0;
+    // get_nprocs_conf returns max num logical processors (including hyper threading)
+    // get_nprocs returs num logical processors depending on whether hyper threading is enabled or not
+    allcores = get_nprocs_conf();
+    *sockets = allcores / *coresPerSocket / *hyperThreads;
+    availcores = get_nprocs();
+    if (availcores != allcores)
+    {
+        *HTenabled = 0;
+    }
+    else
+    {
+        *HTenabled = 1;
+    }
+    fprintf(stderr, "%s::%d DEBUG: allcores is %d, availcores is %d, and register has %lx\n", __FILE__, __LINE__, 
+            allcores, availcores, rbx);
+    fprintf(stderr, "%s::%d DEBUG: hyper threads is %ld, cores per socket is %ld, sockets is %ld\n",
+            __FILE__, __LINE__, *hyperThreads, *coresPerSocket, *sockets);
 }
 
 void cpuid_get_model(uint64_t * model)
