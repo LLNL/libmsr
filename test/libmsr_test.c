@@ -109,13 +109,13 @@ void test_all_limits()
 {
     printf("\n Testing all sockets\n");
     l1.watts = 115;
-	l1.seconds = 2;
+	l1.seconds = 1;
 	l1.bits = 0;
 	l2.watts =  180;
 	l2.seconds =  3;
 	l2.bits = 0;
     l3.watts = 50;
-    l3.seconds = 2;
+    l3.seconds = 1;
     l3.bits = 0;
     l4.watts = 110;
     l4.seconds = 8;
@@ -144,7 +144,7 @@ void thermal_test(){
 	fprintf(stdout, "\n");
 }
 
-char * args[] = {"--cpu", "24", "--io", "64", "--vm", "64", "--vm-bytes", "1G", "--timeout", "15s"};
+char * args[] = {"--cpu", "24", "--io", "96", "--vm", "96", "--vm-bytes", "1G", "--timeout", "10s"};
 
 void rapl_r_test(struct rapl_data ** rd)
 {

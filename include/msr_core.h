@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <linux/types.h>
-#define LIBMSR_DEBUG 1
+//#define LIBMSR_DEBUG 1
 #define NUM_SOCKETS 2
 #define NUM_CORES_PER_SOCKET 12 
 #define NUM_THREADS_PER_CORE 1

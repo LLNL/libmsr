@@ -156,7 +156,7 @@
 #define PP1_ENERGY_STATUS (0x4000L)
 #define PP1_POLICY (0x8000L)
 
-#define STORAGE_DEBUG 1
+//#define STORAGE_DEBUG 1
 
 enum{
 	BITS_TO_WATTS,
@@ -747,7 +747,7 @@ static int calc_rapl_bits(const unsigned socket, struct rapl_limit * limit, cons
     }
     else
     {
-        translate( socket, &seconds_bits, &limit->seconds, BITS_TO_SECONDS_STD);
+        translate( socket, &seconds_bits, &limit->seconds, SECONDS_TO_BITS_STD);
                  // (model == 0x3F ? SECONDS_TO_BITS_HASWELL : SECONDS_TO_BITS_STD) );
     }
     // there is only 1 translation for watts (so far)

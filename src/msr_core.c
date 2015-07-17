@@ -118,7 +118,7 @@ typedef struct dest_item
     unsigned size;
 } dest_item;
 
-#define BATCH_DEBUG 1
+//#define BATCH_DEBUG 1
 
 uint64_t * batch_ops(struct msr_op * op, uint64_t cpu, uint64_t * dest)
 {
@@ -552,7 +552,9 @@ int core_storage(int recover, recover_data * recoverValue)
                 }
                 else
                 {
+#ifdef LIBMSR_DEBUG
                     fprintf(stderr, "ALLOC: realloc from %p to %p, space %u, size %u\n", recovery, temp, allocated, size);
+#endif 
                     recovery = temp;
                 }
             }
@@ -583,7 +585,9 @@ int core_storage(int recover, recover_data * recoverValue)
                              recovery[i].thread, recovery[i].msr, recovery[i].bits);
         }
         // TODO: fix this
+#ifdef LIBMSR_DEBUG 
         fprintf(stderr, "DEBUG: core storage is at %p, first value is %lx\n", recovery, recovery[0].bits);
+#endif
         //if (recovery != NULL)
         //{
             //free(recovery);

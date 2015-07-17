@@ -14,7 +14,7 @@
 #define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
 #define MASK_VAL(x,m,n) (((uint64_t)(x)&MASK_RANGE((m),(n)))>>(n))
 
-#define CPUID_DEBUG
+//#define CPUID_DEBUG
 
 void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t *rdx)
 {
@@ -95,10 +95,12 @@ void cpuid_detect_core_conf(uint64_t * coresPerSocket, uint64_t * hyperThreads, 
     {
         *HTenabled = 1;
     }
+#ifdef CPUID_DEBUG
     fprintf(stderr, "%s::%d DEBUG: allcores is %d, availcores is %d, and register has %lx\n", __FILE__, __LINE__, 
             allcores, availcores, rbx);
     fprintf(stderr, "%s::%d DEBUG: hyper threads is %ld, cores per socket is %ld, sockets is %ld\n",
             __FILE__, __LINE__, *hyperThreads, *coresPerSocket, *sockets);
+#endif
 }
 
 void cpuid_get_model(uint64_t * model)
