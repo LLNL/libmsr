@@ -108,14 +108,14 @@ void test_socket_0_limits(unsigned s)
 void test_all_limits()
 {
     printf("\n Testing all sockets\n");
-    l1.watts = 160;
-	l1.seconds = 1;
+    l1.watts = 115;
+	l1.seconds = 2;
 	l1.bits = 0;
 	l2.watts =  180;
-	l2.seconds =  1;
+	l2.seconds =  3;
 	l2.bits = 0;
-    l3.watts = 53;
-    l3.seconds = 1;
+    l3.watts = 50;
+    l3.seconds = 2;
     l3.bits = 0;
     l4.watts = 110;
     l4.seconds = 8;
@@ -144,7 +144,7 @@ void thermal_test(){
 	fprintf(stdout, "\n");
 }
 
-char * args[] = {"--cpu", "24", "--io", "32", "--vm", "64", "--vm-bytes", "1G", "--timeout", "10s"};
+char * args[] = {"--cpu", "24", "--io", "64", "--vm", "64", "--vm-bytes", "1G", "--timeout", "15s"};
 
 void rapl_r_test(struct rapl_data ** rd)
 {
@@ -166,10 +166,13 @@ void rapl_r_test(struct rapl_data ** rd)
     pid = fork();
     if (pid == 0)
     {
+        fprintf(stderr, "executing stress test\n");
         execve("/g/g19/walker91/Projects/libmsr-walker/test/stress-ng", args, NULL);
+        exit(1);
     }
     else if (pid > 0)
     {
+        fprintf(stderr, "waiting for test to complete\n");
         wait(&status);
     }
 
@@ -230,6 +233,7 @@ int main(int argc, char** argv)
     printf("testing core count\n");
     cpuid_detect_core_conf(&cores, &threads, &sockets, &HTenabled);
     printf("the number of cores is %ld\n", cores);
+
     if (HTenabled)
     {
         printf("hyper threading is enabled\n");

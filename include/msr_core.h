@@ -23,7 +23,9 @@
 #ifndef MSR_CORE_H
 #define MSR_CORE_H
 #include <stdint.h>
-#include <sys/types.h>	// off_t
+#include <sys/types.h>
+#include <linux/types.h>
+#define LIBMSR_DEBUG 1
 #define NUM_SOCKETS 2
 #define NUM_CORES_PER_SOCKET 12 
 #define NUM_THREADS_PER_CORE 1
@@ -72,6 +74,9 @@ enum{
 extern "C" {
 #endif
 
+#define MSR_MAX_BATCH_OPS 50
+#define X86_IOC_MSR_BATCH _IOWR('c', 0xA2, struct msr_bundle_desc)
+
 typedef struct recover_data
 {
     uint64_t bits;
@@ -81,8 +86,41 @@ typedef struct recover_data
     off_t msr;
 } recover_data;
 
+struct msr_op
+{
+    union msrdata
+    {
+        __u32 data32[2];
+        __u64 data64;
+    } d;
+    __u64 mask;
+    __u32 msr;
+    __u32 isread;
+    int error;
+};
+
+struct msr_cpu_ops
+{
+    __u32 cpu;
+    int nOps;
+    struct msr_op ops[MSR_MAX_BATCH_OPS];
+};
+
+struct msr_bundle_desc
+{
+    int numMsrBundles;
+    struct msr_cpu_ops * bundle;
+};
+
 int init_msr();
 int finalize_msr(const int restore);
+uint64_t * batch_ops(struct msr_op * op, uint64_t cpu, uint64_t * dest);
+int read_batch();
+
+int memory_handler(void * address, void * oldaddr, int dealloc);
+void * libmsr_malloc(size_t size);
+void * libmsr_calloc(size_t num, size_t size);
+void * libmsr_realloc(void * addr, size_t size);
 
 int core_storage(int recover, recover_data * recoverValue);
 int core_config(uint64_t * coresPerSocket, uint64_t * threadsPerCore, uint64_t * sockets, int * HTenabled);

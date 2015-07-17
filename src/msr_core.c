@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <unistd.h>	
 #include <sys/stat.h> 	
-#include <linux/ioctl.h>
+#include <sys/ioctl.h>
 #include <fcntl.h>	
 #include <stdint.h>	
 #include <errno.h>
@@ -46,12 +46,13 @@
 #include "cpuid.h"
 
 #define LIBMSR_DEBUG_TAG "LIBMSR"
-#define LIBMSR_DEBUG     1
+//#define LIBMSR_DEBUG     1
 #define FILENAME_SIZE 1024
-//#define USE_MSR_SAFE_BETA 1
+#define USE_MSR_SAFE_BETA 1
 
 //static int core_fd[NUM_DEVS];
 
+/*
 #define MSR_MAX_BATCH_OPS 50
 #define X86_IOC_MSR_BATCH _IOWR('c', 0xA2, struct msr_bundle_desc)
 
@@ -80,6 +81,7 @@ struct msr_bundle_desc
     int numMsrBundles; // number of jobs in batch
     struct msr_cpu_ops * bundle;
 };
+*/
 
 // TODO: add this array to the memory handler
 static int * core_fd(const int dev_idx)
@@ -93,7 +95,7 @@ static int * core_fd(const int dev_idx)
         uint64_t sockets = 0, coresPerSocket = 0, threadsPerCore = 0;
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
         devices = NUM_DEVS_NEW;
-        file_descriptors = (int *) malloc(devices * sizeof(int));
+        file_descriptors = (int *) libmsr_malloc(devices * sizeof(int));
         if (file_descriptors == NULL)
         {
             fprintf(stderr, "%s %s::%d ERROR: could not allocate memory\n", 
@@ -109,80 +111,241 @@ static int * core_fd(const int dev_idx)
     return NULL;
 }
 
-static uint64_t * batch_ops(struct msr_op * op, uint64_t cpu)
+typedef struct dest_item
+{
+    uint64_t ** destp;
+    unsigned last;
+    unsigned size;
+} dest_item;
+
+#define BATCH_DEBUG 1
+
+uint64_t * batch_ops(struct msr_op * op, uint64_t cpu, uint64_t * dest)
 {
     static struct msr_bundle_desc b;
-    static int * fd = NULL;
-    if (fd == NULL)
+    static dest_item * destinations = NULL;
+    static unsigned destsize = 5;
+    static unsigned lastdest = 0;
+    if (destinations == NULL)
     {
-        fd = core_fd(0);
-    }
-    if (op == NULL)
-    {
-        // time to perform batch operation
-        if (ioctl(fd, X86_IOC_MSR_BATCH, &b) < 0)
+        destinations = (dest_item *) libmsr_malloc(destsize * sizeof(dest_item));
+        if (destinations == NULL)
         {
-            fprintf(stderr, "%s %s::%d ERROR: ioctl failure\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+            fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
             exit(-1);
         }
-        int i, j;
-        for (i = 0; i < b.numMsrBundles; i++)
+        int j;
+        for (j = 0; j < destsize; j++)
         {
-            for (j = 0; j < b.bundle[i].nOps; j++)
+            destinations[j].last = 0;
+            destinations[j].size = 5;
+            destinations[j].destp = (uint64_t **) libmsr_malloc(destinations[j].size * sizeof(uint64_t *));
+            if (destinations[j].destp == NULL)
             {
-                if (b.bundle[i].ops[j].error)
-                {
-                    fprintf(stderr, "CPU %d, %s %x Err %d\n", b.bundle[i].cpu, b.bundle[i].ops[j].isread ? "RDMSR" : "WRMSR",
-                            b.bundle[i].ops[j].msr, b.bundle[i].ops[j].error);
-                }
+                fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+                exit(-1);
             }
         }
     }
-    if (b.bundle == NULL)
+    static int fd = 0;
+#ifdef BATCH_DEBUG
+    fprintf(stderr, "DEBUG: in batch ops\n");
+#endif
+    if (fd == 0)
     {
-        b.numMsrBundles = 0;
-        b.bundle = (struct msr_cpu_ops *) malloc(sizeof(struct msr_cpu_ops)); 
-        b.bundle[b.numMsrBundles].cpu = cpu;
-        b.bundle[b.numMsrBundles].nOps = 0;
+        fd = open("/dev/cpu/msr_batch", O_RDWR);
+        if (fd < 0)
+        {
+            fprintf(stderr, "%s %s::%d ERROR: unable to open msr_batch\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+            exit(-1);
+        }
+    }
+    if (op == NULL)
+    {
+#ifdef BATCH_DEBUG
+        fprintf(stderr, "DEBUG: performing batch operation\n");
+#endif
+        // time to perform batch operation
+        if (ioctl(fd, X86_IOC_MSR_BATCH, &b) < 0)
+        {
+            perror("IOCTL error: ");
+            fprintf(stderr, "%s %s::%d ERROR: ioctl failure\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+        }
+        int k, j;
+        for (k = 0; k < b.numMsrBundles; k++)
+        {
+#ifdef BATCH_DEBUG
+            fprintf(stderr, "BATCH: there are %d msrops in bundle %d\n", b.bundle[k].nOps, k);
+#endif
+            for (j = 0; j < b.bundle[k].nOps; j++)
+            {
+#ifdef BATCH_DEBUG
+                fprintf(stderr, "BATCH: msrop %d in bundle %d had data %lx from msr 0x%x, written to dest %p\n", j, k, 
+                        (uint64_t) b.bundle[k].ops[j].d.data64, b.bundle[k].ops[j].msr, destinations[k].destp[j]);
+#endif
+                *(destinations[k].destp[j]) = b.bundle[k].ops[j].d.data64;
+                if (b.bundle[k].ops[j].error)
+                {
+                    fprintf(stderr, "CPU %d, %s %x Err %d\n", b.bundle[k].cpu, b.bundle[k].ops[j].isread ? "RDMSR" : "WRMSR",
+                            b.bundle[k].ops[j].msr, b.bundle[k].ops[j].error);
+                }
+            }
+        }
+        // TODO: optimize this
+        //free(b.bundle);
+        //b.bundle = NULL;
+        //b.numMsrBundles = 0;
         return NULL;
     }
+    if (b.bundle == NULL)
+    {
+#ifdef BATCH_DEBUG
+        fprintf(stderr, "DEBUG: initializing bundle\n");
+#endif
+        b.numMsrBundles = 1;
+        b.bundle = (struct msr_cpu_ops *) libmsr_malloc(sizeof(struct msr_cpu_ops)); 
+        b.bundle[b.numMsrBundles - 1].cpu = cpu;
+        b.bundle[b.numMsrBundles - 1].nOps = 0;
+        //b.bundle[b.numMsrBundles].ops[b.bundle[b.numMsrBundles].nOps] = *op;
+        //return &(b.bundle[b.numMsrBundles].ops[b.bundle[b.numMsrBundles].nOps]);
+    }
+#ifdef BATCH_DEBUG
+        fprintf(stderr, "DEBUG: adding to bundles\n");
+#endif
+#ifdef BATCH_DEBUG
+            fprintf(stderr, "BATCH: there are %d msrops in bundle 0 at %p\n", b.bundle[0].nOps, &(b.bundle[0]));
+#endif
     int i;
     // walk out to the bundle of the designated cpu, or to the end of the array
-    for (i = 0; i < b.numMsrBundles && b.bundle[i].cpu != cpu; i++);
-#ifdef LIBMSR_DEBUG
-    fprintf(stderr, "BATCH: stopped at bundle %d which as cpu %u, function has cpu %lu\n",
-            i, b.bundle[i].cpu, cpu);
+    for (i = 0; i < b.numMsrBundles && b.bundle[i].cpu != cpu; ++i);
+#ifdef BATCH_DEBUG
+            fprintf(stderr, "BATCH: there are %d msrops in bundle %d at %p\n", b.bundle[i].nOps, i, &(b.bundle[i]));
+#endif
+#ifdef BATCH_DEBUG
+    fprintf(stderr, "DEBUG: added msrop with destination %p to destinations[%d][%d]\n",
+            dest, i, destinations[i].last);
+#endif
+    if (b.bundle[i].nOps > destinations[i].size)
+    {
+        destinations[i].size *= 2;
+        uint64_t ** temp = destinations[i].destp;
+        temp = (uint64_t **) libmsr_realloc(destinations[i].destp, destinations[i].size * sizeof(uint64_t *));
+        if (temp == NULL)
+        {
+            fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory.\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+            exit(-1);
+        }
+        destinations[i].destp = temp;
+    }
+    destinations[i].destp[destinations[i].last] = dest;
+    destinations[i].last++;
+#ifdef BATCH_DEBUG
+    fprintf(stderr, "BATCH: seek stopped at bundle %d which has cpu %u, function has cpu %lu, bundle array is at %p\n",
+            i, b.bundle[i].cpu, cpu, b.bundle);
 #endif
     if (b.bundle[i].cpu == cpu)
     {
-        b.bundle[i].ops[b.bundle[i].nOps - 1] = *op;
+#ifdef BATCH_DEBUG
+        fprintf(stderr, "BATCH: adding %lu to existing bundle %d which has %d, and %d ops (%x)\n", cpu, b.bundle[i].cpu, i,
+                b.bundle[i].nOps, op->msr);
+#endif
         b.bundle[i].nOps++;
+        b.bundle[i].ops[b.bundle[i].nOps - 1] = *op;
         assert(b.bundle[i].nOps <= 50);
         return (uint64_t *) &(b.bundle[i].ops[b.bundle[i].nOps - 1].d.data64);
     }
+    //i++;
     b.numMsrBundles++;
+    if (b.numMsrBundles > destsize)
+    {
+        destsize *= 2;
+        dest_item * temp = destinations;
+        temp = (dest_item *) libmsr_realloc(destinations, destsize * sizeof(dest_item *));
+        if (temp == NULL)
+        {
+            fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+            exit(-1);
+        }
+        destinations = temp;
+        int j;
+        for (j = destsize / 2; j < destsize; j++)
+        {
+            destinations[j].last = 0;
+            destinations[j].size = 5;
+            destinations[j].destp = (uint64_t **) libmsr_malloc(destinations[0].size * sizeof(uint64_t *));
+            if (destinations[i].destp == NULL)
+            {
+                fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+                exit(-1);
+            }
+        }
+    }
 //    if (b.bundle[b.numMsrBundles].nOps >  50)
 //    {
         // TODO:
 //    }
-    struct msr_cpu_ops * temp = b.bundle;
-    temp = (struct msr_cpu_ops *) realloc(b.bundle, b.numMsrBundles * sizeof(struct msr_cpu_ops));
-    if (temp == NULL)
+#ifdef BATCH_DEBUG
+    fprintf(stderr, "BATCH: num bundles %d, bundle %d has %d ops\n", b.numMsrBundles, i, b.bundle[i].nOps);
+#endif
+    if (b.numMsrBundles > 1)
     {
-        fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"),
-                __FILE__, __LINE__);
-        exit(-1);
+#ifdef BATCH_DEBUG
+        fprintf(stderr, "BATCH: allocating new bundle %d\n", i+1);
+        fprintf(stderr, "BATCH: bundle 0 has %d ops at %p\n", b.bundle[0].nOps, &(b.bundle[0].nOps));
+        fprintf(stderr, "BATCH: b.bundle is at %p before realloc, nummsrbundles is %d\n", b.bundle, b.numMsrBundles);
+#endif
+        struct msr_cpu_ops * temp = b.bundle;
+        temp = (struct msr_cpu_ops *) libmsr_realloc(b.bundle, b.numMsrBundles * sizeof(struct msr_cpu_ops));
+        if (temp == NULL)
+        {
+            fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"),
+                    __FILE__, __LINE__);
+            exit(-1);
+        }
+        b.bundle = temp;
     }
-    b.numMsrBundles++;
-    b.bundle[b.numMsrBundles - 1].nOps = 1;
-    b.bundle[b.numMsrBundles - 1].ops[b.bundle[b.numMsrBundles - 1].nOps] = *op;
-    return (uint64_t *) &(b.bundle[b.numMsrBundles].ops[b.bundle[i].nOps - 1].d.data64);
+#ifdef BATCH_DEBUG
+        fprintf(stderr, "BATCH: bundle 0 has %d ops at %p\n", b.bundle[0].nOps, &(b.bundle[0].nOps));
+        fprintf(stderr, "BATCH: b.bundle is at %p after realloc\n", b.bundle);
+        //b.bundle[0].nOps = 4;
+#endif
+    b.bundle[i].nOps = 1;
+    b.bundle[i].ops[b.bundle[i].nOps - 1] = *op;
+    b.bundle[i].cpu = cpu;
+#ifdef BATCH_DEBUG
+    fprintf(stderr, "BATCH: created new bundle %d which has cpu %u, function has cpu %lu\n",
+            i, b.bundle[i].cpu, cpu);
+    fprintf(stderr, "BATCH: bundle 0 has %d ops at %p\n", b.bundle[0].nOps, &(b.bundle[0].nOps));
+#endif
+    lastdest = b.numMsrBundles;
+    return (uint64_t *) &(b.bundle[i].ops[b.bundle[i].nOps - 1].d.data64);
+}
+
+void * libmsr_malloc(size_t size)
+{
+    void * result = malloc(size);
+    memory_handler(result, NULL, 0);
+    return result;
+}
+
+void * libmsr_calloc(size_t num, size_t size)
+{
+    void * result = calloc(num, size);
+    memory_handler(result, NULL, 0);
+    return result;
+}
+
+void * libmsr_realloc(void * addr, size_t size)
+{
+    void * result = realloc(addr, size);
+    memory_handler(result, addr, 0);
+    return result;
 }
 
 // TODO: add all dynamic arrays to this memory handler
 // I will have to either have each array in the program assigned to a single address, or return their location
 // because on realloc the array could move
-int memory_handler(void ** address, int dealloc)
+int memory_handler(void * address, void * oldaddr, int dealloc)
 {
     static void ** arrays = NULL;
     static unsigned last = 0;
@@ -194,6 +357,9 @@ int memory_handler(void ** address, int dealloc)
         {
             if (arrays[i])
             {
+#ifdef LIBMSR_DEBUG
+                fprintf(stderr, "DEBUG: data at %p has been deallocated\n", arrays[i]);
+#endif
                 free(arrays[i]);
             }
         }
@@ -204,6 +370,21 @@ int memory_handler(void ** address, int dealloc)
     }
     else
     {
+#ifdef BATCH_DEBUG
+        fprintf(stderr, "MEMHDLR: recieved address %p, (realloc %p)\n", address, oldaddr);
+#endif
+        if (oldaddr)
+        {
+            int i;
+            for (i = 0; i <= last; i++)
+            {
+                if (arrays[i] == oldaddr)
+                {
+                    arrays[i] = address;
+                }
+            }
+            return 0;
+        }
         if (arrays == NULL)
         {
             arrays = (void **) malloc(size * sizeof(void *));
@@ -214,6 +395,9 @@ int memory_handler(void ** address, int dealloc)
                 exit(-1);
             }
         }
+#ifdef BATCH_DEBUG
+        fprintf(stderr, "MEMHDLR: arrays tracker is at %p\n", arrays);
+#endif
         if (last >= size)
         {
             void ** temp = arrays;
@@ -226,9 +410,9 @@ int memory_handler(void ** address, int dealloc)
             }
             arrays = temp;
         }
-        if (*address)
+        if (address)
         {
-            arrays[last] = *address;
+            arrays[last] = address;
             last++;
         }
     }
@@ -336,7 +520,7 @@ int core_storage(int recover, recover_data * recoverValue)
     if (recovery == NULL)
     {
         allocated = 2;
-        recovery = (recover_data *) malloc(allocated * sizeof(recover_data));
+        recovery = (recover_data *) libmsr_malloc(allocated * sizeof(recover_data));
         if (recovery == NULL)
         {
             fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"),
@@ -358,12 +542,12 @@ int core_storage(int recover, recover_data * recoverValue)
             {
                 recover_data * temp = recovery;
                 allocated *= 2;
-                temp = (recover_data *) realloc(recovery, allocated * sizeof(recover_data));
+                temp = (recover_data *) libmsr_realloc(recovery, allocated * sizeof(recover_data));
                 if (temp == NULL)
                 {
                     fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"),
                             __FILE__, __LINE__);
-                    free(recovery);
+                    //free(recovery);
                     return -1;
                 }
                 else
@@ -400,10 +584,10 @@ int core_storage(int recover, recover_data * recoverValue)
         }
         // TODO: fix this
         fprintf(stderr, "DEBUG: core storage is at %p, first value is %lx\n", recovery, recovery[0].bits);
-        if (recovery != NULL)
-        {
-            free(recovery);
-        }
+        //if (recovery != NULL)
+        //{
+            //free(recovery);
+        //}
     }
     return 0;
 }
@@ -423,13 +607,13 @@ int init_msr()
 
     core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL); 
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s Initializing %lu device(s).\n", getenv("HOSTNAME"), (sockets * coresPerSocket * threadsPerCore));
+	fprintf(stderr, "%s Initializing %lu device(s).\n", getenv("HOSTNAME"), (NUM_DEVS_NEW));
 #endif
 	if( initialized ){
 		return 0;
 	}
     // open the file descriptor for each device's msr interface
-	for (dev_idx=0; dev_idx < (sockets * coresPerSocket * threadsPerCore); dev_idx++)
+	for (dev_idx=0; dev_idx < (NUM_DEVS_NEW); dev_idx++)
     {
 #ifdef LIBMSR_DEBUG
         fprintf(stderr, "found module %d\n", dev_idx);
@@ -467,7 +651,8 @@ int init_msr()
             continue;
 		}
         // check to see if the module has the correct permissions
-		if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR) || !(statbuf.st_mode & S_IRGRP) || !(statbuf.st_mode & S_IWGRP))
+		if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR) || 
+           !(statbuf.st_mode & S_IRGRP) || !(statbuf.st_mode & S_IWGRP))
         {
 			fprintf(stderr, "%s %s::%d  ERROR: Read/write permissions denied for %s.\n", 
 				    getenv("HOSTNAME"),__FILE__, __LINE__, filename);
@@ -505,6 +690,8 @@ int init_msr()
 	return 0;
 }
 
+#define LIBMSR_FREE 1
+
 int finalize_msr(const int restore)
 {
 	int dev_idx;
@@ -514,6 +701,9 @@ int finalize_msr(const int restore)
     uint64_t threadsPerCore = 0;
     uint64_t sockets = 0;
 
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "DEBUG: finalize_msr\n");
+#endif
     core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
     
     if (restore)
@@ -521,7 +711,7 @@ int finalize_msr(const int restore)
         core_storage(restore, NULL);
     }
     //close the file descriptors
-	for (dev_idx=0; dev_idx < (sockets * coresPerSocket * threadsPerCore); dev_idx++)
+	for (dev_idx=0; dev_idx < (NUM_DEVS_NEW); dev_idx++)
     {
         fileDescriptor = core_fd(dev_idx);
 		if(fileDescriptor)
@@ -541,6 +731,7 @@ int finalize_msr(const int restore)
 			}
 		}
 	}
+    memory_handler(NULL, NULL, LIBMSR_FREE);
     return 0;
 }
 
@@ -561,14 +752,14 @@ write_msr_by_coord( unsigned socket, unsigned core, unsigned thread, off_t msr, 
     {
         core_config(&coresPerSocket, &threadsPerCore, NULL, NULL);
     }
-    read_msr_by_idx(socket * coresPerSocket + core * threadsPerCore + thread, msr, &oldvalue.bits);
+    read_msr_by_idx((thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, &oldvalue.bits);
     core_storage(0, &oldvalue);
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s %s::%d (write_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx) val=%lu\n", 
             getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr, val);
-    return write_msr_by_idx_and_verify( socket * coresPerSocket + core * threadsPerCore + thread, msr, val );
+    return write_msr_by_idx_and_verify( (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, val );
 #endif
-    return write_msr_by_idx( socket * coresPerSocket + core * threadsPerCore + thread, msr, val );
+    return write_msr_by_idx( (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, val );
 }
 
 int
@@ -586,13 +777,13 @@ read_msr_by_coord(  unsigned socket, unsigned core, unsigned thread, off_t msr, 
     {
         core_config(&coresPerSocket, &threadsPerCore, NULL, NULL);
     }
-	return read_msr_by_idx( socket * coresPerSocket + core * threadsPerCore + thread, msr, val );
+	return read_msr_by_idx( (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, val );
 }
 
 int
 read_msr_by_coord_batch(  unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t *val ){
-#ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s %s::%d (read_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx)\n", 
+#ifdef BATCH_DEBUG
+	fprintf(stderr, "%s %s %s::%d (read_msr_by_coord_batch) socket=%d core=%d thread=%d msr=%lu (0x%lx)\n", 
             getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr);
 #endif
     sockets_assert(&socket, __LINE__, __FILE__);
@@ -605,15 +796,20 @@ read_msr_by_coord_batch(  unsigned socket, unsigned core, unsigned thread, off_t
     {
         core_config(&coresPerSocket, &threadsPerCore, NULL, NULL);
     }
+    op.d.data64 = 0xFFFFFA;
     op.msr = msr;
-    *val = *batch_ops(&op, (socket * coresPerSocket + core * threadsPerCore + thread));
-	//return read_msr_by_idx( socket * coresPerSocket + core * threadsPerCore + thread, msr, val );
+    op.isread = 1;
+#ifdef BATCH_DEBUG
+    fprintf(stderr, "DEBUG: passed operation on msr 0x%x (socket %u, core %u, thread %u) to BATCH OPS with destination %p\n", 
+            op.msr, socket, core, thread, val);
+#endif
+    batch_ops(&op, (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, val);
     return 0;
 }
 
 int read_batch()
 {
-    batch_ops(NULL, 0);
+    batch_ops(NULL, 0, NULL);
     return 0;
 }
 
@@ -632,7 +828,7 @@ write_all_sockets(   off_t msr, uint64_t  val )
 	fprintf(stderr, "%s %s %s::%d (write_all_sockets) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
-	for(dev_idx=0; dev_idx< (sockets * coresPerSocket * threadsPerCore); dev_idx += coresPerSocket * threadsPerCore )
+	for(dev_idx=0; dev_idx< (NUM_DEVS_NEW); dev_idx += coresPerSocket * threadsPerCore )
     {
 		if(write_msr_by_idx( dev_idx, msr, val ))
         {
@@ -657,7 +853,7 @@ write_all_cores(     off_t msr, uint64_t  val )
 	fprintf(stderr, "%s %s %s::%d (write_all_cores) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
-	for(dev_idx=0; dev_idx<(sockets * coresPerSocket * threadsPerCore); dev_idx += threadsPerCore )
+	for(dev_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx += threadsPerCore )
     {
 		if(write_msr_by_idx( dev_idx, msr, val ))
         {
@@ -682,7 +878,7 @@ write_all_threads(   off_t msr, uint64_t  val )
 	fprintf(stderr, "%s %s %s::%d (write_all_threads) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
-	for(dev_idx=0; dev_idx<(sockets * coresPerSocket * threadsPerCore); dev_idx++)
+	for(dev_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx++)
     {
 		if(write_msr_by_idx( dev_idx, msr, val ))
         {
@@ -707,7 +903,7 @@ write_all_sockets_v( off_t msr, uint64_t *val )
 	fprintf(stderr, "%s %s %s::%d (write_all_sockets_v) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
-	for(dev_idx=0, val_idx=0; dev_idx<(sockets * coresPerSocket * threadsPerCore); 
+	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); 
         dev_idx += coresPerSocket * threadsPerCore, val_idx++ )
     {
 		if(write_msr_by_idx( dev_idx, msr, val[val_idx] ))
@@ -733,7 +929,7 @@ write_all_cores_v(   off_t msr, uint64_t *val )
 	fprintf(stderr, "%s %s %s::%d (write_all_cores_v) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
-	for(dev_idx=0, val_idx=0; dev_idx<(sockets * coresPerSocket * threadsPerCore); dev_idx += threadsPerCore, val_idx++ )
+	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx += threadsPerCore, val_idx++ )
     {
 		if (write_msr_by_idx( dev_idx, msr, val[val_idx] ))
         {
@@ -758,7 +954,7 @@ write_all_threads_v( off_t msr, uint64_t *val )
 	fprintf(stderr, "%s %s %s::%d (write_all_threads_v) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
-	for(dev_idx=0, val_idx=0; dev_idx<(sockets * coresPerSocket * threadsPerCore); dev_idx++, val_idx++ )
+	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx++, val_idx++ )
     {
 		if(write_msr_by_idx( dev_idx, msr, val[val_idx] ))
         {
@@ -785,7 +981,7 @@ read_all_sockets(    off_t msr, uint64_t *val )
             __FILE__, __LINE__, msr, msr);
     fprintf(stderr, "sockets %lu, cores %lu, threads %lu\n", sockets, coresPerSocket, threadsPerCore);
 #endif
-	for(dev_idx=0, val_idx=0; dev_idx< NUM_DEVS_NEW;// (sockets * coresPerSocket * threadsPerCore); 
+	for(dev_idx=0, val_idx=0; dev_idx< NUM_DEVS_NEW;// (NUM_DEVS_NEW); 
         dev_idx += coresPerSocket * threadsPerCore, val_idx++ )
     {
 #ifdef LIBMSR_DEBUG
@@ -814,7 +1010,7 @@ read_all_cores(      off_t msr, uint64_t *val )
 	fprintf(stderr, "%s %s %s::%d (read_all_cores) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
-	for(dev_idx=0, val_idx=0; dev_idx<(sockets * coresPerSocket * threadsPerCore); dev_idx += threadsPerCore, val_idx++ )
+	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx += threadsPerCore, val_idx++ )
     {
 		if (read_msr_by_idx( dev_idx, msr, &val[val_idx] ))
         {
@@ -839,7 +1035,7 @@ read_all_threads(    off_t msr, uint64_t *val )
 	fprintf(stderr, "%s %s %s::%d (read_all_threads) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
-	for(dev_idx=0, val_idx=0; dev_idx<(sockets * coresPerSocket * threadsPerCore); dev_idx++, val_idx++ )
+	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx++, val_idx++ )
     {
 		if(read_msr_by_idx( dev_idx, msr, &val[val_idx] ))
         {

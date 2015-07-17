@@ -31,7 +31,7 @@
 #include "msr_core.h"
 #include "cpuid.h"
 #include "msr_rapl.h"
-#define LIBMSR_DEBUG 1
+//#define LIBMSR_DEBUG 1
 #define RAPL_USE_DRAM 1
 
 /* UNIT_SCALE 
@@ -124,7 +124,7 @@
 #define MF_06_2A (0xFE17) 
 #define MF_06_2D (0x7FF)
 #define MF_06_3A (0xFE17)
-#define MF_06_3E (0x7FF)
+#define MF_06_3E (0x7F7)
 #define MF_06_3C (0x1CFE17)
 #define MF_06_45 (0x1CFE17)
 #define MF_06_46 (0x1CFE17)
@@ -302,13 +302,13 @@ int rapl_storage(struct rapl_data ** data, uint64_t ** flags)
     {
         init = 0;
         core_config(NULL, NULL, &sockets, NULL);
-        rapl = (struct rapl_data *) malloc(sockets * sizeof(struct rapl_data));
+        rapl = (struct rapl_data *) libmsr_malloc(sockets * sizeof(struct rapl_data));
         if (rapl == NULL)
         {
             fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
             return -1;
         }
-        rapl_flags = (uint64_t *) malloc(sizeof(uint64_t));
+        rapl_flags = (uint64_t *) libmsr_malloc(sizeof(uint64_t));
         if (rapl_flags == NULL)
         {
             fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
@@ -462,14 +462,14 @@ int rapl_finalize()
         return -1;
     }
 
-    if (rapl)
-    {
-       free(rapl);
-    }
-    if (rapl_flags)
-    {
-        free(rapl_flags);
-    }
+    //if (rapl)
+    //{
+    //   free(rapl);
+    //}
+    //if (rapl_flags)
+    //{
+    //    free(rapl_flags);
+    //}
     return 0;
 }
 
@@ -495,13 +495,13 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 
 	if(!initialized){
 		initialized=1;
-        ru = (struct rapl_units *) calloc(sockets, sizeof(struct rapl_units));
+        ru = (struct rapl_units *) libmsr_calloc(sockets, sizeof(struct rapl_units));
         if (ru == NULL)
         {
             fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
             exit(-1);
         }
-        val = (uint64_t *) calloc(sockets, sizeof(uint64_t));
+        val = (uint64_t *) libmsr_calloc(sockets, sizeof(uint64_t));
         if (val == NULL)
         {
             fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
@@ -598,7 +598,7 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
         case BITS_TO_SECONDS_HASWELL:
             timeval_y = *bits & 0x1F;
             timeval_x = (*bits & 0x60) >> 5;
-            *units = (1.0 + (((double) timeval_x) / 10.0)) * pow(2.0, (double) timeval_y);
+            *units = ((1.0 + (((double) timeval_x) / 10.0)) * pow(2.0, (double) timeval_y)) / ru[socket].seconds;
             break;
         case SECONDS_TO_BITS_HASWELL:
             timeval_y = (uint64_t) log2(*units * ru[socket].seconds);
@@ -654,8 +654,8 @@ get_rapl_power_info( const unsigned socket, struct rapl_power_info *info){
     {
         read_msr_by_coord( socket, 0, 0, MSR_PKG_POWER_INFO, &(info->msr_pkg_power_info) );
         val = MASK_VAL( info->msr_pkg_power_info,  53, 48 );
-        translate( socket, &val, &(info->pkg_max_window), 
-                  (model == 0x3F ? BITS_TO_SECONDS_HASWELL : BITS_TO_SECONDS_STD));
+        translate( socket, &val, &(info->pkg_max_window), BITS_TO_SECONDS_STD);
+                  //(model == 0x3F ? BITS_TO_SECONDS_HASWELL : BITS_TO_SECONDS_STD));
         
         val = MASK_VAL( info->msr_pkg_power_info,  46, 32 );
         translate( socket, &val, &(info->pkg_max_power), BITS_TO_WATTS );
@@ -672,8 +672,8 @@ get_rapl_power_info( const unsigned socket, struct rapl_power_info *info){
         // Note that the same units are used in both the PKG and DRAM domains.
 	
         val = MASK_VAL( info->msr_dram_power_info, 53, 48 );
-        translate( socket, &val, &(info->dram_max_window), 
-                  (model == 0x3F ? BITS_TO_SECONDS_HASWELL : BITS_TO_SECONDS_STD) );
+        translate( socket, &val, &(info->dram_max_window), BITS_TO_SECONDS_STD);
+                  //(model == 0x3F ? BITS_TO_SECONDS_HASWELL : BITS_TO_SECONDS_STD) );
 
         val = MASK_VAL( info->msr_dram_power_info, 46, 32 );
         translate( socket, &val, &(info->dram_max_power), BITS_TO_WATTS );
@@ -711,8 +711,8 @@ static int calc_rapl_from_bits(const unsigned socket, struct rapl_limit * limit,
     // If the offset is > 31 (we are writing the upper PKG limit), then no translation needed
     if (offset < 32)
     {
-        translate( socket, &seconds_bits, &limit->seconds, 
-                  (model == 0x3F ? BITS_TO_SECONDS_HASWELL: BITS_TO_SECONDS_STD) );
+        translate( socket, &seconds_bits, &limit->seconds, BITS_TO_SECONDS_STD);
+                  //(model == 0x3F ? BITS_TO_SECONDS_HASWELL: BITS_TO_SECONDS_STD) );
     }
     else
     {
@@ -747,7 +747,8 @@ static int calc_rapl_bits(const unsigned socket, struct rapl_limit * limit, cons
     }
     else
     {
-        translate( socket, &seconds_bits, &limit->seconds, (model == 0x3F ? SECONDS_TO_BITS_HASWELL : SECONDS_TO_BITS_STD) );
+        translate( socket, &seconds_bits, &limit->seconds, BITS_TO_SECONDS_STD);
+                 // (model == 0x3F ? SECONDS_TO_BITS_HASWELL : SECONDS_TO_BITS_STD) );
     }
     // there is only 1 translation for watts (so far)
     translate( socket, &watts_bits,   &limit->watts,   WATTS_TO_BITS   );
@@ -1454,7 +1455,7 @@ int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_dat
         p->elapsed = 0;
         p->pkg_watts = 0.0;
         // TODO: left off here ###
-        //p->
+        p->dram_watts = 0.0;
         first = 0;
         translate(socket, &maxbits, &max_joules, BITS_TO_JOULES); 
     }
@@ -1555,6 +1556,17 @@ int read_rapl_data(const unsigned socket)
     struct rapl_data * p;
     static struct rapl_data * rapl = NULL;
     static uint64_t * rapl_flags = NULL;
+    static uint64_t batch_init = 0;
+    static uint64_t socketcount = 0;
+    if (socketcount == 0)
+    {
+        int i;
+        core_config(NULL, NULL, &socketcount, NULL);
+        for (i = 0; i < socketcount; i++)
+        {
+            batch_init |= (0x1 << i);
+        }
+    }
     sockets_assert(&socket, __LINE__, __FILE__);
 
     if (rapl == NULL || rapl_flags == NULL)
@@ -1583,19 +1595,25 @@ int read_rapl_data(const unsigned socket)
         // Get raw joules
         p->old_pkg_bits = p->pkg_bits;
         p->old_pkg_joules = p->pkg_joules;
-        if(read_msr_by_coord_batch( socket, 0, 0, MSR_PKG_ENERGY_STATUS,  &(p->pkg_bits)  ))
+        if (batch_init & (0x1 << socket))
         {
-            return -1;
+                if(read_msr_by_coord_batch( socket, 0, 0, MSR_PKG_ENERGY_STATUS,  &(p->pkg_bits)  ))
+                {
+                    return -1;
+                }
         }
    //     translate( socket, &(p->pkg_bits), &(p->pkg_joules), BITS_TO_JOULES );
     }
     // make sure pkg perf status register exits
     if (*rapl_flags & PKG_PERF_STATUS)
     {
-        if (read_msr_by_coord_batch(socket, 0, 0, MSR_PKG_PERF_STATUS, &(p->pkg_perf_count)))
+        if (batch_init & (0x1 << socket))
         {
-            // currently there is a problem preventing this register from being read on certain systems
-            //return -1;
+            if (read_msr_by_coord_batch(socket, 0, 0, MSR_PKG_PERF_STATUS, &(p->pkg_perf_count)))
+            {
+                // currently there is a problem preventing this register from being read on certain systems
+                //return -1;
+            }
         }
     }
 #ifdef LIBMSR_DEBUG
@@ -1609,26 +1627,35 @@ int read_rapl_data(const unsigned socket)
     {
         p->old_pp0_joules = p->pp0_joules;
         p->old_pp0_bits   = p->pp0_bits;
-        if(read_msr_by_coord_batch(socket, 0, 0, MSR_PP0_ENERGY_STATUS, &(p->pp0_bits)))
+        if (batch_init & (0x1 << socket))
         {
-            return -1;
+            if(read_msr_by_coord_batch(socket, 0, 0, MSR_PP0_ENERGY_STATUS, &(p->pp0_bits)))
+            {
+                return -1;
+            }
         }
     //    translate(socket, &(p->pp0_bits), &(p->pp0_joules), BITS_TO_JOULES);
     }
     // make sure pp0 perf status register exists
     if (*rapl_flags & PP0_PERF_STATUS) 
     {
-        if (read_msr_by_coord_batch(socket, 0, 0, MSR_PP0_PERF_STATUS, &(p->pp0_perf_count)))
+        if (batch_init & (0x1 << socket))
         {
-            return -1;
+            if (read_msr_by_coord_batch(socket, 0, 0, MSR_PP0_PERF_STATUS, &(p->pp0_perf_count)))
+            {
+                return -1;
+            }
         }
     }
     // make sure pp0 policy register exists
     if (*rapl_flags & PP0_POLICY)
     {
-        if (read_msr_by_coord_batch(socket, 0, 0, MSR_PP0_POLICY, &(p->pp0_policy)))
+        if (batch_init & (0x1 << socket))
         {
-            return -1;
+            if (read_msr_by_coord_batch(socket, 0, 0, MSR_PP0_POLICY, &(p->pp0_policy)))
+            {
+                return -1;
+            }
         }
     }
     // make sure pp1 energy status register exists
@@ -1636,18 +1663,24 @@ int read_rapl_data(const unsigned socket)
     {
         p->old_pp1_bits   = p->pp1_bits;
         p->old_pp1_joules = p->pp1_joules;
-        if(read_msr_by_coord_batch(socket, 0, 0, MSR_PP1_ENERGY_STATUS, &(p->pp0_bits)))
+        if (batch_init & (0x1 << socket))
         {
-            return -1;
+            if(read_msr_by_coord_batch(socket, 0, 0, MSR_PP1_ENERGY_STATUS, &(p->pp0_bits)))
+            {
+                return -1;
+            }
         }
     //    translate(socket, &(p->pp1_bits), &(p->pp1_joules), BITS_TO_JOULES);
     }
     // make sure pp1 policy register exists
     if (*rapl_flags & PP1_POLICY)
     {
-        if(read_msr_by_coord_batch(socket, 0, 0, MSR_PP1_POLICY, &(p->pp1_policy)))
+        if (batch_init & (0x1 << socket))
         {
-            return -1;
+            if(read_msr_by_coord_batch(socket, 0, 0, MSR_PP1_POLICY, &(p->pp1_policy)))
+            {
+                return -1;
+            }
         }
     }
     // make sure dram energy status register exists
@@ -1655,23 +1688,34 @@ int read_rapl_data(const unsigned socket)
     {
         p->old_dram_bits	= p->dram_bits;
         p->old_dram_joules	= p->dram_joules;
-        if(read_msr_by_coord_batch( socket, 0, 0, MSR_DRAM_ENERGY_STATUS, &(p->dram_bits) ))
+        if (batch_init & (0x1 << socket))
         {
-            return -1;
+            if(read_msr_by_coord_batch( socket, 0, 0, MSR_DRAM_ENERGY_STATUS, &(p->dram_bits) ))
+            {
+                return -1;
+            }
         }
     //    translate( socket, &(p->dram_bits), &(p->dram_joules), BITS_TO_JOULES );
     }
     // make sure dram perf status register exists
     if (*rapl_flags & DRAM_PERF_STATUS)
     {
-        if (read_msr_by_coord_batch( socket, 0, 0, MSR_DRAM_PERF_STATUS, &(p->dram_perf_count)))
+        if (batch_init & (0x1 << socket))
         {
-            return -1;
+            if (read_msr_by_coord_batch( socket, 0, 0, MSR_DRAM_PERF_STATUS, &(p->dram_perf_count)))
+            {
+                return -1;
+            }
         }
     }
-        translate(socket, &(p->pp0_bits), &(p->pp0_joules), BITS_TO_JOULES);
+    read_batch();
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "BATCH: batch operation returned %lx to rapl data array\n", p->pkg_bits);
+#endif
+    translate(socket, &(p->pp0_bits), &(p->pp0_joules), BITS_TO_JOULES);
     translate(socket, &(p->pp1_bits), &(p->pp1_joules), BITS_TO_JOULES);
     translate( socket, &(p->dram_bits), &(p->dram_joules), BITS_TO_JOULES );
     translate( socket, &(p->pkg_bits), &(p->pkg_joules), BITS_TO_JOULES );
+    batch_init &= ~(0x1 << socket);
     return 0;
 }
