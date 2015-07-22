@@ -28,109 +28,113 @@
 #define MSR_THERMAL_H
 #include <stdio.h>
 
+// TODO: used num_sockets
 struct msr_temp_target{				//Scope is "unique" for Sandy Bridge
 						//Assuming that it is by socket
-	uint64_t raw[NUM_SOCKETS];
-	uint64_t temp_target[NUM_SOCKETS];	//Read only (probably the TCC Activation Temp)
+	uint64_t * raw;
+	uint64_t * temp_target;	//Read only (probably the TCC Activation Temp)
 };
 
-
+// TODO: used num_cores
 struct therm_stat{			//Scope is "core" for Sandy Bridge
-	uint64_t raw[NUM_CORES];
-	int status[NUM_CORES];				//Read only
+	uint64_t * raw;
+	int * status;				//Read only
 
-	int status_log[NUM_CORES];			//Read and Write (Sticky bit)
+	int * status_log;			//Read and Write (Sticky bit)
 							//Cleared by software to 0 or RESET
 
-	int PROCHOT_or_FORCEPR_event[NUM_CORES];	//Read only
+	int * PROCHOT_or_FORCEPR_event;	//Read only
 
-	int PROCHOT_or_FORCEPR_log[NUM_CORES];		//Read and Write
+	int * PROCHOT_or_FORCEPR_log;		//Read and Write
 
-	int crit_temp_status[NUM_CORES];		//Read only
+	int * crit_temp_status;		//Read only
 
-	int crit_temp_log[NUM_CORES];			//Read and Write
+	int * crit_temp_log;			//Read and Write
 							//Sticky bit
 
-	int therm_thresh1_status[NUM_CORES];		//Read only
+	int * therm_thresh1_status;		//Read only
 
-	int therm_thresh1_log[NUM_CORES];		//Read and Write
+	int * therm_thresh1_log;		//Read and Write
 							//Sticky bit
 
-	int therm_thresh2_status[NUM_CORES];		//Read only
+	int * therm_thresh2_status;		//Read only
 
-	int therm_thresh2_log[NUM_CORES];		//Read and Write
+	int * therm_thresh2_log;		//Read and Write
 							//Sticky bit
 
-	int power_limit_status[NUM_CORES];		//Read only
+	int * power_limit_status;		//Read only
 
-	int power_notification_log[NUM_CORES];		//Read and Write
+	int * power_notification_log;		//Read and Write
 							//Sticky bit
 
-	int readout[NUM_CORES];				//Read only
+	int * readout;				//Read only
 
-	int resolution_deg_celsius[NUM_CORES];		//Read only
+	int * resolution_deg_celsius;		//Read only
 
-	int readout_valid[NUM_CORES];			//Read only
+	int * readout_valid;			//Read only
 };
 
+// TODO: used num_cores
 struct therm_interrupt{			//Core scope
-	uint64_t raw[NUM_CORES];
+	uint64_t * raw;
 	//Below all read and write
-	int high_temp_enable[NUM_CORES];
-	int low_temp_enable[NUM_CORES];
-	int PROCHOT_enable[NUM_CORES];
-	int FORCEPR_enable[NUM_CORES];
-	int crit_temp_enable[NUM_CORES];
-	int thresh1_val[NUM_CORES];
-	int thresh1_enable[NUM_CORES];
-	int thresh2_val[NUM_CORES];
-	int thresh2_enable[NUM_CORES];
-	int pwr_limit_notification_enable[NUM_CORES];
+	int * high_temp_enable;
+	int * low_temp_enable;
+	int * PROCHOT_enable;
+	int * FORCEPR_enable;
+	int * crit_temp_enable;
+	int * thresh1_val;
+	int * thresh1_enable;
+	int * thresh2_val;
+	int * thresh2_enable;
+	int * pwr_limit_notification_enable;
 };
 
+// TODO: used num_sockets
 struct pkg_therm_stat{			//Package (socket) scope
-	uint64_t raw[NUM_SOCKETS];
-	int status[NUM_SOCKETS];		//Read only
+	uint64_t * raw;
+	int * status;		//Read only
 
-	int status_log[NUM_SOCKETS];		//Read or Write Sticky bit (default: clear)
+	int * status_log;		//Read or Write Sticky bit (default: clear)
 						//Cleared by software to 0 or reset
 
-	int PROCHOT_event[NUM_SOCKETS];		//Read only
+	int * PROCHOT_event;		//Read only
 
-	int PROCHOT_log[NUM_SOCKETS];		//Read or Write
+	int * PROCHOT_log;		//Read or Write
 						//Sticky bit
 
-	int crit_temp_status[NUM_SOCKETS];	//Read only
-	int crit_temp_log[NUM_SOCKETS];		//Read or write
+	int * crit_temp_status;	//Read only
+	int * crit_temp_log;		//Read or write
 						//Sticky bit
 
-	int therm_thresh1_status[NUM_SOCKETS];	//Read only
-	int therm_thresh1_log[NUM_SOCKETS];	//Read or write
+	int * therm_thresh1_status;	//Read only
+	int * therm_thresh1_log;	//Read or write
 						//Sticky bit
 
-	int therm_thresh2_status[NUM_SOCKETS];	//Read only
-	int therm_thresh2_log[NUM_SOCKETS];	//Read or write
+	int * therm_thresh2_status;	//Read only
+	int * therm_thresh2_log;	//Read or write
 						//Sticky bit
 
-	int power_limit_status[NUM_SOCKETS];	//Read only
-	int power_notification_log[NUM_SOCKETS];//Read or write
+	int * power_limit_status;	//Read only
+	int * power_notification_log; //Read or write
 						//Sticky bit
 
-	int readout[NUM_SOCKETS];		//Read only
+	int * readout;		//Read only
 };
 
+// TODO: used num_sockets
 struct pkg_therm_interrupt{			//Package(socket) scope
-	uint64_t raw[NUM_SOCKETS];
+	uint64_t * raw;
 	//All read and write below
-	int high_temp_enable[NUM_SOCKETS];
-	int low_temp_enable[NUM_SOCKETS];
-	int PROCHOT_enable[NUM_SOCKETS];
-	int crit_temp_enable[NUM_SOCKETS];
-	int thresh1_val[NUM_SOCKETS];
-	int thresh1_enable[NUM_SOCKETS];
-	int thresh2_val[NUM_SOCKETS];
-	int thresh2_enable[NUM_SOCKETS];
-	int pwr_limit_notification_enable[NUM_SOCKETS];
+	int * high_temp_enable;
+	int * low_temp_enable;
+	int * PROCHOT_enable;
+	int * crit_temp_enable;
+	int * thresh1_val;
+	int * thresh1_enable;
+	int * thresh2_val;
+	int * thresh2_enable;
+	int * pwr_limit_notification_enable;
 };
 
 #ifdef __cplusplus

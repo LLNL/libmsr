@@ -25,14 +25,11 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <linux/types.h>
-//#define LIBMSR_DEBUG 1
-#define NUM_SOCKETS 2
-#define NUM_CORES_PER_SOCKET 12 
-#define NUM_THREADS_PER_CORE 1
-#define NUM_DEVS (NUM_SOCKETS * NUM_CORES_PER_SOCKET * NUM_THREADS_PER_CORE)
+#define LIBMSR_DEBUG 1
 #define NUM_DEVS_NEW (sockets * coresPerSocket * threadsPerCore)
-#define NUM_CORES (NUM_CORES_PER_SOCKET * NUM_SOCKETS)
-#define NUM_THREADS (NUM_CORES * NUM_THREADS_PER_CORE)
+#define NUM_CORES_NEW (sockets * coresPerSocket)
+// this is the same as num_devs
+#define NUM_THREADS_NEW (sockets * coresPerSocket * threadsPerCore)
 
 /* MASK_RANGE
  * Create a mask from bit m to n.
@@ -116,11 +113,6 @@ int init_msr();
 int finalize_msr(const int restore);
 uint64_t * batch_ops(struct msr_op * op, uint64_t cpu, uint64_t * dest);
 int read_batch();
-
-int memory_handler(void * address, void * oldaddr, int dealloc);
-void * libmsr_malloc(size_t size);
-void * libmsr_calloc(size_t num, size_t size);
-void * libmsr_realloc(void * addr, size_t size);
 
 int core_storage(int recover, recover_data * recoverValue);
 int core_config(uint64_t * coresPerSocket, uint64_t * threadsPerCore, uint64_t * sockets, int * HTenabled);

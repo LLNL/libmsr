@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include "msr_core.h"
+#include "memhdlr.h"
 #include "msr_counters.h"
 #include "cpuid.h"
 
@@ -22,18 +23,68 @@
 #define IA32_FIXED_CTR1			(0x30A)	// (R/W) Counts CPU_CLK_Unhalted.Core
 #define IA32_FIXED_CTR2			(0x30B)	// (R/W) Counts CPU_CLK_Unhalted.Ref
 
-static struct ctr_data c0, c1, c2;
+//static struct ctr_data c0, c1, c2;
+static int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, struct ctr_data ** ctr2)
+{
+    static struct ctr_data c0, c1, c2;
+    static int init = 1;
+    if (init)
+    {
+        init = 0;
+        init_ctr_data(&c0);
+        init_ctr_data(&c1);
+        init_ctr_data(&c2);
+    }
+    if (ctr0)
+    {
+        *ctr0 = &c0;
+    }
+    if (ctr1)
+    {
+        *ctr1 = &c1;
+    }
+    if (ctr2)
+    {
+        *ctr2 = &c2;
+    }
+    return 0;
+}
+
+void init_ctr_data(struct ctr_data * ctr)
+{
+    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
+    if (!coresPerSocket || !threadsPerCore || !sockets)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+    ctr->enable = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "DEBUG: note q1, ctr->enable is at %p\n", ctr->enable);
+#endif
+    ctr->ring_level = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+    ctr->anyThread = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+    ctr->pmi = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+    ctr->overflow = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+    ctr->value = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+}
 
 void 
 get_fixed_ctr_ctrl(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data *ctr2){
-	uint64_t perf_global_ctrl[NUM_THREADS];
-	uint64_t fixed_ctr_ctrl[NUM_THREADS];
+    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
+    if (!coresPerSocket || !threadsPerCore || !sockets)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+    uint64_t * perf_global_ctrl = NULL;
+    perf_global_ctrl = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+    uint64_t * fixed_ctr_ctrl = NULL;
+    fixed_ctr_ctrl = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
 	int i;
 
 	read_all_threads(IA32_PERF_GLOBAL_CTRL, perf_global_ctrl);
 	read_all_threads(IA32_FIXED_CTR_CTRL,   fixed_ctr_ctrl);
 
-	for(i=0; i<NUM_THREADS; i++){
+	for(i=0; i<NUM_THREADS_NEW; i++){
 		if(ctr0){
 			ctr0->enable[i] 	= MASK_VAL(perf_global_ctrl[i], 32, 32);
 			ctr0->ring_level[i] 	= MASK_VAL(fixed_ctr_ctrl[i], 1,0);
@@ -59,14 +110,22 @@ get_fixed_ctr_ctrl(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data
 
 void 
 set_fixed_ctr_ctrl(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data *ctr2) {
-	uint64_t perf_global_ctrl[NUM_THREADS];
-	uint64_t fixed_ctr_ctrl[NUM_THREADS];
+    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
+    if (!coresPerSocket || !threadsPerCore || !sockets)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+    uint64_t * perf_global_ctrl = NULL;
+    perf_global_ctrl = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+    uint64_t * fixed_ctr_ctrl = NULL;
+    fixed_ctr_ctrl = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+
 	int i;
 
 	read_all_threads( IA32_PERF_GLOBAL_CTRL, perf_global_ctrl);
 	read_all_threads( IA32_FIXED_CTR_CTRL,   fixed_ctr_ctrl);
 
-	for(i=0; i<NUM_THREADS; i++){	
+	for(i=0; i<NUM_THREADS_NEW; i++){	
 		perf_global_ctrl[i] =  ( perf_global_ctrl[i] & ~(1ULL<<32) ) | ctr0->enable[i] << 32; 
 		perf_global_ctrl[i] =  ( perf_global_ctrl[i] & ~(1ULL<<33) ) | ctr1->enable[i] << 33; 
 		perf_global_ctrl[i] =  ( perf_global_ctrl[i] & ~(1ULL<<34) ) | ctr2->enable[i] << 34; 
@@ -106,38 +165,62 @@ get_fixed_ctr_values(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_da
 	read_all_threads(IA32_FIXED_CTR2, ctr2->value);
 }
 
-// These four funcitons use the static structs defined a the top of the file.
+// These four functions use the structs defined in fixed_ctr_storage.
 
 void
 enable_fixed_counters(){
+    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
+    if (!coresPerSocket || !threadsPerCore || !sockets)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+    struct ctr_data * c0, * c1, * c2;
+    fixed_ctr_storage(&c0, &c1, &c2);
+
 	int i;
-	for(i=0; i<NUM_THREADS; i++){
-		c0.enable[i] 		= c1.enable[i] 		= c2.enable[i] 		= 1;
-		c0.ring_level[i] 	= c1.ring_level[i] 	= c2.ring_level[i] 	= 3; // usr + os	
-		c0.anyThread[i] 	= c1.anyThread[i] 	= c2.anyThread[i] 	= 1; 
-		c0.pmi[i] 		= c1.pmi[i] 		= c2.pmi[i] 		= 0;
+	for(i=0; i<NUM_THREADS_NEW; i++){
+		c0->enable[i] 		= c1->enable[i] 		= c2->enable[i] 		= 1;
+		c0->ring_level[i] 	= c1->ring_level[i] 	= c2->ring_level[i] 	= 3; // usr + os	
+		c0->anyThread[i] 	= c1->anyThread[i] 	= c2->anyThread[i] 	= 1; 
+		c0->pmi[i] 		= c1->pmi[i] 		= c2->pmi[i] 		= 0;
 	}
-	set_fixed_ctr_ctrl( &c0, &c1, &c2 );	
+	set_fixed_ctr_ctrl( c0, c1, c2 );	
 }
 
 void
 disable_fixed_counters(){
+    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
+    if (!coresPerSocket || !threadsPerCore || !sockets)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+    struct ctr_data * c0, * c1, * c2;
+    fixed_ctr_storage(&c0, &c1, &c2);
+
 	int i;
-	for(i=0; i<NUM_THREADS; i++){
-		c0.enable[i] = c1.enable[i] = c2.enable[i] = 0;
-		c0.ring_level[i] = c1.ring_level[i] = c2.ring_level[i] = 3; // usr + os	
-		c0.anyThread[i] = c1.anyThread[i] = c2.anyThread[i] = 1; 
-		c0.pmi[i] = c1.pmi[i] = c2.pmi[i] = 0;
+	for(i=0; i<NUM_THREADS_NEW; i++){
+		c0->enable[i] = c1->enable[i] = c2->enable[i] = 0;
+		c0->ring_level[i] = c1->ring_level[i] = c2->ring_level[i] = 3; // usr + os	
+		c0->anyThread[i] = c1->anyThread[i] = c2->anyThread[i] = 1; 
+		c0->pmi[i] = c1->pmi[i] = c2->pmi[i] = 0;
 	}
-	set_fixed_ctr_ctrl( &c0, &c1, &c2 );	
+	set_fixed_ctr_ctrl( c0, c1, c2 );	
 }
 
 void
 dump_fixed_terse(FILE *writeFile){
+    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
+    if (!coresPerSocket || !threadsPerCore || !sockets)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+    struct ctr_data * c0, * c1, * c2;
+    fixed_ctr_storage(&c0, &c1, &c2);
+
 	int i;
-	get_fixed_ctr_values( &c0, &c1, &c2 );
-	for(i=0; i<NUM_THREADS; i++){
-		fprintf(writeFile, "%lu %lu %lu ", c0.value[i], c1.value[i], c2.value[i]);
+	get_fixed_ctr_values( c0, c1, c2 );
+	for(i=0; i<NUM_THREADS_NEW; i++){
+		fprintf(writeFile, "%lu %lu %lu ", c0->value[i], c1->value[i], c2->value[i]);
 	}
 
 }
@@ -153,8 +236,32 @@ dump_fixed_terse_label(FILE *writeFile){
 	 * 5	Branch Instructions Retired
 	 * 6	Branch Misses Retired
 	 */
+    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
+    if (!coresPerSocket || !threadsPerCore || !sockets)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+
 	int i;
-	for(i=0; i<NUM_THREADS; i++){
-		fprintf(writeFile, "UCC%02d IR%02d URC%02d ", i, i, i);
+	for(i=0; i<NUM_THREADS_NEW; i++){
+		fprintf(writeFile, "IR%02d UCC%02d URC%02d ", i, i, i);
 	}
+}
+
+void dump_fixed_readable(FILE * writeFile)
+{
+    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
+    if (!coresPerSocket || !threadsPerCore || !sockets)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+    struct ctr_data * c0, * c1, * c2;
+    fixed_ctr_storage(&c0, &c1, &c2);
+
+	int i;
+	get_fixed_ctr_values( c0, c1, c2 );
+	for(i=0; i<NUM_THREADS_NEW; i++){
+		fprintf(writeFile, "IR%02d: %lu UCC%02d:%lu URC%02d:%lu\n", i, c0->value[i], i, c1->value[i], i, c2->value[i]);
+	}
+
 }

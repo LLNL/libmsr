@@ -6,6 +6,11 @@
 #include "../include/msr_core.h"
 #include "../include/msr_rapl.h"
 #include "../include/msr_thermal.h"
+#include "../include/msr_counters.h"
+#include "../include/msr_clocks.h"
+#include "../include/profile.h"
+#include "../include/msr_misc.h"
+#include "../include/msr_turbo.h"
 #ifdef MPI
 #include <mpi.h>
 #endif
@@ -21,8 +26,13 @@ get_limits()
 {
 	int i;
     uint64_t pp_result;
+    static uint64_t sockets = 0;
+    if (!sockets)
+    {
+        core_config(NULL, NULL, &sockets, NULL);
+    }
     fprintf(stderr, "\nGetting limits...\n");
-	for(i=0; i<NUM_SOCKETS; i++){
+	for(i=0; i<sockets; i++){
         fprintf(stdout, "\nSocket %d:\n", i);
         printf("PKG\n");
         get_pkg_rapl_limit(i, &l1, &l2);
@@ -107,6 +117,11 @@ void test_socket_0_limits(unsigned s)
 
 void test_all_limits()
 {
+    static uint64_t sockets = 0;
+    if (!sockets)
+    {
+        core_config(NULL, NULL, &sockets, NULL);
+    }
     printf("\n Testing all sockets\n");
     l1.watts = 115;
 	l1.seconds = 1;
@@ -122,7 +137,7 @@ void test_all_limits()
     l4.bits = 0;
     pp_policy = 31;
     int i;
-    for (i = 0; i < NUM_SOCKETS; i++)
+    for (i = 0; i < sockets; i++)
     {
         set_pkg_rapl_limit(i, &l1, &l2);
         set_pp_rapl_limit(i, &l4, NULL);
@@ -132,19 +147,46 @@ void test_all_limits()
     get_limits();
 }
 
+// TODO: test other parts of thermal
 void thermal_test(){
-	dump_thermal_terse_label(stdout);
-	fprintf(stdout, "\n");
-	dump_thermal_terse(stdout);
-	fprintf(stdout, "\n");
-
 	dump_thermal_verbose_label(stdout);
 	fprintf(stdout, "\n");
 	dump_thermal_verbose(stdout);
 	fprintf(stdout, "\n");
 }
 
-char * args[] = {"--cpu", "24", "--io", "96", "--vm", "96", "--vm-bytes", "1G", "--timeout", "10s"};
+void counters_test()
+{
+    dump_fixed_readable(stdout);
+    fprintf(stdout, "\n");
+}
+
+// TODO: test other parts of clocks
+void clocks_test()
+{
+    dump_clocks_readable(stdout);
+    fprintf(stdout, "\n");
+}
+
+void misc_test()
+{
+    struct misc_enable s;
+    uint64_t sockets = 0;
+    core_config(NULL, NULL, &sockets, NULL);
+    int i;
+    for (i = 0; i < sockets; i++)
+    {
+        get_misc_enable(i, &s);
+        dump_misc_enable(&s);
+    }
+}
+
+void turbo_test()
+{
+    dump_turbo(stdout);
+}
+
+char * args[] = {"--cpu", "24", "--io", "96", "--vm", "96", "--vm-bytes", "1G", "--timeout", "5s"};
 
 void rapl_r_test(struct rapl_data ** rd)
 {
@@ -191,7 +233,10 @@ int main(int argc, char** argv)
     struct rapl_data * rd = NULL;
     uint64_t * rapl_flags = NULL;
     uint64_t cores = 0, threads = 0, sockets = 0;
-    int HTenabled = 0;
+    if (!sockets)
+    {
+        core_config(&cores, &threads, &sockets, NULL);
+    }
 	#ifdef MPI
 	MPI_Init(&argc, &argv);
     printf("mpi init done\n");
@@ -207,9 +252,10 @@ int main(int argc, char** argv)
         return -1;
     }
     printf("init done\n");
+    enable_fixed_counters();
 	get_limits();
     unsigned i;
-    for(i = 0; i < NUM_SOCKETS; i++)
+    for(i = 0; i < sockets; i++)
     {
         fprintf(stdout, "BEGINNING SOCKET %u TEST\n", i);
 	    test_pkg_lower_limit(i);
@@ -230,18 +276,18 @@ int main(int argc, char** argv)
     //printf("testing CSR read\n");
     //read_csr(&test);
     //printf("CSR has %lx\n", test);
-    printf("testing core count\n");
-    cpuid_detect_core_conf(&cores, &threads, &sockets, &HTenabled);
-    printf("the number of cores is %ld\n", cores);
+    printf("thermal test\n");
+    thermal_test();
 
-    if (HTenabled)
-    {
-        printf("hyper threading is enabled\n");
-    }
-    else
-    {
-        printf("hyper threading is not enabled\n");
-    }
+    printf("clocks test\n");
+    clocks_test();
+    printf("counters test\n");
+    counters_test();
+    printf("turbo test\n");
+    turbo_test();
+    printf("misc test\n");
+    misc_test();
+
 	finalize_msr(1);
 	#ifdef MPI
 	MPI_Finalize();

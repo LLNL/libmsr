@@ -29,6 +29,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include "msr_core.h"
+#include "memhdlr.h"
 #include "msr_thermal.h"
 
 // Section 35.7 Table 35-11
@@ -41,17 +42,116 @@
 						// what it means exactly)
 
 // Static structs being defined
-static struct msr_temp_target 		t_target;
-static struct therm_stat 		t_stat;
-static struct therm_interrupt 		t_interrupt;
-static struct pkg_therm_stat 		pkg_stat;
-static struct pkg_therm_interrupt 	pkg_interrupt;
+
+static int thermal_storage(struct msr_temp_target ** t, struct therm_stat ** s, struct therm_interrupt ** i, 
+                           struct pkg_therm_stat ** p, struct pkg_therm_interrupt ** k)
+{
+    static struct msr_temp_target t_target;
+    static struct therm_stat t_stat;
+    static struct therm_interrupt t_interrupt;
+    static struct pkg_therm_stat pkg_stat;
+    static struct pkg_therm_interrupt pkg_interrupt;
+    static uint64_t sockets = 0, coresPerSocket = 0;
+    static int init = 1;
+    if (init)
+    {
+        init = 0;
+        core_config(&coresPerSocket, NULL, &sockets, NULL);
+        t_target.raw = (uint64_t *) libmsr_malloc(sockets * sizeof(uint64_t));
+        t_target.temp_target = (uint64_t *) libmsr_malloc(sockets * sizeof(uint64_t));
+
+        t_stat.raw = (uint64_t *) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t));
+        t_stat.status = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.status_log = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.PROCHOT_or_FORCEPR_event = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.PROCHOT_or_FORCEPR_log = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.crit_temp_status = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.crit_temp_log = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.therm_thresh1_status = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.therm_thresh1_log = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.therm_thresh2_status = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.therm_thresh2_log = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.power_limit_status = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.power_notification_log = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.readout = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.resolution_deg_celsius = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_stat.readout_valid = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+
+        t_interrupt.raw = (uint64_t *) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t));
+        t_interrupt.high_temp_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_interrupt.low_temp_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_interrupt.PROCHOT_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_interrupt.FORCEPR_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_interrupt.crit_temp_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_interrupt.thresh1_val = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_interrupt.thresh1_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_interrupt.thresh2_val = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_interrupt.thresh2_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+        t_interrupt.pwr_limit_notification_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+
+        pkg_stat.raw = (uint64_t *) libmsr_malloc(sockets * sizeof(uint64_t));
+        pkg_stat.status = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_stat.status_log = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_stat.PROCHOT_event = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_stat.PROCHOT_log = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_stat.crit_temp_status = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_stat.crit_temp_log = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_stat.therm_thresh1_status = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_stat.therm_thresh1_log = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_stat.therm_thresh2_status = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_stat.therm_thresh2_log = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_stat.power_limit_status = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_stat.power_notification_log = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_stat.readout = (int *) libmsr_malloc(sockets * sizeof(int));
+
+        pkg_interrupt.raw = (uint64_t *) libmsr_malloc(sockets * sizeof(uint64_t));
+#ifdef LIBMSR_DEBUG
+        fprintf(stderr, "DEBUG: pkg_interrupt.raw is at %p\n", pkg_interrupt.raw);
+#endif
+        pkg_interrupt.high_temp_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_interrupt.low_temp_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_interrupt.PROCHOT_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_interrupt.crit_temp_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_interrupt.thresh1_val = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_interrupt.thresh1_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_interrupt.thresh2_val = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_interrupt.thresh2_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+        pkg_interrupt.pwr_limit_notification_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+    }
+    if (t)
+    {
+        *t = &t_target;
+    }
+    if (s)
+    {
+        *s = &t_stat;
+    }
+    if (i)
+    {
+        *i = &t_interrupt;
+    }
+    if (p)
+    {
+        *p = &pkg_stat;
+    }
+    if (k)
+    {
+        *k = &pkg_interrupt;
+    }
+    return 0;
+}
 
 void is_init() {
 	static int initialized = 0;
+    static struct msr_temp_target * t_target = NULL;
+    if (t_target == NULL)
+    {
+        thermal_storage(&t_target, NULL, NULL, NULL, NULL);
+    }
 	if(!initialized)
 	{
-		get_temp_target(&t_target);
+        // TODO: shouldnt this set initialized to 1 now?
+		get_temp_target(t_target);
 	}
 	else
 		return;
@@ -62,11 +162,16 @@ void is_init() {
 
 void get_temp_target(struct msr_temp_target *s)
 { 
+    static uint64_t sockets = 0;
+    if (!sockets)
+    {
+        core_config(NULL, NULL, &sockets, NULL);
+    }
 	read_all_sockets(MSR_TEMPERATURE_TARGET, s->raw);
 	//read_msr_by_coord(socket, 0, 0, MSR_TEMPERATURE_TARGET, &(s->raw));
 	//s->raw = 64;
 	int i;
-	for(i=0; i<NUM_SOCKETS; i++)
+	for(i=0; i<sockets; i++)
 	{
 		s->temp_target[i] = MASK_VAL(s->raw[i], 23, 16);	// Minimum temperature at which PROCHOT will
 	}							// be asserted in degree Celsius (Probably 
@@ -80,11 +185,17 @@ void get_temp_target(struct msr_temp_target *s)
 
 void get_therm_stat(struct therm_stat *s)
 {
+    static uint64_t coresPerSocket = 0;
+    static uint64_t sockets = 0;
+    if (!coresPerSocket || !sockets)
+    {
+        core_config(&coresPerSocket, NULL, &sockets, NULL);
+    }
 	read_all_cores(IA32_THERM_STATUS,s->raw);
 	//read_msr_by_coord(socket, core, 0, IA32_THERM_STATUS, &(s->raw));
 	//s->raw = 56879; //in dec
 	int i;
-	for(i = 0; i<NUM_CORES; i++)
+	for(i = 0; i< NUM_CORES_NEW ; i++)
 	{
 		s->status[i] = MASK_VAL(s->raw[i], 0,0);			// Indicates whether the digital thermal sensor
 									// high-temperature output signal (PROCHOT#) is
@@ -158,11 +269,17 @@ void get_therm_stat(struct therm_stat *s)
 
 void get_therm_interrupt(struct therm_interrupt *s)
 {
+    static uint64_t coresPerSocket = 0;
+    static uint64_t sockets = 0;
+    if (!coresPerSocket || !sockets)
+    {
+        core_config(&coresPerSocket, NULL, &sockets, NULL);
+    }
 	read_all_cores(IA32_THERM_INTERRUPT,s->raw);
 	//read_msr_by_coord(socket, core, 0, IA32_THERM_INTERRUPT, &(s->raw));
 	//s->raw = 64;	
 	int i;
-	for(i=0;i<NUM_CORES;i++)
+	for(i=0;i< NUM_CORES_NEW ;i++)
 	{
 		s->high_temp_enable[i] = MASK_VAL(s->raw[i], 0, 0);	// Allows the BIOS to enable the generation of an inerrupt on the
 									// transition from low-temp to a high-temp threshold. 
@@ -209,11 +326,16 @@ void get_therm_interrupt(struct therm_interrupt *s)
 
 void get_pkg_therm_stat(struct pkg_therm_stat *s)
 {
+    static uint64_t sockets = 0;
+    if (!sockets)
+    {
+        core_config(NULL, NULL, &sockets, NULL);
+    }
 	read_all_sockets(IA32_PACKAGE_THERM_STATUS,s->raw);
 	//read_msr_by_coord( package, 0, 0, IA32_PACKAGE_THERM_STATUS, &(s->raw) ); 
 	//s->raw = 56879; //in dec
 	int i;
-	for(i=0;i<NUM_SOCKETS;i++)
+	for(i=0;i<sockets ;i++)
 	{
 		s->status[i] = MASK_VAL(s->raw[i],0,0);			// Indicates whether the digital thermal sensor 
 									// high-temp output signal (PROCHOT#) for the pkg
@@ -270,11 +392,16 @@ void get_pkg_therm_stat(struct pkg_therm_stat *s)
 
 void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 {
+    static uint64_t sockets = 0;
+    if (!sockets)
+    {
+        core_config(NULL, NULL, &sockets, NULL);
+    }
 	read_all_sockets(IA32_PACKAGE_THERM_INTERRUPT, s->raw);
 	//read_msr_by_coord( package, 0, 0, IA32_PACKAGE_THERM_INTERRUPT, &(s->raw));
 	//s->raw = 56879;
 	int i;
-	for(i=0;i<NUM_SOCKETS;i++)
+	for(i=0;i<sockets ;i++)
 	{
 		s->high_temp_enable[i] = MASK_VAL(s->raw[i], 0, 0);	// Allows the BIOS to enable the generation of an interrupt on transition
 								// from low temp to pkg high temp threshold
@@ -310,11 +437,18 @@ void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 
 void set_therm_stat(struct therm_stat *s)
 {
-	uint64_t msrVal[NUM_CORES];
+    static uint64_t sockets = 0;
+    static uint64_t coresPerSocket = 0;
+    if (!coresPerSocket || !sockets)
+    {
+        core_config(&coresPerSocket, NULL, &sockets, NULL);
+    }
+	uint64_t * msrVal;
+    msrVal = (uint64_t *) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t));
 	read_all_cores(IA32_THERM_STATUS,msrVal);
 	//read_msr_by_coord(socket, core, 0, IA32_THERM_STATUS, &msrVal);
 	int i;
-	for(i=0;i<NUM_CORES;i++)
+	for(i=0;i<coresPerSocket ;i++)
 	{
 		assert(s->status_log[i] == 0 || s->status_log[i] == 1);
 		assert(s->PROCHOT_or_FORCEPR_log[i] == 0 || s->PROCHOT_or_FORCEPR_log[i] == 1);
@@ -337,11 +471,19 @@ void set_therm_stat(struct therm_stat *s)
 
 void set_therm_interrupt(struct therm_interrupt *s)
 {
-	uint64_t msrVal[NUM_CORES];
+    static uint64_t sockets = 0;
+    static uint64_t coresPerSocket = 0;
+    if (!coresPerSocket || !sockets)
+    {
+        core_config(&coresPerSocket, NULL, &sockets, NULL);
+    }
+	uint64_t * msrVal;
+    msrVal = (uint64_t *) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t));
+
 	read_all_cores(IA32_THERM_INTERRUPT,msrVal);
 	//read_msr_by_coord(socket, core, 0, IA32_THERM_INTERRUPT, &msrVal);
 	int i;
-	for(i=0;i<NUM_CORES;i++)
+	for(i=0;i<coresPerSocket ;i++)
 	{
 		assert(s->high_temp_enable[i] == 0 || s->high_temp_enable[i] == 1);
 		assert(s->low_temp_enable[i] == 0 || s->low_temp_enable[i] == 1);
@@ -370,11 +512,17 @@ void set_therm_interrupt(struct therm_interrupt *s)
 
 void set_pkg_therm_stat(struct pkg_therm_stat *s)
 {
-	uint64_t msrVal[NUM_SOCKETS];
+    static uint64_t sockets = 0;
+    if (!sockets)
+    {
+        core_config(NULL, NULL, &sockets, NULL);
+    }
+	uint64_t * msrVal = NULL;
+    msrVal = (uint64_t *) libmsr_malloc(sockets * sizeof (uint64_t));
 	read_all_sockets(IA32_PACKAGE_THERM_STATUS,msrVal);
 	//read_msr_by_coord(package, 0, 0, IA32_PACKAGE_THERM_INTERRUPT, &msrVal);
 	int i;
-	for(i=0;i<NUM_SOCKETS;i++)
+	for(i=0;i<sockets ;i++)
 	{
 		assert(s->status_log[i] == 0 || s->status_log[i] == 1);
 		assert(s->PROCHOT_log[i] == 0 || s->PROCHOT_log[i] == 1);
@@ -396,11 +544,18 @@ void set_pkg_therm_stat(struct pkg_therm_stat *s)
 
 void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 {
-	uint64_t msrVal[NUM_SOCKETS];
+    static uint64_t sockets = 0;
+    if (!sockets)
+    {
+        core_config(NULL, NULL, &sockets, NULL);
+    }
+	uint64_t * msrVal = NULL;
+    msrVal = (uint64_t *) libmsr_malloc(sockets * sizeof (uint64_t));
+
 	read_all_sockets(IA32_PACKAGE_THERM_INTERRUPT,msrVal);
 	//read_msr_by_coord(package, 0, 0, IA32_PACKAGE_THERM_INTERRUPT, &msrVal);
 	int i;
-	for(i=0;i<NUM_SOCKETS;i++)
+	for(i=0;i<sockets ;i++)
 	{	
 		assert(s->high_temp_enable[i] == 0 || s->high_temp_enable[i] == 1);
 		assert(s->low_temp_enable[i] == 0 || s->low_temp_enable[i] == 1);
@@ -428,9 +583,15 @@ void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 void dump_thermal_terse_label( FILE *writeFile )
 {
 	int core,socket;
-	for(socket = 0; socket < NUM_SOCKETS; socket++)
+    static uint64_t sockets = 0;
+    static uint64_t coresPerSocket = 0;
+    if (!sockets || !coresPerSocket)
+    {
+        core_config(&coresPerSocket, NULL, &sockets, NULL);
+    }
+	for(socket = 0; socket < sockets; socket++)
 	{
-		for(core = NUM_CORES_PER_SOCKET*socket; core < NUM_CORES_PER_SOCKET*(socket+1); core++)
+		for(core = NUM_CORES_NEW; core < coresPerSocket * (socket+1); core++)
 		{
 			fprintf(writeFile,"TempC_%02d_%02d ", socket,core); 
 		}
@@ -440,15 +601,26 @@ void dump_thermal_terse_label( FILE *writeFile )
 void dump_thermal_terse( FILE *writeFile )
 {
 	is_init();
-	get_therm_stat(&t_stat);
+    static struct therm_stat * t_stat = NULL;
+    static struct msr_temp_target * t_target = NULL;
+    if (t_stat == NULL || t_target == NULL)
+    {
+        thermal_storage(&t_target, &t_stat, NULL, NULL, NULL);
+    }
+	get_therm_stat(t_stat);
 	int core, socket;
 	int actTemp;
+    static uint64_t sockets = 0, coresPerSocket = 0;
+    if (!sockets || !coresPerSocket)
+    {
+        core_config(&coresPerSocket, NULL, &sockets, NULL);
+    }
 
-	for(socket=0; socket < NUM_SOCKETS; socket++)
+	for(socket=0; socket < sockets; socket++)
 	{
-		for(core=NUM_CORES_PER_SOCKET*socket; core < NUM_CORES_PER_SOCKET*(socket+1); core++)
+		for(core= NUM_CORES_NEW; core < coresPerSocket * (socket+1); core++)
 		{
-			actTemp = t_target.temp_target[socket] - t_stat.readout[core];
+			actTemp = t_target->temp_target[socket] - t_stat->readout[core];
 			fprintf(writeFile,"%d ", actTemp);
 		}
 	}
@@ -458,71 +630,77 @@ void dump_thermal_verbose_label( FILE *writeFile )
 {
 	int socket;
 	int core;
-	for(socket=0; socket < NUM_SOCKETS; socket++)
+    static uint64_t sockets = 0;
+    static uint64_t coresPerSocket = 0;
+    if (!sockets || !coresPerSocket)
+    {
+        core_config(&coresPerSocket, NULL, &sockets, NULL);
+    }
+	for(socket=0; socket < sockets; socket++)
 	{
 		// Registers that are socket granularity
 
 		//Thermal Status dump (package)
-		fprintf(writeFile, "socket_status_%02d ", socket);
-		fprintf(writeFile, "socket_log_%02d ", socket);
-		fprintf(writeFile, "socket_PROCHOT_event_%02d ", socket);
-		fprintf(writeFile, "socket_PROCHOT_log_%02d ", socket);
-		fprintf(writeFile, "socket_crit_temp_status_%02d ", socket);
-		fprintf(writeFile, "socket_crit_temp_log_%02d ", socket);
-		fprintf(writeFile, "socket_therm_thresh1_status_%02d ", socket);
-		fprintf(writeFile, "socket_therm_thresh1_log_%02d ", socket);
-		fprintf(writeFile, "socket_therm_thresh2_status_%02d ", socket);
-		fprintf(writeFile, "socket_therm_thresh2_log_%02d ", socket);
-		fprintf(writeFile, "socket_power_limit_status_%02d ", socket);
-		fprintf(writeFile, "socket_power_notification_log_%02d ", socket);
-		fprintf(writeFile, "socket_readout_%02d ", socket);
-		fprintf(writeFile, "socket_TempC_%02d ", socket);
+		fprintf(writeFile, "socket_status_%02d", socket);
+		fprintf(writeFile, "socket_log_%02d", socket);
+		fprintf(writeFile, "socket_PROCHOT_event_%02d", socket);
+		fprintf(writeFile, "socket_PROCHOT_log_%02d", socket);
+		fprintf(writeFile, "socket_crit_temp_status_%02d", socket);
+		fprintf(writeFile, "socket_crit_temp_log_%02d", socket);
+		fprintf(writeFile, "socket_therm_thresh1_status_%02d", socket);
+		fprintf(writeFile, "socket_therm_thresh1_log_%02d", socket);
+		fprintf(writeFile, "socket_therm_thresh2_status_%02d", socket);
+		fprintf(writeFile, "socket_therm_thresh2_log_%02d", socket);
+		fprintf(writeFile, "socket_power_limit_status_%02d", socket);
+		fprintf(writeFile, "socket_power_notification_log_%02d", socket);
+		fprintf(writeFile, "socket_readout_%02d", socket);
+		fprintf(writeFile, "socket_TempC_%02d", socket);
 		//Thermal Interrupt dump (package)	
-		fprintf(writeFile, "socket_high_temp_enable_%02d ", socket);
-		fprintf(writeFile, "socket_low_temp_enable_%02d ", socket);
-		fprintf(writeFile, "socket_PROCHOT_enable_%02d ", socket);
-		fprintf(writeFile, "socket_crit_temp_enable_%02d ", socket);
-		fprintf(writeFile, "socket_thresh1_val_%02d ", socket);
-		fprintf(writeFile, "socket_thresh1_actual_tempC_%02d ", socket);
-		fprintf(writeFile, "socket_thresh1_enable_%02d ", socket);
-		fprintf(writeFile, "socket_thresh2_val_%02d ", socket);
-		fprintf(writeFile, "socket_thresh2_actual_tempC_%02d ", socket);
-		fprintf(writeFile, "socket_thresh2_enable_%02d ", socket);
-		fprintf(writeFile, "socket_pwr_limit_notification_enable_%02d ", socket);
+		fprintf(writeFile, "socket_high_temp_enable_%02d", socket);
+		fprintf(writeFile, "socket_low_temp_enable_%02d", socket);
+		fprintf(writeFile, "socket_PROCHOT_enable_%02d", socket);
+		fprintf(writeFile, "socket_crit_temp_enable_%02d", socket);
+		fprintf(writeFile, "socket_thresh1_val_%02d", socket);
+		fprintf(writeFile, "socket_thresh1_actual_tempC_%02d", socket);
+		fprintf(writeFile, "socket_thresh1_enable_%02d", socket);
+		fprintf(writeFile, "socket_thresh2_val_%02d", socket);
+		fprintf(writeFile, "socket_thresh2_actual_tempC_%02d", socket);
+		fprintf(writeFile, "socket_thresh2_enable_%02d", socket);
+		fprintf(writeFile, "socket_pwr_limit_notification_enable_%02d", socket);
 		
 		// Registers that are core granularity
-		for(core=NUM_CORES_PER_SOCKET*socket; core < NUM_CORES_PER_SOCKET*(socket+1); core++)
+		for(core= NUM_CORES_NEW; core < coresPerSocket * (socket+1); core++)
 		{
 			//Thermal Status dump (core)
-			fprintf(writeFile, "core_status_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_status_log_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_PROCHOT_or_FORCEPR_event_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_PROCHOT_or_FORCEPR_log_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_crit_temp_status_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_crit_temp_log_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_therm_thresh1_status_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_therm_thresh1_log_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_therm_thresh2_status_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_therm_thresh2_log_%02d_%02d ", socket, core);
+			fprintf(writeFile, "core_status_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_status_log_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_PROCHOT_or_FORCEPR_event_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_PROCHOT_or_FORCEPR_log_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_crit_temp_status_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_crit_temp_log_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_therm_thresh1_status_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_therm_thresh1_log_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_therm_thresh2_status_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_therm_thresh2_log_%02d_%02d", socket, core);
 			fprintf(writeFile, "core_power_limit_status_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_power_notification_log_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_readout_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_TempC_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_resolution_deg_celsius_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_readout_valid_%02d_%02d ", socket, core);
+			fprintf(writeFile, "core_power_notification_log_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_readout_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_TempC_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_resolution_deg_celsius_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_readout_valid_%02d_%02d", socket, core);
 			//Thermal Interrupt dump (core)	
-			fprintf(writeFile, "core_high_temp_enable_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_low_temp_enable_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_PROCHOT_enable_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_FORCEPR_enable_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_crit_temp_enable_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_thresh1_val_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_thresh1_actual_tempC_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_thresh1_enable_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_thresh2_val_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_thresh2_actual_tempC_%02d_%02d ", socket, core);
+			fprintf(writeFile, "core_high_temp_enable_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_low_temp_enable_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_PROCHOT_enable_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_FORCEPR_enable_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_crit_temp_enable_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_thresh1_val_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_thresh1_actual_tempC_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_thresh1_enable_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_thresh2_val_%02d_%02d", socket, core);
+			fprintf(writeFile, "core_thresh2_actual_tempC_%02d_%02d", socket, core);
 			fprintf(writeFile, "core_thresh2_enable_%02d_%02d ", socket, core);
-			fprintf(writeFile, "core_pwr_limit_notification_enable_%02d_%02d ", socket, core);
+			fprintf(writeFile, "core_pwr_limit_notification_enable_%02d_%02d", socket, core);
 			
 		}
 	}
@@ -531,83 +709,105 @@ void dump_thermal_verbose_label( FILE *writeFile )
 void dump_thermal_verbose( FILE *writeFile )
 {
 	is_init();
-	get_therm_stat(&t_stat);
-	get_therm_interrupt(&t_interrupt);
-	get_pkg_therm_stat(&pkg_stat);
-	get_pkg_therm_interrupt(&pkg_interrupt);
+    static struct therm_stat * t_stat = NULL;
+    static struct therm_interrupt * t_interrupt = NULL;
+    static struct pkg_therm_interrupt * pkg_interrupt = NULL;
+    static struct pkg_therm_stat * pkg_stat = NULL;
+    if (t_stat == NULL || pkg_stat == NULL || t_interrupt == NULL || pkg_interrupt == NULL)
+    {
+        thermal_storage(NULL, &t_stat, &t_interrupt, &pkg_stat, &pkg_interrupt);
+    }
+	get_therm_stat(t_stat);
+	get_therm_interrupt(t_interrupt);
+	get_pkg_therm_stat(pkg_stat);
+	get_pkg_therm_interrupt(pkg_interrupt);
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "%s %s::%d DEBUG: (dump_thermal_verbose)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+#endif
 	int core, socket;
 	int actTemp;
-	for(socket=0; socket < NUM_SOCKETS; socket++)
+    static uint64_t sockets = 0;
+    static uint64_t coresPerSocket = 0;
+    static struct msr_temp_target * t_target = NULL;
+    if (!sockets || !coresPerSocket)
+    {
+        core_config(&coresPerSocket, NULL, &sockets, NULL);
+    }
+    if (t_target == NULL)
+    {
+        thermal_storage(&t_target, NULL, NULL, NULL, NULL);
+    }
+	for(socket=0; socket < sockets; socket++)
 	{
 		// Registers that are socket granularity
 
 		//Thermal Status dump (package)
-		fprintf(writeFile, "%d ", pkg_stat.status[socket]);
-		fprintf(writeFile, "%d ", pkg_stat.status_log[socket]);
-		fprintf(writeFile, "%d ", pkg_stat.PROCHOT_event[socket]);
-		fprintf(writeFile, "%d ", pkg_stat.PROCHOT_log[socket]);
-		fprintf(writeFile, "%d ", pkg_stat.crit_temp_status[socket]);
-		fprintf(writeFile, "%d ", pkg_stat.crit_temp_log[socket]);
-		fprintf(writeFile, "%d ", pkg_stat.therm_thresh1_status[socket]);
-		fprintf(writeFile, "%d ", pkg_stat.therm_thresh1_log[socket]);
-		fprintf(writeFile, "%d ", pkg_stat.therm_thresh2_status[socket]);
-		fprintf(writeFile, "%d ", pkg_stat.therm_thresh2_log[socket]);
-		fprintf(writeFile, "%d ", pkg_stat.power_limit_status[socket]);
-		fprintf(writeFile, "%d ", pkg_stat.power_notification_log[socket]);
-		fprintf(writeFile, "%d ", pkg_stat.readout[socket]);
-		actTemp=(t_target.temp_target[socket] - pkg_stat.readout[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->status[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->status_log[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->PROCHOT_event[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->PROCHOT_log[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->crit_temp_status[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->crit_temp_log[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->therm_thresh1_status[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->therm_thresh1_log[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->therm_thresh2_status[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->therm_thresh2_log[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->power_limit_status[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->power_notification_log[socket]);
+		fprintf(writeFile, "%d ", pkg_stat->readout[socket]);
+		actTemp=(t_target->temp_target[socket] - pkg_stat->readout[socket]);
 		fprintf(writeFile, "%d ", actTemp);
 		//Thermal Interrupt dump (package)	
-		fprintf(writeFile, "%d ", pkg_interrupt.high_temp_enable[socket]);
-		fprintf(writeFile, "%d ", pkg_interrupt.low_temp_enable[socket]);
-		fprintf(writeFile, "%d ", pkg_interrupt.PROCHOT_enable[socket]);
-		fprintf(writeFile, "%d ", pkg_interrupt.crit_temp_enable[socket]);
-		fprintf(writeFile, "%d ", pkg_interrupt.thresh1_val[socket]);
-		actTemp=(t_target.temp_target[socket]-pkg_interrupt.thresh1_val[socket]);
+		fprintf(writeFile, "%d ", pkg_interrupt->high_temp_enable[socket]);
+		fprintf(writeFile, "%d ", pkg_interrupt->low_temp_enable[socket]);
+		fprintf(writeFile, "%d ", pkg_interrupt->PROCHOT_enable[socket]);
+		fprintf(writeFile, "%d ", pkg_interrupt->crit_temp_enable[socket]);
+		fprintf(writeFile, "%d ", pkg_interrupt->thresh1_val[socket]);
+		actTemp=(t_target->temp_target[socket]-pkg_interrupt->thresh1_val[socket]);
 		fprintf(writeFile, "%d ", actTemp);
-		fprintf(writeFile, "%d ", pkg_interrupt.thresh1_enable[socket]);
-		fprintf(writeFile, "%d ", pkg_interrupt.thresh1_val[socket]);
-		actTemp=(t_target.temp_target[socket]-pkg_interrupt.thresh2_val[socket]);
+		fprintf(writeFile, "%d ", pkg_interrupt->thresh1_enable[socket]);
+		fprintf(writeFile, "%d ", pkg_interrupt->thresh1_val[socket]);
+		actTemp=(t_target->temp_target[socket]-pkg_interrupt->thresh2_val[socket]);
 		fprintf(writeFile, "%d ", actTemp);
-		fprintf(writeFile, "%d ", pkg_interrupt.thresh2_enable[socket]);
-		fprintf(writeFile, "%d ", pkg_interrupt.pwr_limit_notification_enable[socket]);
+		fprintf(writeFile, "%d ", pkg_interrupt->thresh2_enable[socket]);
+		fprintf(writeFile, "%d ", pkg_interrupt->pwr_limit_notification_enable[socket]);
 		
 		// Registers that are core granularity
-		for(core=NUM_CORES_PER_SOCKET*socket; core < NUM_CORES_PER_SOCKET*(socket+1); core++)
+		for(core= NUM_CORES_NEW; core < coresPerSocket * (socket+1); core++)
 		{
 			//Thermal Status dump (core)
-			fprintf(writeFile, "%d ", t_stat.status[core]);
-			fprintf(writeFile, "%d ", t_stat.status_log[core]);
-			fprintf(writeFile, "%d ", t_stat.PROCHOT_or_FORCEPR_event[core]);
-			fprintf(writeFile, "%d ", t_stat.PROCHOT_or_FORCEPR_log[core]);
-			fprintf(writeFile, "%d ", t_stat.crit_temp_status[core]);
-			fprintf(writeFile, "%d ", t_stat.crit_temp_log[core]);
-			fprintf(writeFile, "%d ", t_stat.therm_thresh1_status[core]);
-			fprintf(writeFile, "%d ", t_stat.therm_thresh1_log[core]);
-			fprintf(writeFile, "%d ", t_stat.therm_thresh2_status[core]);
-			fprintf(writeFile, "%d ", t_stat.therm_thresh2_log[core]);
-			fprintf(writeFile, "%d ", t_stat.power_limit_status[core]);
-			fprintf(writeFile, "%d ", t_stat.power_notification_log[core]);
-			fprintf(writeFile, "%d ", t_stat.readout[core]);
-			actTemp=(t_target.temp_target[socket]-t_stat.readout[core]);
+			fprintf(writeFile, "%d ", t_stat->status[core]);
+			fprintf(writeFile, "%d ", t_stat->status_log[core]);
+			fprintf(writeFile, "%d ", t_stat->PROCHOT_or_FORCEPR_event[core]);
+			fprintf(writeFile, "%d ", t_stat->PROCHOT_or_FORCEPR_log[core]);
+			fprintf(writeFile, "%d ", t_stat->crit_temp_status[core]);
+			fprintf(writeFile, "%d ", t_stat->crit_temp_log[core]);
+			fprintf(writeFile, "%d ", t_stat->therm_thresh1_status[core]);
+			fprintf(writeFile, "%d ", t_stat->therm_thresh1_log[core]);
+			fprintf(writeFile, "%d ", t_stat->therm_thresh2_status[core]);
+			fprintf(writeFile, "%d ", t_stat->therm_thresh2_log[core]);
+			fprintf(writeFile, "%d ", t_stat->power_limit_status[core]);
+			fprintf(writeFile, "%d ", t_stat->power_notification_log[core]);
+			fprintf(writeFile, "%d ", t_stat->readout[core]);
+			actTemp=(t_target->temp_target[socket]-t_stat->readout[core]);
 			fprintf(writeFile, "%d ", actTemp);
-			fprintf(writeFile, "%d ", t_stat.resolution_deg_celsius[core]);
-			fprintf(writeFile, "%d ", t_stat.readout_valid[core]);
+			fprintf(writeFile, "%d ", t_stat->resolution_deg_celsius[core]);
+			fprintf(writeFile, "%d ", t_stat->readout_valid[core]);
 			//Thermal Interrupt dump (core)	
-			fprintf(writeFile, "%d ", t_interrupt.high_temp_enable[core]);
-			fprintf(writeFile, "%d ", t_interrupt.low_temp_enable[core]);
-			fprintf(writeFile, "%d ", t_interrupt.PROCHOT_enable[core]);
-			fprintf(writeFile, "%d ", t_interrupt.FORCEPR_enable[core]);
-			fprintf(writeFile, "%d ", t_interrupt.crit_temp_enable[core]);
-			fprintf(writeFile, "%d ", t_interrupt.thresh1_val[core]);
-			actTemp=(t_target.temp_target[socket]-t_interrupt.thresh1_val[core]);
+			fprintf(writeFile, "%d ", t_interrupt->high_temp_enable[core]);
+			fprintf(writeFile, "%d ", t_interrupt->low_temp_enable[core]);
+			fprintf(writeFile, "%d ", t_interrupt->PROCHOT_enable[core]);
+			fprintf(writeFile, "%d ", t_interrupt->FORCEPR_enable[core]);
+			fprintf(writeFile, "%d ", t_interrupt->crit_temp_enable[core]);
+			fprintf(writeFile, "%d ", t_interrupt->thresh1_val[core]);
+			actTemp=(t_target->temp_target[socket]-t_interrupt->thresh1_val[core]);
 			fprintf(writeFile, "%d ", actTemp);
-			fprintf(writeFile, "%d ", t_interrupt.thresh1_enable[core]);
-			fprintf(writeFile, "%d ", t_interrupt.thresh2_val[core]);
-			actTemp=(t_target.temp_target[socket]-t_interrupt.thresh2_val[core]);
+			fprintf(writeFile, "%d ", t_interrupt->thresh1_enable[core]);
+			fprintf(writeFile, "%d ", t_interrupt->thresh2_val[core]);
+			actTemp=(t_target->temp_target[socket]-t_interrupt->thresh2_val[core]);
 			fprintf(writeFile, "%d ", actTemp);
-			fprintf(writeFile, "%d ", t_interrupt.thresh2_enable[core]);
-			fprintf(writeFile, "%d ", t_interrupt.pwr_limit_notification_enable[core]);
+			fprintf(writeFile, "%d ", t_interrupt->thresh2_enable[core]);
+			fprintf(writeFile, "%d ", t_interrupt->pwr_limit_notification_enable[core]);
 			
 		}
 	}

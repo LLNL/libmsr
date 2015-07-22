@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include "msr_core.h"
 #include "msr_clocks.h"
+#include "memhdlr.h"
 #include <assert.h>
 
 
@@ -53,25 +54,66 @@ read_all_tsc(uint64_t *tsc){
 void
 dump_clocks_terse_label(FILE *writeFile){
 	int thread_idx;
-	for(thread_idx=0; thread_idx<NUM_THREADS; thread_idx++){
+    static uint64_t threadsPerCore = 0;
+    static uint64_t coresPerSocket = 0;
+    static uint64_t sockets = 0;
+    if (!threadsPerCore || !coresPerSocket)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+	for(thread_idx=0; thread_idx<NUM_THREADS_NEW; thread_idx++){
 		fprintf(writeFile, "aperf%02d mperf%02d tsc%02d ", 
 			thread_idx, thread_idx, thread_idx);
 	}
 }
 
+// TODO: may be better if arrays are not re-allocated for every call
 void
 dump_clocks_terse(FILE *writeFile){
-	uint64_t aperf_val[NUM_THREADS], mperf_val[NUM_THREADS], tsc_val[NUM_THREADS];
+    static uint64_t threadsPerCore = 0;
+    static uint64_t coresPerSocket = 0;
+    static uint64_t sockets = 0;
+    if (!threadsPerCore || !coresPerSocket)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+    uint64_t * aperf_val = NULL, * mperf_val = NULL, * tsc_val = NULL;
+    aperf_val = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+    mperf_val = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+    tsc_val = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
 	int thread_idx;
 	read_all_aperf(aperf_val);
 	read_all_mperf(mperf_val);
 	read_all_tsc  (tsc_val);
-	for(thread_idx=0; thread_idx<NUM_THREADS; thread_idx++){
+	for(thread_idx=0; thread_idx<NUM_THREADS_NEW; thread_idx++){
 		fprintf(writeFile, "%20lu %20lu %20lu ", 
 			aperf_val[thread_idx], mperf_val[thread_idx], tsc_val[thread_idx]);
 	}
 }
 
+void dump_clocks_readable(FILE * writeFile)
+{
+    static uint64_t threadsPerCore = 0;
+    static uint64_t coresPerSocket = 0;
+    static uint64_t sockets = 0;
+    if (!threadsPerCore || !coresPerSocket)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+    uint64_t * aperf_val = NULL, * mperf_val = NULL, * tsc_val = NULL;
+    aperf_val = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+    mperf_val = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+    tsc_val = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+	int thread_idx;
+	read_all_aperf(aperf_val);
+	read_all_mperf(mperf_val);
+	read_all_tsc  (tsc_val);
+	for(thread_idx=0; thread_idx<NUM_THREADS_NEW; thread_idx++){
+		fprintf(writeFile, "aperf%02d:%20lu mperf%02d:%20lu tsc%02d:%20lu\n", 
+			thread_idx, aperf_val[thread_idx], thread_idx, mperf_val[thread_idx], 
+            thread_idx, tsc_val[thread_idx]);
+	}
+}
 //----------------------------Software Controlled Clock Modulation-----------------------------------------------
 /*struct clock_mod{
 	uint64_t raw;

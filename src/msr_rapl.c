@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <omp.h>
 #include "msr_core.h"
+#include "memhdlr.h"
 #include "cpuid.h"
 #include "msr_rapl.h"
 //#define LIBMSR_DEBUG 1
@@ -303,17 +304,7 @@ int rapl_storage(struct rapl_data ** data, uint64_t ** flags)
         init = 0;
         core_config(NULL, NULL, &sockets, NULL);
         rapl = (struct rapl_data *) libmsr_malloc(sockets * sizeof(struct rapl_data));
-        if (rapl == NULL)
-        {
-            fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-            return -1;
-        }
         rapl_flags = (uint64_t *) libmsr_malloc(sizeof(uint64_t));
-        if (rapl_flags == NULL)
-        {
-            fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-            return -1;
-        }
         if (setflags(rapl_flags))
         {
             return -1;
@@ -421,7 +412,6 @@ static int check_for_locks()
     return 0;
 }
 
-// TODO: have this save rapl register data so it can be restored later in finalize
 // This initalizes the rapl data items. Be sure to put this function before any other rapl functions.
 int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
 {
@@ -461,29 +451,24 @@ int rapl_finalize()
     {
         return -1;
     }
-
-    //if (rapl)
-    //{
-    //   free(rapl);
-    //}
-    //if (rapl_flags)
-    //{
-    //    free(rapl_flags);
-    //}
     return 0;
 }
 
 // TODO: make sure the translation works for all architectures
-// TODO: free the two arrays here
 // This translates any human supplied units to the format expected in the registers and vice-versa
 static int
 translate( const unsigned socket, uint64_t* bits, double* units, int type){
 	static int initialized=0;
     double logremainder = 0.0;
     static uint64_t sockets = 0;
+    static uint64_t model = 0;
     if (sockets == 0)
     {
         core_config(NULL, NULL, &sockets, NULL);
+    }
+    if (model == 0)
+    {
+        cpuid_get_model(&model);
     }
 	//static struct rapl_units ru[*sockets];
 	//uint64_t val[*sockets];
@@ -496,17 +481,7 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 	if(!initialized){
 		initialized=1;
         ru = (struct rapl_units *) libmsr_calloc(sockets, sizeof(struct rapl_units));
-        if (ru == NULL)
-        {
-            fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-            exit(-1);
-        }
         val = (uint64_t *) libmsr_calloc(sockets, sizeof(uint64_t));
-        if (val == NULL)
-        {
-            fprintf(stderr, "%s %s::%d ERROR: unable to allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-            exit(-1);
-        }
 		read_all_sockets( MSR_RAPL_POWER_UNIT, val );
         // Initialize the units used for each socket
 		for(i=0; i<sockets; i++){
@@ -564,12 +539,22 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
             timeval_y = *bits & 0x1F;
             timeval_x = (*bits & 0x60) >> 5;
             *units = ((1 + 0.25 * timeval_x) * pow(2.0, (double) timeval_y)) / ru[socket].seconds;
+            // Temporary fix for haswell difference
+            if (model == 0x3F)
+            {
+                *units = *units * 2.5 + 15.0;
+            }
 #ifdef LIBMSR_DEBUG
             fprintf(stderr, "%s %s::%d DEBUG: timeval_x is %lx, timeval_y is %lx, units is %lf, bits is %lx\n",
                     getenv("HOSTNAME"), __FILE__, __LINE__, timeval_x, timeval_y, *units, *bits);
 #endif
             break;
         case SECONDS_TO_BITS_STD:
+            // Temporary fix for haswell difference
+            if (model == 0x3F)
+            {
+                *units = *units / 2.5 - 15;
+            }
             // store the whole number part of the log2
             timeval_y = (uint64_t) log2(*units * ru[socket].seconds);
             // store the mantissa of the log2
@@ -594,29 +579,6 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
             fprintf(stderr, "%s %s::%d DEBUG: timeval_x is %lx, timeval_y is %lx, units is %lf, bits is %lx, remainder is %lf\n",
                     getenv("HOSTNAME"), __FILE__, __LINE__, timeval_x, timeval_y, *units, *bits, logremainder);
 #endif
-            break;
-        case BITS_TO_SECONDS_HASWELL:
-            timeval_y = *bits & 0x1F;
-            timeval_x = (*bits & 0x60) >> 5;
-            *units = ((1.0 + (((double) timeval_x) / 10.0)) * pow(2.0, (double) timeval_y)) / ru[socket].seconds;
-            break;
-        case SECONDS_TO_BITS_HASWELL:
-            timeval_y = (uint64_t) log2(*units * ru[socket].seconds);
-            logremainder = (double) log2(*units * ru[socket].seconds) - (double) timeval_y; 
-            timeval_x = 0;
-            if (logremainder > 0.05 && logremainder <= 0.18)
-            {
-                timeval_x = 1;
-            }
-            else if (logremainder > 0.18 && logremainder <= 0.3)
-            {
-                timeval_x = 2;
-            }
-            else if (logremainder > 0.3)
-            {
-                timeval_x = 3;
-            }
-            *bits = (uint64_t) (timeval_y | (timeval_x << 5));
             break;
 		default: 
 			fprintf(stderr, "%s:%d  Unknown value %d.  This is bad.\n", __FILE__, __LINE__, type);  
@@ -653,7 +615,7 @@ get_rapl_power_info( const unsigned socket, struct rapl_power_info *info){
     if (*rapl_flags & PKG_POWER_INFO)
     {
         read_msr_by_coord( socket, 0, 0, MSR_PKG_POWER_INFO, &(info->msr_pkg_power_info) );
-        val = MASK_VAL( info->msr_pkg_power_info,  53, 48 );
+        val = MASK_VAL( info->msr_pkg_power_info,  54, 48 );
         translate( socket, &val, &(info->pkg_max_window), BITS_TO_SECONDS_STD);
                   //(model == 0x3F ? BITS_TO_SECONDS_HASWELL : BITS_TO_SECONDS_STD));
         
@@ -671,7 +633,7 @@ get_rapl_power_info( const unsigned socket, struct rapl_power_info *info){
         read_msr_by_coord( socket, 0, 0, MSR_DRAM_POWER_INFO, &(info->msr_dram_power_info) );
         // Note that the same units are used in both the PKG and DRAM domains.
 	
-        val = MASK_VAL( info->msr_dram_power_info, 53, 48 );
+        val = MASK_VAL( info->msr_dram_power_info, 54, 48 );
         translate( socket, &val, &(info->dram_max_window), BITS_TO_SECONDS_STD);
                   //(model == 0x3F ? BITS_TO_SECONDS_HASWELL : BITS_TO_SECONDS_STD) );
 
@@ -1262,7 +1224,6 @@ dump_rapl_terse( FILE * writeFile){
 #ifdef LIBMSR_DEBUG
         fprintf(writeFile, "%s %s::%d Writing terse label\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
-    // TODO: do you really need to read rapl data here? might skew results
 	for(socket=0; socket<sockets; socket++){
 		read_rapl_data(socket);
     }
@@ -1454,7 +1415,7 @@ int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_dat
     {
         p->elapsed = 0;
         p->pkg_watts = 0.0;
-        // TODO: left off here ###
+        // TODO: make sure everything gets initialized here
         p->dram_watts = 0.0;
         first = 0;
         translate(socket, &maxbits, &max_joules, BITS_TO_JOULES); 
