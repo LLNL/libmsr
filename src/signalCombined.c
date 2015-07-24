@@ -37,6 +37,11 @@ int stop=0;
 
 void printData(int i)
 {
+    static uint64_t sockets = 0;
+    if (!sockets)
+    {
+        core_config(NULL, NULL, &sockets, NULL);
+    }
 	signal(SIGALRM, printData);
 	struct timeval currentTime;
 	if(!init)
@@ -46,7 +51,7 @@ void printData(int i)
 	}
 	struct itimerval tout_val;
 	
-	struct rapl_data r1,r2;
+	struct rapl_data * rd = NULL;
 	
 
 	gettimeofday(&currentTime, NULL);
@@ -57,11 +62,13 @@ void printData(int i)
 	dump_thermal_terse(stdout);	
 	fprintf(stdout, "\n");
 
-    // TODO: fix this later
-	//read_rapl_data(0,&r1);
-	//read_rapl_data(1,&r2);
-	fprintf(stdout, "Power Socket/PKG/DRAM: %d %8.4lf %8.4lf \n", 0, r1.pkg_watts, r1.dram_watts);
-	fprintf(stdout, "Power Socket/PKG/DRAM: %d %8.4lf %8.4lf \n", 1, r2.pkg_watts, r2.dram_watts);
+    // TODO: may need changes after batch is fixed
+    unsigned sock_idx;
+    for (sock_idx = 0; sock_idx < sockets; sock_idx++)
+    {
+        poll_rapl_data(sock_idx, rd);
+        fprintf(stdout, "Power Socket/PKG/DRAM: %d %8.4lf %8.4lf \n", sock_idx, rd->pkg_watts, rd->dram_watts);
+    }
 
 	tout_val.it_interval.tv_sec = 0;
 	tout_val.it_interval.tv_usec = 0;

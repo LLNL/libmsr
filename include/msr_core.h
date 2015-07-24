@@ -23,13 +23,13 @@
 #ifndef MSR_CORE_H
 #define MSR_CORE_H
 #include <stdint.h>
-#include <sys/types.h>	// off_t
-#define NUM_SOCKETS 2
-#define NUM_CORES_PER_SOCKET 12 
-#define NUM_THREADS_PER_CORE 1
-#define NUM_DEVS (NUM_SOCKETS * NUM_CORES_PER_SOCKET * NUM_THREADS_PER_CORE)
-#define NUM_CORES (NUM_CORES_PER_SOCKET * NUM_SOCKETS)
-#define NUM_THREADS (NUM_CORES * NUM_THREADS_PER_CORE)
+#include <sys/types.h>
+#include <linux/types.h>
+#define LIBMSR_DEBUG 1
+#define NUM_DEVS_NEW (sockets * coresPerSocket * threadsPerCore)
+#define NUM_CORES_NEW (sockets * coresPerSocket)
+// this is the same as num_devs
+#define NUM_THREADS_NEW (sockets * coresPerSocket * threadsPerCore)
 
 /* MASK_RANGE
  * Create a mask from bit m to n.
@@ -71,16 +71,63 @@ enum{
 extern "C" {
 #endif
 
+#define MSR_MAX_BATCH_OPS 50
+#define X86_IOC_MSR_BATCH _IOWR('c', 0xA2, struct msr_bundle_desc)
+
+typedef struct recover_data
+{
+    uint64_t bits;
+    unsigned socket;
+    unsigned core;
+    unsigned thread;
+    off_t msr;
+} recover_data;
+
+struct msr_op
+{
+    union msrdata
+    {
+        __u32 data32[2];
+        __u64 data64;
+    } d;
+    __u64 mask;
+    __u32 msr;
+    __u32 isread;
+    int error;
+};
+
+struct msr_cpu_ops
+{
+    __u32 cpu;
+    int nOps;
+    struct msr_op ops[MSR_MAX_BATCH_OPS];
+};
+
+struct msr_bundle_desc
+{
+    int numMsrBundles;
+    struct msr_cpu_ops * bundle;
+};
 
 int init_msr();
-int finalize_msr();
+int finalize_msr(const int restore);
+uint64_t * batch_ops(struct msr_op * op, uint64_t cpu, uint64_t * dest);
+int read_batch();
+
+int core_storage(int recover, recover_data * recoverValue);
+int core_config(uint64_t * coresPerSocket, uint64_t * threadsPerCore, uint64_t * sockets, int * HTenabled);
+
+int sockets_assert(const unsigned * socket, const int location, const char * file);
+int cores_assert(const unsigned * core, const int location, const char * file);
+int threads_assert(const unsigned * thread, const int location, const char * file);
 
 int write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val );
 int write_msr_by_idx_and_verify( int dev_idx, off_t msr, uint64_t  val );
 int read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val );
 
-int write_msr_by_coord( int socket, int core, int thread, off_t msr, uint64_t  val );
-int read_msr_by_coord(  int socket, int core, int thread, off_t msr, uint64_t *val );
+int write_msr_by_coord( unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t  val );
+int read_msr_by_coord(  unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t *val );
+int read_msr_by_coord_batch(  unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t *val );
 
 int write_all_sockets(   off_t msr, uint64_t  val  );
 int write_all_sockets_v( off_t msr, uint64_t *val );

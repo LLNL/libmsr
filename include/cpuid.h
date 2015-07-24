@@ -14,7 +14,8 @@ extern "C" {
 #endif
 
 void cpuid_get_model(uint64_t * model);
-void cpuid_detect_cores(uint64_t * cores);
+void read_csr(uint64_t * val);
+void cpuid_detect_core_conf(uint64_t * coresPerSocket, uint64_t * hyperThreads, uint64_t *sockets, int * HTenabled);
 bool cpuid_MPERF_and_APERF();
 bool cpuid_timeStampCounter_avail();
 int cpuid_PMC_num();

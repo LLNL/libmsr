@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "msr_core.h"
 #include "msr_turbo.h"
+#include "memhdlr.h"
 
 // MSRs common to 062A and 062D.
 #define MSR_MISC_ENABLE			0x1A0	// aka IA32_MISC_ENABLE
@@ -14,45 +15,78 @@ void
 disable_turbo(){
 
 	int j;
-	uint64_t val[NUM_DEVS];
+    static uint64_t sockets = 0;
+    static uint64_t coresPerSocket = 0;
+    static uint64_t threadsPerCore = 0;
+    if (!sockets || !coresPerSocket || !threadsPerCore)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+	uint64_t * val = NULL;
+    val = (uint64_t *) libmsr_malloc(NUM_DEVS_NEW * sizeof(uint64_t));
+    if (val == NULL)
+    {
+        MEMERR_GENERIC;
+        exit(-1);
+    }
 	// Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 0.
 	read_all_cores(IA32_PERF_CTL, &val[0] );
-	for(j=0; j<NUM_DEVS; j++){
+	for(j=0; j<NUM_DEVS_NEW; j++){
 		val[j] |= ((uint64_t)1) << 32;
 	}
 	write_all_cores_v(IA32_PERF_CTL, &val[0] );
-
-
+    libmsr_free(val);
 }
 
 
 void
 enable_turbo(){
 	int j;
-	uint64_t val[NUM_DEVS];
+    static uint64_t sockets = 0;
+    static uint64_t coresPerSocket = 0;
+    static uint64_t threadsPerCore = 0;
+    if (!sockets || !coresPerSocket || !threadsPerCore)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
+	uint64_t * val = NULL;
+    val = (uint64_t *) libmsr_malloc(NUM_DEVS_NEW * sizeof(uint64_t));
+    if (val == NULL)
+    {
+        MEMERR_GENERIC;
+        exit(-1);
+    }
 	// Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 1.
 	read_all_cores(IA32_PERF_CTL, &val[0] );
-	for(j=0; j<NUM_DEVS;j++){
+	for(j=0; j<NUM_DEVS_NEW;j++){
 		val[j] &= ~(((uint64_t)1) << 32);
     fprintf(stderr, "0x%016lx\t", val[j] & (((uint64_t)1)<<32));
 	}
 
 	write_all_cores_v(IA32_PERF_CTL, &val[0] );
+    libmsr_free(val);
 }
 
 void
-dump_turbo(){
+dump_turbo(FILE * writeFile){
 	int core;
+    static uint64_t sockets = 0;
+    static uint64_t coresPerSocket = 0;
+    static uint64_t threadsPerCore = 0;
+    if (!sockets || !coresPerSocket || !threadsPerCore)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+    }
 	uint64_t val;
-		for(core=0; core<NUM_DEVS; core++){
-			read_msr_by_idx(core, MSR_MISC_ENABLE, &val);
-			fprintf(stderr, "Core: %d\n", core);
-			fprintf(stderr, "0x%016lx\t", val & (((uint64_t)1)<<38));
-			fprintf(stderr, "| MSR_MISC_ENABLE | 38 (0=Turbo Available) \n");
-			read_msr_by_idx(core, IA32_PERF_CTL, &val);
-			fprintf(stderr, "0x%016lx \t", val & (((uint64_t)1)<<32));
-			fprintf(stderr, "| IA32_PERF_CTL | 32 (0=Turbo Engaged) \n");
-		}
+    for(core=0; core<NUM_DEVS_NEW; core++){
+        read_msr_by_idx(core, MSR_MISC_ENABLE, &val);
+        fprintf(writeFile, "Core: %d\n", core);
+        fprintf(writeFile, "0x%016lx\t", val & (((uint64_t)1)<<38));
+        fprintf(writeFile, "| MSR_MISC_ENABLE | 38 (0=Turbo Available) \n");
+        read_msr_by_idx(core, IA32_PERF_CTL, &val);
+        fprintf(writeFile, "0x%016lx \t", val & (((uint64_t)1)<<32));
+        fprintf(writeFile, "| IA32_PERF_CTL | 32 (0=Turbo Engaged) \n");
+    }
 }
 
 
