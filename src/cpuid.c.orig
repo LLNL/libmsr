@@ -14,7 +14,11 @@
 #define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
 #define MASK_VAL(x,m,n) (((uint64_t)(x)&MASK_RANGE((m),(n)))>>(n))
 
+<<<<<<< HEAD
+#define CPUID_DEBUG
+=======
 //#define CPUID_DEBUG
+>>>>>>> barry/master
 
 void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t *rdx)
 {
@@ -27,6 +31,11 @@ void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t 
 		);
 }
 
+<<<<<<< HEAD
+void cpuid_detect_cores(uint64_t * cores)
+{
+    uint64_t rax = 0xb, rbx = 0, rcx = 0, rdx = 0;
+=======
 /* may be in its own function some day
 void read_csr(uint64_t * val)
 {
@@ -62,12 +71,17 @@ void cpuid_detect_core_conf(uint64_t * coresPerSocket, uint64_t * hyperThreads, 
     // use rcx = 0 to see if hyper threading is supported. If > 1 then there is HT
     // use rcx = 1 to see how many cores are avaiable per socket (including HT if supported)
     uint64_t rax = 0xb, rbx = 0, rcx = 0x0, rdx = 0;
+>>>>>>> barry/master
     asm volatile("cpuid"
                     : "=a" (rax),
                       "=b" (rbx),
                       "=c" (rcx),
                       "=d" (rdx)
                     : "0" (rax), "2"(rcx));
+<<<<<<< HEAD
+    *cores = ((rbx) & 0xFFFF);
+    fprintf(stderr, "%s::%d DEBUG: number of cores is %ld, and register has %lx\n", __FILE__, __LINE__,*cores, rbx);
+=======
     *hyperThreads = ((rbx) & 0xFFFF);
     rax = 0xb;
     rbx = 0;
@@ -101,6 +115,7 @@ void cpuid_detect_core_conf(uint64_t * coresPerSocket, uint64_t * hyperThreads, 
     fprintf(stderr, "%s::%d DEBUG: hyper threads is %ld, cores per socket is %ld, sockets is %ld\n",
             __FILE__, __LINE__, *hyperThreads, *coresPerSocket, *sockets);
 #endif
+>>>>>>> barry/master
 }
 
 void cpuid_get_model(uint64_t * model)

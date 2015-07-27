@@ -30,9 +30,6 @@ configure_file(
     ${PROJECT_BINARY_DIR}/libmsr-config.cmake
     @ONLY)
 
-message("Source Dir: ${PROJECT_SOURCE_DIR}")
-message("Binary Dir: ${PROJECT_BINARY_DIR}")
-
 
 install(FILES ${PROJECT_BINARY_DIR}/libmsr-config.cmake DESTINATION
 "${CMAKE_INSTALL_PREFIX}/share/cmake/libmsr")
@@ -41,4 +38,3 @@ install(EXPORT libmsr-libs DESTINATION
 
 add_subdirectory(src)
 add_subdirectory(cmd)
-
