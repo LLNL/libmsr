@@ -9,6 +9,7 @@ set(LIBMSR_SOURCES
   msr_turbo.c
   cpuid.c
   profile.c
+  memhdlr.c
   signalCombined.c)
 
 #
