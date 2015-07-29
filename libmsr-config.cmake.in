@@ -1,55 +1,27 @@
-# - callpath: Library to represent callpaths in memory.
 # Lauren Morita
-# Modified from callpath-config.cmake.in written by Todd Gamblin
-#=============================================================================
-# Callpath is a library for representing unique callpaths in memory.  The
-# callpaths built using the library are stored uniquely and represented using
-# reference semantics for fast comparison.  Also, callpaths use
-# (module, offset) pairs as their frames, so a particular frame will have the
-# same representation regardless of different shared library load addresses
-# across processes in MPI applications.
-#
-#=== Usage ===================================================================
-# This file allows callpath to be automatically detected by other libraries
-# using CMake.  To build with callpath, you can do one of two things:
-#
-#   1. Set the callpath_DIR environment variable to the root of the Adept Utils
-#      installation.  If you loaded callpath through a dotkit, this may already
-#      be set, and callpath will be autodetected by CMake.
-#
-#   2. Configure your proeject with this option:
-#      -D callpath_DIR=/path/to/dir/containing/this/file
-#
-# If you have done either of these things, then CMake should automatically find
-# and include this file when you call find_package(callpath) from your
-# CMakeLists.txt file.
-#
-#=== Components ==============================================================
+#libmsr config
 if (NOT libmsr_CONFIG_LOADED)
     set(libmsr_CONFIG_LOADED TRUE)
 
     #Install layout
-<<<<<<< HEAD
     set(libmsr_INSTALL_PREFIX   @CMAKE_INSTALL_PREFIX@)
     set(libmsr_INCLUDE_DIR      ${libmsr_INSTALL_PREFIX}/include)
     set(libmsr_LIB_DIR          ${libmsr_INSTALL_PREFIX}/lib)
 
-    #Includes needed to use callpath
+    #Includes needed to use libmsr
     set(libmsr_INCLUDE_PATH     ${libmsr_INCLUDE_DIR})
     set(libmsr_LIB_PATH         @{libmsr_LIB_DIR})
     #Whether the library was bulit with MPI
     set(libmsr_HAVE_MPI         @LIBMSR_HAVE_MPI@)
-=======
     set(libmsr_INSTALL_PREFIX	@CMAKE_INSTALL_PREFIX@)
     set(libmsr_INCLUDE_DIR	${libmsr_INSTALL_PREFIX}/include)
     set(libmsr_LIB_DIR		${libmsr_INSTALL_PREFIX}/lib)
 
-    #Includes needed to use callpath
+    #Includes needed to use libmsr
     set(libmsr_INCLUDE_PATH	${libmsr_INCLUDE_DIR})
     set(libmsr_LIB_PATH		@{libmsr_LIB_DIR})
     #Whether the library was bulit with MPI
     set(libmsr_HAVE_MPI 	@LIBMSR_HAVE_MPI@)
->>>>>>> cmake config files created
     #Library targets imported from file
     include(${libmsr_CMAKE_DIR}/libmsr-libs.cmake)
 endif()

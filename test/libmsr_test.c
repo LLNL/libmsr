@@ -1,8 +1,12 @@
 #include <unistd.h>
 #include <stdio.h>
+<<<<<<< HEAD
+#include <stdlib.h>
+=======
 #include <sys/wait.h>
 #include <stdlib.h>
 #include "../include/cpuid.h"
+>>>>>>> barry/master
 #include "../include/msr_core.h"
 #include "../include/msr_rapl.h"
 #include "../include/msr_thermal.h"
@@ -26,6 +30,10 @@ get_limits()
 {
 	int i;
     uint64_t pp_result;
+<<<<<<< HEAD
+    fprintf(stderr, "\nGetting limits...\n");
+	for(i=0; i<NUM_SOCKETS; i++){
+=======
     static uint64_t sockets = 0;
     if (!sockets)
     {
@@ -33,6 +41,7 @@ get_limits()
     }
     fprintf(stderr, "\nGetting limits...\n");
 	for(i=0; i<sockets; i++){
+>>>>>>> barry/master
         fprintf(stdout, "\nSocket %d:\n", i);
         printf("PKG\n");
         get_pkg_rapl_limit(i, &l1, &l2);
@@ -90,6 +99,59 @@ void test_socket_1_limits(unsigned s)
     pp_policy = 8;
     set_pp_rapl_policies(1, &pp_policy, NULL);
     get_limits();
+<<<<<<< HEAD
+}
+
+void test_socket_0_limits(unsigned s)
+{
+    printf("\n Testing socket %u limits\n", s);
+    l1.watts = 110;
+	l1.seconds = 1;
+	l1.bits = 0;
+	l2.watts =  135;
+	l2.seconds =  5;
+	l2.bits = 0;
+    set_pkg_rapl_limit(s, &l1, &l2);
+    l3.watts = 35;
+    l3.seconds = 1;
+    l3.bits = 0;
+    set_dram_rapl_limit(s, &l3);
+    l4.watts = 132;
+    l4.seconds = 2;
+    l4.bits = 0;
+    set_pp_rapl_limit(s, &l4, NULL);
+    pp_policy = 1;
+    set_pp_rapl_policies(0, &pp_policy, NULL);
+    get_limits();
+}
+
+void test_all_limits()
+{
+    printf("\n Testing all sockets\n");
+    l1.watts = 120;
+	l1.seconds = 4;
+	l1.bits = 0;
+	l2.watts =  155;
+	l2.seconds =  6;
+	l2.bits = 0;
+    l3.watts = 50;
+    l3.seconds = 6;
+    l3.bits = 0;
+    l4.watts = 110;
+    l4.seconds = 8;
+    l4.bits = 0;
+    pp_policy = 31;
+    int i;
+    for (i = 0; i < NUM_SOCKETS; i++)
+    {
+        set_pkg_rapl_limit(i, &l1, &l2);
+        set_pp_rapl_limit(i, &l4, NULL);
+        set_dram_rapl_limit(i, &l3);
+        set_pp_rapl_policies(i, &pp_policy, NULL);
+    }
+    get_limits();
+=======
+>>>>>>> barry/master
 }
 
 void test_socket_0_limits(unsigned s)
@@ -155,6 +217,23 @@ void thermal_test(){
 	fprintf(stdout, "\n");
 }
 
+<<<<<<< HEAD
+void rapl_r_test(struct rapl_data ** rd)
+{
+	// Initialize two separate state objects and read rapl data into them during overlapping time windows
+    struct rapl_data * r1;// = (struct rapl_data *) malloc(sizeof(struct rapl_data));
+
+    fprintf(stdout, "\nNEW\n\n");
+    r1 = &((*rd)[0]);
+    poll_rapl_data(0, r1);
+    dump_rapl_data(r1, stdout);
+    sleep(1);
+
+
+    poll_rapl_data(0, r1);
+    dump_rapl_data(r1, stdout);
+    sleep(1);
+=======
 void counters_test()
 {
     dump_fixed_readable(stdout);
@@ -224,6 +303,7 @@ void rapl_r_test(struct rapl_data ** rd)
     dump_rapl_data(r1, stdout);
     printf("pkg 2\n");
     dump_rapl_data(r2, stdout);
+>>>>>>> barry/master
 }
 
 
@@ -232,11 +312,14 @@ int main(int argc, char** argv)
 {
     struct rapl_data * rd = NULL;
     uint64_t * rapl_flags = NULL;
+<<<<<<< HEAD
+=======
     uint64_t cores = 0, threads = 0, sockets = 0;
     if (!sockets)
     {
         core_config(&cores, &threads, &sockets, NULL);
     }
+>>>>>>> barry/master
 	#ifdef MPI
 	MPI_Init(&argc, &argv);
     printf("mpi init done\n");
@@ -252,10 +335,16 @@ int main(int argc, char** argv)
         return -1;
     }
     printf("init done\n");
+<<<<<<< HEAD
+	get_limits();
+    unsigned i;
+    for(i = 0; i < NUM_SOCKETS; i++)
+=======
     enable_fixed_counters();
 	get_limits();
     unsigned i;
     for(i = 0; i < sockets; i++)
+>>>>>>> barry/master
     {
         fprintf(stdout, "BEGINNING SOCKET %u TEST\n", i);
 	    test_pkg_lower_limit(i);
@@ -273,6 +362,9 @@ int main(int argc, char** argv)
     dump_rapl_power_info(stdout);
     printf("\nEND POWER INFO\n\n");
     rapl_finalize(&rd);
+<<<<<<< HEAD
+	finalize_msr();
+=======
     //printf("testing CSR read\n");
     //read_csr(&test);
     //printf("CSR has %lx\n", test);
@@ -289,6 +381,7 @@ int main(int argc, char** argv)
     misc_test();
 
 	finalize_msr(1);
+>>>>>>> barry/master
 	#ifdef MPI
 	MPI_Finalize();
 	#endif
