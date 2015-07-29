@@ -220,7 +220,7 @@ dump_fixed_terse(FILE *writeFile){
 	int i;
 	get_fixed_ctr_values( c0, c1, c2 );
 	for(i=0; i<NUM_THREADS_NEW; i++){
-		fprintf(writeFile, "%lu %lu %lu ", c0->value[i], c1->value[i], c2->value[i]);
+		fprintf(writeFile, "%lu, %lu, %lu\n", c0->value[i], c1->value[i], c2->value[i]);
 	}
 
 }
@@ -261,7 +261,7 @@ void dump_fixed_readable(FILE * writeFile)
 	int i;
 	get_fixed_ctr_values( c0, c1, c2 );
 	for(i=0; i<NUM_THREADS_NEW; i++){
-		fprintf(writeFile, "IR%02d: %lu UCC%02d:%lu URC%02d:%lu\n", i, c0->value[i], i, c1->value[i], i, c2->value[i]);
+		fprintf(writeFile, "IR%02d, %lu, UCC%02d, %lu, URC%02d, %lu\n", i, c0->value[i], i, c1->value[i], i, c2->value[i]);
 	}
 
 }

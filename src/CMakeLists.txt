@@ -9,6 +9,7 @@ set(LIBMSR_SOURCES
   msr_turbo.c
   cpuid.c
   profile.c
+  memhdlr.c
   signalCombined.c)
 
 #
@@ -21,6 +22,11 @@ add_library(msr SHARED ${LIBMSR_SOURCES})
 #
 add_library(msr-static STATIC ${LIBMSR_SOURCES})
 set_target_properties(msr-static PROPERTIES OUTPUT_NAME "msr")
+
+#
+# Add math library for rapl
+#
+set (CMAKE_SHARED_LINKER_FLAGS "-lm")
 
 #
 # Install target should install the two library targets above.
