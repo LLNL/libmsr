@@ -24,6 +24,11 @@ add_library(msr-static STATIC ${LIBMSR_SOURCES})
 set_target_properties(msr-static PROPERTIES OUTPUT_NAME "msr")
 
 #
+# Add math library for rapl
+#
+set (CMAKE_SHARED_LINKER_FLAGS "-lm")
+
+#
 # Install target should install the two library targets above.
 #
 install(TARGETS msr msr-static DESTINATION
