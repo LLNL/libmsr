@@ -9,6 +9,7 @@ set(LIBMSR_HEADERS
   msr_core.h
   msr_misc.h
   msr_thermal.h
+  memhdlr.h
   profile.h)
 
 install(FILES ${LIBMSR_HEADERS} DESTINATION include)

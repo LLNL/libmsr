@@ -39,12 +39,12 @@ struct rapl_data{
     // holds the bits previously stored in the MSR_PKG_ENERGY_STATUS register
 	uint64_t old_pkg_bits;
     // holds the bits currently stored in the MSR_PKG_ENERGY_STATUS register
-	uint64_t pkg_bits;
+	uint64_t ** pkg_bits;
 
     // holds the bits previously stored in the MSR_DRAM_ENERGY_STATUS register 
 	uint64_t old_dram_bits;
     // holds the bits currently stored in the MSR_DRAM_ENERGY_STATUS register
-	uint64_t dram_bits;
+	uint64_t ** dram_bits;
 
     // this holds the previous energy value stored in MSR_PKG_ENERGY_STATUS register represented in joules
 	double old_pkg_joules;
@@ -63,7 +63,7 @@ struct rapl_data{
     // this represents the change in power for PKG between rapl data measurements
 	double pkg_watts;
 
-    uint64_t pkg_perf_count; // pkg performance counter
+    uint64_t * pkg_perf_count; // pkg performance counter
 
     //uint64_t old_pkg_perf; // old pkg performance counter
 
@@ -72,7 +72,7 @@ struct rapl_data{
 
     // DRAM
     // this is a count of how many times dram performance was capped due to imposed limits
-    uint64_t dram_perf_count;
+    uint64_t * dram_perf_count;
 
     // uint64_t old_dram_perf;
     
@@ -87,7 +87,7 @@ struct rapl_data{
 	double dram_joules;
 
     // PP0
-    uint64_t pp0_bits;
+    uint64_t ** pp0_bits;
 
     uint64_t old_pp0_bits;
 
@@ -97,14 +97,14 @@ struct rapl_data{
 
     double pp0_delta_joules;
 
-    uint64_t pp0_policy;
+    uint64_t * pp0_policy;
 
-    uint64_t pp0_perf_count;
+    uint64_t * pp0_perf_count;
 
     double pp0_watts;
 
     // PP1
-    uint64_t pp1_bits; // energy bits
+    uint64_t ** pp1_bits; // energy bits
 
     uint64_t old_pp1_bits; // old energy bits
 
@@ -114,7 +114,7 @@ struct rapl_data{
 
     double pp1_delta_joules; // delta energy
 
-    uint64_t pp1_policy; // policy
+    uint64_t * pp1_policy; // policy
 
     double pp1_watts;
 

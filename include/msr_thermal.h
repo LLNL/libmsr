@@ -31,13 +31,13 @@
 // TODO: used num_sockets
 struct msr_temp_target{				//Scope is "unique" for Sandy Bridge
 						//Assuming that it is by socket
-	uint64_t * raw;
+	uint64_t ** raw;
 	uint64_t * temp_target;	//Read only (probably the TCC Activation Temp)
 };
 
 // TODO: used num_cores
 struct therm_stat{			//Scope is "core" for Sandy Bridge
-	uint64_t * raw;
+	uint64_t ** raw;
 	int * status;				//Read only
 
 	int * status_log;			//Read and Write (Sticky bit)
@@ -76,7 +76,7 @@ struct therm_stat{			//Scope is "core" for Sandy Bridge
 
 // TODO: used num_cores
 struct therm_interrupt{			//Core scope
-	uint64_t * raw;
+	uint64_t ** raw;
 	//Below all read and write
 	int * high_temp_enable;
 	int * low_temp_enable;
@@ -92,7 +92,7 @@ struct therm_interrupt{			//Core scope
 
 // TODO: used num_sockets
 struct pkg_therm_stat{			//Package (socket) scope
-	uint64_t * raw;
+	uint64_t ** raw;
 	int * status;		//Read only
 
 	int * status_log;		//Read or Write Sticky bit (default: clear)
@@ -124,7 +124,7 @@ struct pkg_therm_stat{			//Package (socket) scope
 
 // TODO: used num_sockets
 struct pkg_therm_interrupt{			//Package(socket) scope
-	uint64_t * raw;
+	uint64_t ** raw;
 	//All read and write below
 	int * high_temp_enable;
 	int * low_temp_enable;

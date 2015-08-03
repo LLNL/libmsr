@@ -35,7 +35,7 @@ void * libmsr_malloc(size_t size)
 {
     void * result = malloc(size);
 #ifdef MEMHDLR_DEBUG
-    fprintf(stderr, "MEMHDLR: allocated new array at %p\n", result);
+    fprintf(stderr, "MEMHDLR: (malloc) allocated new array at %p\n", result);
 #endif
     if (result == NULL)
     {
@@ -49,6 +49,9 @@ void * libmsr_malloc(size_t size)
 void * libmsr_calloc(size_t num, size_t size)
 {
     void * result = calloc(num, size);
+#ifdef MEMHDLR_DEBUG
+    fprintf(stderr, "MEMHDLR: (calloc) allocated new array at %p\n", result);
+#endif
     if (result == NULL)
     {
         MEMERR_GENERIC;
@@ -61,6 +64,9 @@ void * libmsr_calloc(size_t num, size_t size)
 void * libmsr_realloc(void * addr, size_t size)
 {
     void * result = realloc(addr, size);
+#ifdef MEMHDLR_DEBUG
+    fprintf(stderr, "MEMHDLR: (realloc) allocated new array at %p (from %p) with new size %lu\n", result, addr, size);
+#endif
     if (result == NULL)
     {
         MEMERR_GENERIC;
