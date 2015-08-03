@@ -43,11 +43,11 @@ int main(int argc, char **argv) {
   } else if (strcmp(subcommand, "disable") == 0) {
     disable_turbo();
   } else if (strcmp(subcommand, "dump") == 0) {
-    dump_turbo(stdout);
+    dump_turbo();
   } else {
     usage();
   }
-  finalize_msr(1);
+  finalize_msr();
 
   exit(0);
 }

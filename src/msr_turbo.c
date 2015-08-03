@@ -22,19 +22,20 @@ disable_turbo(){
     {
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
     }
-	uint64_t * val = NULL;
-    val = (uint64_t *) libmsr_malloc(NUM_DEVS_NEW * sizeof(uint64_t));
+	uint64_t ** val = (uint64_t **) libmsr_malloc(NUM_DEVS_NEW * sizeof(uint64_t *));
     if (val == NULL)
     {
         MEMERR_GENERIC;
         exit(-1);
     }
 	// Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 0.
-	read_all_cores(IA32_PERF_CTL, &val[0] );
+	load_core_batch(IA32_PERF_CTL, val, PERF_CTL);
+    read_batch(PERF_CTL);
 	for(j=0; j<NUM_DEVS_NEW; j++){
-		val[j] |= ((uint64_t)1) << 32;
+		*val[j] |= ((uint64_t)1) << 32;
 	}
-	write_all_cores_v(IA32_PERF_CTL, &val[0] );
+    write_batch(PERF_CTL);
+	//write_all_cores_v(IA32_PERF_CTL, &val[0] );
     libmsr_free(val);
 }
 
@@ -49,21 +50,22 @@ enable_turbo(){
     {
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
     }
-	uint64_t * val = NULL;
-    val = (uint64_t *) libmsr_malloc(NUM_DEVS_NEW * sizeof(uint64_t));
+	uint64_t ** val = (uint64_t **) libmsr_malloc(NUM_DEVS_NEW * sizeof(uint64_t *));
     if (val == NULL)
     {
         MEMERR_GENERIC;
         exit(-1);
     }
 	// Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 1.
-	read_all_cores(IA32_PERF_CTL, &val[0] );
+	load_core_batch(IA32_PERF_CTL, val , PERF_CTL);
+    read_batch(PERF_CTL);
 	for(j=0; j<NUM_DEVS_NEW;j++){
-		val[j] &= ~(((uint64_t)1) << 32);
-    fprintf(stderr, "0x%016lx\t", val[j] & (((uint64_t)1)<<32));
+		*val[j] &= ~(((uint64_t)1) << 32);
+    fprintf(stderr, "0x%016lx\t", *val[j] & (((uint64_t)1)<<32));
 	}
 
-	write_all_cores_v(IA32_PERF_CTL, &val[0] );
+    write_batch(PERF_CTL);
+	//write_all_cores_v(IA32_PERF_CTL, &val[0] );
     libmsr_free(val);
 }
 

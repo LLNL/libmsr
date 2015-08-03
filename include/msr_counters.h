@@ -19,7 +19,9 @@ struct ctr_data
     uint64_t * anyThread;
     uint64_t * pmi;
     uint64_t * overflow;
-    uint64_t * value;
+    uint64_t ** value;
+    //uint64_t * old;
+    //uint64_t * delta;
 };
 
 struct fixed_counter_data{

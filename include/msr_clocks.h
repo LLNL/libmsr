@@ -53,9 +53,10 @@ struct clock_mod{
 extern "C" {
 #endif
 
-void read_all_aperf(uint64_t *aperf);
-void read_all_mperf(uint64_t *mperf);
-void read_all_tsc  (uint64_t *tsc);
+void read_all_clocks(uint64_t ** aperf, uint64_t ** mperf, uint64_t ** tsc);
+void read_all_aperf(uint64_t **aperf);
+void read_all_mperf(uint64_t **mperf);
+void read_all_tsc  (uint64_t **tsc);
 void dump_clocks_terse(FILE *w);
 void dump_clocks_terse_label(FILE *w);
 
