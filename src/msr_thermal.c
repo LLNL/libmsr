@@ -53,6 +53,7 @@ static int thermal_storage(struct msr_temp_target ** t, struct therm_stat ** s, 
     static struct pkg_therm_interrupt pkg_interrupt;
     static uint64_t sockets = 0, coresPerSocket = 0;
     static int init = 1;
+    // TODO: this should probably be broken up into several functions
     if (init)
     {
         init = 0;
@@ -166,8 +167,8 @@ void get_temp_target(struct msr_temp_target *s)
     if (!sockets)
     {
         core_config(NULL, NULL, &sockets, NULL);
+        load_socket_batch(MSR_TEMPERATURE_TARGET, s->raw, TEMP_TARGET);
     }
-	load_socket_batch(MSR_TEMPERATURE_TARGET, s->raw, TEMP_TARGET);
     read_batch(TEMP_TARGET);
 	//read_msr_by_coord(socket, 0, 0, MSR_TEMPERATURE_TARGET, &(s->raw));
 	//s->raw = 64;
@@ -191,8 +192,8 @@ void get_therm_stat(struct therm_stat *s)
     if (!coresPerSocket || !sockets)
     {
         core_config(&coresPerSocket, NULL, &sockets, NULL);
+        load_core_batch(IA32_THERM_STATUS,s->raw, THERM_STAT);
     }
-	load_core_batch(IA32_THERM_STATUS,s->raw, THERM_STAT);
     read_batch(THERM_STAT);
 	//read_msr_by_coord(socket, core, 0, IA32_THERM_STATUS, &(s->raw));
 	//s->raw = 56879; //in dec
@@ -276,8 +277,8 @@ void get_therm_interrupt(struct therm_interrupt *s)
     if (!coresPerSocket || !sockets)
     {
         core_config(&coresPerSocket, NULL, &sockets, NULL);
+        load_core_batch(IA32_THERM_INTERRUPT,s->raw, THERM_INTERR);
     }
-	load_core_batch(IA32_THERM_INTERRUPT,s->raw, THERM_INTERR);
     read_batch(THERM_INTERR);
 	//read_msr_by_coord(socket, core, 0, IA32_THERM_INTERRUPT, &(s->raw));
 	//s->raw = 64;	
@@ -333,8 +334,8 @@ void get_pkg_therm_stat(struct pkg_therm_stat *s)
     if (!sockets)
     {
         core_config(NULL, NULL, &sockets, NULL);
+        load_socket_batch(IA32_PACKAGE_THERM_STATUS,s->raw, PKG_THERM_STAT);
     }
-	load_socket_batch(IA32_PACKAGE_THERM_STATUS,s->raw, PKG_THERM_STAT);
     read_batch(PKG_THERM_STAT);
 	//read_msr_by_coord( package, 0, 0, IA32_PACKAGE_THERM_STATUS, &(s->raw) ); 
 	//s->raw = 56879; //in dec
@@ -400,8 +401,8 @@ void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
     if (!sockets)
     {
         core_config(NULL, NULL, &sockets, NULL);
+        load_socket_batch(IA32_PACKAGE_THERM_INTERRUPT, s->raw, PKG_THERM_INTERR);
     }
-	load_socket_batch(IA32_PACKAGE_THERM_INTERRUPT, s->raw, PKG_THERM_INTERR);
     read_batch(PKG_THERM_INTERR);
 	//read_msr_by_coord( package, 0, 0, IA32_PACKAGE_THERM_INTERRUPT, &(s->raw));
 	//s->raw = 56879;
@@ -444,12 +445,13 @@ void set_therm_stat(struct therm_stat *s)
 {
     static uint64_t sockets = 0;
     static uint64_t coresPerSocket = 0;
+    static uint64_t ** msrVal = NULL;
     if (!coresPerSocket || !sockets)
     {
         core_config(&coresPerSocket, NULL, &sockets, NULL);
+        msrVal = (uint64_t **) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t *));
+        load_core_batch(IA32_THERM_STATUS, msrVal, THERM_STAT);
     }
-	uint64_t ** msrVal = (uint64_t **) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t *));
-	load_core_batch(IA32_THERM_STATUS, msrVal, THERM_STAT);
     read_batch(THERM_STAT);
 	//read_msr_by_coord(socket, core, 0, IA32_THERM_STATUS, &msrVal);
 	int i;
@@ -479,13 +481,14 @@ void set_therm_interrupt(struct therm_interrupt *s)
 {
     static uint64_t sockets = 0;
     static uint64_t coresPerSocket = 0;
+    static uint64_t ** msrVal = NULL;
     if (!coresPerSocket || !sockets)
     {
         core_config(&coresPerSocket, NULL, &sockets, NULL);
+        msrVal = (uint64_t **) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t *));
+        load_core_batch(IA32_THERM_INTERRUPT, msrVal, THERM_INTERR);
     }
-	uint64_t ** msrVal = (uint64_t **) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t *));
 
-	load_core_batch(IA32_THERM_INTERRUPT, msrVal, THERM_INTERR);
     read_batch(THERM_INTERR);
 	//read_msr_by_coord(socket, core, 0, IA32_THERM_INTERRUPT, &msrVal);
 	int i;
@@ -519,12 +522,13 @@ void set_therm_interrupt(struct therm_interrupt *s)
 void set_pkg_therm_stat(struct pkg_therm_stat *s)
 {
     static uint64_t sockets = 0;
+    static uint64_t ** msrVal = NULL;
     if (!sockets)
     {
         core_config(NULL, NULL, &sockets, NULL);
+        msrVal = (uint64_t **) libmsr_malloc(sockets * sizeof (uint64_t *));
+        load_socket_batch(IA32_PACKAGE_THERM_STATUS, msrVal, PKG_THERM_STAT);
     }
-	uint64_t ** msrVal = (uint64_t **) libmsr_malloc(sockets * sizeof (uint64_t *));
-	load_socket_batch(IA32_PACKAGE_THERM_STATUS, msrVal, PKG_THERM_STAT);
     read_batch(PKG_THERM_STAT);
 	//read_msr_by_coord(package, 0, 0, IA32_PACKAGE_THERM_INTERRUPT, &msrVal);
 	int i;
@@ -552,13 +556,13 @@ void set_pkg_therm_stat(struct pkg_therm_stat *s)
 void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 {
     static uint64_t sockets = 0;
+    static uint64_t ** msrVal = NULL;
     if (!sockets)
     {
         core_config(NULL, NULL, &sockets, NULL);
+        msrVal = (uint64_t **) libmsr_malloc(sockets * sizeof (uint64_t *));
+        load_socket_batch(IA32_PACKAGE_THERM_INTERRUPT, msrVal, PKG_THERM_INTERR);
     }
-	uint64_t ** msrVal = (uint64_t **) libmsr_malloc(sockets * sizeof (uint64_t *));
-
-	load_socket_batch(IA32_PACKAGE_THERM_INTERRUPT, msrVal, PKG_THERM_INTERR);
     read_batch(PKG_THERM_INTERR);
 	//read_msr_by_coord(package, 0, 0, IA32_PACKAGE_THERM_INTERRUPT, &msrVal);
 	int i;

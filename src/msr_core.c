@@ -144,12 +144,14 @@ uint64_t * batch_ops(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchn
 #endif
         // perform batch operation
         // if write switch flag
-        if (type == BATCH_WRITE)
+        if ((type == BATCH_WRITE && batch[batchnum].ops[0].isrdmsr) ||
+            (type == BATCH_READ && !batch[batchnum].ops[0].isrdmsr))
         {
+            __u8 readflag = (__u8) (type == BATCH_READ ? 1 : 0);
             int j;
             for (j = 0; j < batch[batchnum].numops; j++)
             {
-                batch[batchnum].ops[j].isrdmsr = (__u8) 0;
+                batch[batchnum].ops[j].isrdmsr = readflag;
             }
         }
         int res;
@@ -168,6 +170,7 @@ uint64_t * batch_ops(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchn
                 }
             }
         }
+#ifdef BATCH_DEBUG
         int k;
         for (k = 0; k < batch[batchnum].numops; k++)
         {
@@ -175,14 +178,7 @@ uint64_t * batch_ops(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchn
                     batch[batchnum].ops[k].cpu, (uint64_t) batch[batchnum].ops[k].msrdata,
                     &batch[batchnum].ops[k].msrdata);
         }
-        if (type == BATCH_WRITE)
-        {
-            int j;
-            for (j = 0; j < batch[batchnum].numops; j++)
-            {
-                batch[batchnum].ops[j].isrdmsr = (__u8) 1;
-            }
-        }
+#endif
         return 0;
     }
 #ifdef BATCH_DEBUG
@@ -756,10 +752,6 @@ load_socket_batch(  off_t msr, uint64_t **val , int batchnum)
         dev_idx += coresPerSocket * threadsPerCore, val_idx++ )
     {
         batch_ops(msr, dev_idx, &val[val_idx], batchnum, BATCH_LOAD);
-		//if (read_msr_by_idx( dev_idx, msr, &val[val_idx] ))
-        //{
-        //    return -1;
-        //}
 	}
     return 0;
 }
@@ -782,10 +774,6 @@ load_core_batch( off_t msr, uint64_t **val , int batchnum)
 	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx += threadsPerCore, val_idx++ )
     {
         batch_ops(msr, dev_idx, &val[val_idx], batchnum, BATCH_LOAD);
-		//if (read_msr_by_idx( dev_idx, msr, &val[val_idx] ))
-        //{
-        //    return -1;
-        //}
 	}
     return 0;
 }
@@ -808,12 +796,7 @@ load_thread_batch( off_t msr, uint64_t **val , int batchnum)
 	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx++, val_idx++ )
     {
         batch_ops(msr, dev_idx, &val[val_idx], batchnum, BATCH_LOAD);
-//		if(read_msr_by_idx( dev_idx, msr, &val[val_idx] ))
-//        {
-//            return -1;
-//        }
 	}
-    //read_batch(batchnum);
     return 0;
 }
 
