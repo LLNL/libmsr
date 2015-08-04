@@ -211,7 +211,6 @@ static int store_pkg_therm_interrupt(struct pkg_therm_interrupt ** pi)
     return 0;
 }
 
-// TODO: what is this even for?
 void is_init() {
 	static int initialized = 0;
     static struct msr_temp_target * t_target = NULL;
@@ -485,8 +484,6 @@ void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 void set_therm_stat(struct therm_stat *s)
 {
     uint64_t numCores = num_cores();
-    //static uint64_t ** msrVal = NULL;
-    //msrVal = (uint64_t **) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t *));
     read_batch(THERM_STAT);
 	int i;
 	for(i=0;i<numCores ;i++)
@@ -504,13 +501,6 @@ void set_therm_stat(struct therm_stat *s)
 		*s->raw[i] = (*s->raw[i] & (~(1<<7))) | (s->therm_thresh1_log[i] << 1);
 		*s->raw[i] = (*s->raw[i] & (~(1<<9))) | (s->therm_thresh2_log[i] << 1);
 		*s->raw[i] = (*s->raw[i] & (~(1<<11))) | (s->power_notification_log[i] << 1);
-        
-		//*msrVal[i] = (*msrVal[i] & (~(1<<1))) | (s->status_log[i] << 1);
-		//*msrVal[i] = (*msrVal[i] & (~(1<<3))) | (s->PROCHOT_or_FORCEPR_log[i] << 1);
-		//*msrVal[i] = (*msrVal[i] & (~(1<<5))) | (s->crit_temp_log[i] << 1);
-		//*msrVal[i] = (*msrVal[i] & (~(1<<7))) | (s->therm_thresh1_log[i] << 1);
-		//*msrVal[i] = (*msrVal[i] & (~(1<<9))) | (s->therm_thresh2_log[i] << 1);
-		//*msrVal[i] = (*msrVal[i] & (~(1<<11))) | (s->power_notification_log[i] << 1);
 	}
     write_batch(THERM_STAT);
 //Not sure if I should update the struct here or not.
@@ -519,8 +509,6 @@ void set_therm_stat(struct therm_stat *s)
 void set_therm_interrupt(struct therm_interrupt *s)
 {
     uint64_t numCores = num_cores();
-    //static uint64_t ** msrVal = NULL;
-    //msrVal = (uint64_t **) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t *));
     read_batch(THERM_INTERR);
 	int i;
 	for(i=0;i<numCores ;i++)
@@ -544,18 +532,6 @@ void set_therm_interrupt(struct therm_interrupt *s)
 		*s->raw[i] = (*s->raw[i] & (~(7<<16))) | (s->thresh2_val[i] << 16);
 		*s->raw[i] = (*s->raw[i] & (~(1<<23))) | (s->thresh2_enable[i] << 23);
 		*s->raw[i] = (*s->raw[i] & (~(1<<24))) | (s->pwr_limit_notification_enable[i] << 24);
-/*
-        *msrVal[i] = (*msrVal[i] & (~(1<<0))) | (s->high_temp_enable[i] << 0);
-		*msrVal[i] = (*msrVal[i] & (~(1<<1))) | (s->low_temp_enable[i] << 1);
-		*msrVal[i] = (*msrVal[i] & (~(1<<2))) | (s->PROCHOT_enable[i] << 2);
-		*msrVal[i] = (*msrVal[i] & (~(1<<3))) | (s->FORCEPR_enable[i] << 3);
-		*msrVal[i] = (*msrVal[i] & (~(1<<4))) | (s->crit_temp_enable[i] << 4);
-		*msrVal[i] = (*msrVal[i] & (~(7<<8))) | (s->thresh1_val[i] << 8);
-		*msrVal[i] = (*msrVal[i] & (~(1<<15))) | (s->thresh1_enable[i] << 15);
-		*msrVal[i] = (*msrVal[i] & (~(7<<16))) | (s->thresh2_val[i] << 16);
-		*msrVal[i] = (*msrVal[i] & (~(1<<23))) | (s->thresh2_enable[i] << 23);
-		*msrVal[i] = (*msrVal[i] & (~(1<<24))) | (s->pwr_limit_notification_enable[i] << 24);
-*/
 	}
     write_batch(THERM_INTERR);
 }
@@ -563,8 +539,6 @@ void set_therm_interrupt(struct therm_interrupt *s)
 void set_pkg_therm_stat(struct pkg_therm_stat *s)
 {
     uint64_t sockets = num_sockets();
-    //static uint64_t ** msrVal = NULL;
-    //msrVal = (uint64_t **) libmsr_malloc(sockets * sizeof (uint64_t *));
     read_batch(PKG_THERM_STAT);
 	int i;
 	for(i=0;i<sockets ;i++)
@@ -582,15 +556,6 @@ void set_pkg_therm_stat(struct pkg_therm_stat *s)
 		*s->raw[i] = (*s->raw[i] & (~(1<<7))) | (s->therm_thresh1_log[i] << 7);
 		*s->raw[i] = (*s->raw[i] & (~(1<<9))) | (s->therm_thresh2_log[i] << 9);
 		*s->raw[i] = (*s->raw[i] & (~(1<<11))) | (s->power_notification_log[i] << 11);
-
-/*
-		*msrVal[i] = (*msrVal[i] & (~(1<<1))) | (s->status_log[i] << 1);
-		*msrVal[i] = (*msrVal[i] & (~(1<<3))) | (s->PROCHOT_log[i] << 3);
-		*msrVal[i] = (*msrVal[i] & (~(1<<5))) | (s->crit_temp_log[i] << 5);
-		*msrVal[i] = (*msrVal[i] & (~(1<<7))) | (s->therm_thresh1_log[i] << 7);
-		*msrVal[i] = (*msrVal[i] & (~(1<<9))) | (s->therm_thresh2_log[i] << 9);
-		*msrVal[i] = (*msrVal[i] & (~(1<<11))) | (s->power_notification_log[i] << 11);
-*/
 	}
     write_batch(PKG_THERM_STAT);
 }
@@ -598,8 +563,6 @@ void set_pkg_therm_stat(struct pkg_therm_stat *s)
 void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 {
     uint64_t sockets = num_sockets();
-    //static uint64_t ** msrVal = NULL;
-    //msrVal = (uint64_t **) libmsr_malloc(sockets * sizeof (uint64_t *));
     read_batch(PKG_THERM_INTERR);
 	int i;
 	for(i=0;i<sockets ;i++)
@@ -621,17 +584,6 @@ void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 		*s->raw[i] = (*s->raw[i] & (~(7<<16))) | (s->thresh2_val[i] << 16);
 		*s->raw[i] = (*s->raw[i] & (~(1<<23))) | (s->thresh2_enable[i] << 23);
 		*s->raw[i] = (*s->raw[i] & (~(1<<24))) | (s->pwr_limit_notification_enable[i] << 24);
-/*
-        *msrVal[i] = (*msrVal[i] & (~(1<<0))) | (s->high_temp_enable[i] << 0);
-		*msrVal[i] = (*msrVal[i] & (~(1<<1))) | (s->low_temp_enable[i] << 1);
-		*msrVal[i] = (*msrVal[i] & (~(1<<2))) | (s->PROCHOT_enable[i] << 2);
-		*msrVal[i] = (*msrVal[i] & (~(1<<4))) | (s->crit_temp_enable[i] << 4);
-		*msrVal[i] = (*msrVal[i] & (~(7<<8))) | (s->thresh1_val[i] << 8);	
-		*msrVal[i] = (*msrVal[i] & (~(1<<15))) | (s->thresh1_enable[i] << 15);
-		*msrVal[i] = (*msrVal[i] & (~(7<<16))) | (s->thresh2_val[i] << 16);
-		*msrVal[i] = (*msrVal[i] & (~(1<<23))) | (s->thresh2_enable[i] << 23);
-		*msrVal[i] = (*msrVal[i] & (~(1<<24))) | (s->pwr_limit_notification_enable[i] << 24);
-*/
 	}	
     write_batch(PKG_THERM_INTERR);
 }
@@ -653,7 +605,7 @@ void dump_thermal_terse_label( FILE *writeFile )
 
 void dump_thermal_terse( FILE *writeFile )
 {
-	//is_init();
+	is_init();
     static struct therm_stat * t_stat = NULL;
     static struct msr_temp_target * t_target = NULL;
     if (t_stat == NULL || t_target == NULL)
@@ -755,7 +707,7 @@ void dump_thermal_verbose_label( FILE *writeFile )
 
 void dump_thermal_verbose( FILE *writeFile )
 {
-	//is_init();
+	is_init();
     static struct therm_stat * t_stat = NULL;
     static struct therm_interrupt * t_interrupt = NULL;
     static struct pkg_therm_interrupt * pkg_interrupt = NULL;
