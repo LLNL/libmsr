@@ -35,49 +35,55 @@
 						// for each logical processor. 
 						// Must have it enabled and the same for all logical
 						// processors within the physical processor
-void read_all_clocks(uint64_t ** aperf, uint64_t ** mperf, uint64_t ** tsc)
+
+static int clocks_storage(uint64_t *** aperf_val, uint64_t *** mperf_val, uint64_t *** tsc_val)
 {
     static int init = 1;
+    static uint64_t ** aperf = NULL, ** mperf = NULL, ** tsc = NULL;
+    static uint64_t threadsPerCore = 0, coresPerSocket = 0, sockets = 0;
     if (init)
     {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+        aperf = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
+        mperf = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
+        tsc = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
         load_thread_batch(MSR_IA32_APERF, aperf, CLOCKS_DATA);
         load_thread_batch(MSR_IA32_MPERF, mperf, CLOCKS_DATA);
         load_thread_batch(IA32_TIME_STAMP_COUNTER, tsc, CLOCKS_DATA);
         init = 0;
     }
+    if (aperf_val)
+    {
+        *aperf_val = aperf;
+    }
+    if (mperf_val)
+    {
+        *mperf_val = mperf;
+    }
+    if (tsc_val)
+    {
+        *tsc_val = tsc;
+    }
+    return 0;
+}
+
+void read_all_clocks(uint64_t ** aperf, uint64_t ** mperf, uint64_t ** tsc)
+{
     read_batch(CLOCKS_DATA);
 }
 
 void 
 read_all_aperf(uint64_t **aperf){
-    static int init = 1;
-    if (init)
-    {
-        load_thread_batch( MSR_IA32_APERF, aperf , CLOCKS_DATA);
-        init = 0;
-    }
     read_batch(CLOCKS_DATA);
 }
 
 void
 read_all_mperf(uint64_t **mperf){
-    static int init = 1;
-    if (init)
-    {
-        load_thread_batch( MSR_IA32_MPERF, mperf , CLOCKS_DATA);
-        init = 0;
-    }
     read_batch(CLOCKS_DATA);
 }
 
 void 
 read_all_tsc(uint64_t **tsc){
-    static int init = 1;
-    if (init)
-    {
-        load_thread_batch( IA32_TIME_STAMP_COUNTER, tsc , CLOCKS_DATA);
-        init = 0;
-    }
     read_batch(CLOCKS_DATA);
 }
 
@@ -108,11 +114,10 @@ dump_clocks_terse(FILE *writeFile){
     if (!threadsPerCore || !coresPerSocket)
     {
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-        aperf_val = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
-        mperf_val = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
-        tsc_val   = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
+        clocks_storage(&aperf_val, &mperf_val, &tsc_val);
     }
 	int thread_idx;
+    // TODO: could be replaced with read_batch
     read_all_clocks(aperf_val, mperf_val, tsc_val);
 	for(thread_idx=0; thread_idx<NUM_THREADS_NEW; thread_idx++){
 		fprintf(writeFile, "%20lu %20lu %20lu ", 
@@ -131,14 +136,13 @@ void dump_clocks_readable(FILE * writeFile)
     if (!threadsPerCore || !coresPerSocket)
     {
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-        aperf_val = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
-        mperf_val = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
-        tsc_val   = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
+        clocks_storage(&aperf_val, &mperf_val, &tsc_val);
     }
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "DEBUG: (clocks_readable) NUM_THREADS_NEW is %lu\n", NUM_THREADS_NEW);
 #endif
 	int thread_idx;
+    // TODO: could be replaced with read_batch
     read_all_clocks(aperf_val, mperf_val, tsc_val);
 	for(thread_idx=0; thread_idx<NUM_THREADS_NEW; thread_idx++){
 		fprintf(writeFile, "aperf%02d:%20lu mperf%02d:%20lu tsc%02d:%20lu\n", 

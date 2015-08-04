@@ -34,6 +34,9 @@ static int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, s
         init_ctr_data(&c0);
         init_ctr_data(&c1);
         init_ctr_data(&c2);
+        load_thread_batch(IA32_FIXED_CTR0, c0.value, COUNTERS_DATA);
+        load_thread_batch(IA32_FIXED_CTR1, c1.value, COUNTERS_DATA);
+        load_thread_batch(IA32_FIXED_CTR2, c2.value, COUNTERS_DATA);
     }
     if (ctr0)
     {
@@ -46,6 +49,31 @@ static int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, s
     if (ctr2)
     {
         *ctr2 = &c2;
+    }
+    return 0;
+}
+
+static int fixed_ctr_ctrl_storage(uint64_t *** perf_ctrl, uint64_t *** fixed_ctrl)
+{
+    static uint64_t ** perf_global_ctrl = NULL, ** fixed_ctr_ctrl = NULL;
+    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
+    int init = 1;
+    if (init)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+        perf_global_ctrl = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
+        fixed_ctr_ctrl   = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
+        load_thread_batch(IA32_PERF_GLOBAL_CTRL, perf_global_ctrl, COUNTERS_CTR_DATA);
+        load_thread_batch(IA32_FIXED_CTR_CTRL, fixed_ctr_ctrl, COUNTERS_CTR_DATA);
+        init = 0;
+    }
+    if (perf_ctrl)
+    {
+        *perf_ctrl = perf_global_ctrl;
+    }
+    if (fixed_ctrl)
+    {
+        *fixed_ctrl = fixed_ctr_ctrl;
     }
     return 0;
 }
@@ -66,6 +94,7 @@ void init_ctr_data(struct ctr_data * ctr)
     ctr->pmi        = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
     ctr->overflow   = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
     ctr->value      = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
+
 }
 
 void 
@@ -76,10 +105,7 @@ get_fixed_ctr_ctrl(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data
     if (!coresPerSocket || !threadsPerCore || !sockets)
     {
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-        perf_global_ctrl = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
-        fixed_ctr_ctrl = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
-        load_thread_batch(IA32_PERF_GLOBAL_CTRL, perf_global_ctrl, COUNTERS_CTR_DATA);
-        load_thread_batch(IA32_FIXED_CTR_CTRL,   fixed_ctr_ctrl, COUNTERS_CTR_DATA);
+        fixed_ctr_ctrl_storage(&perf_global_ctrl, &fixed_ctr_ctrl);
     }
     read_batch(COUNTERS_CTR_DATA);
 
@@ -119,18 +145,8 @@ set_fixed_ctr_ctrl(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data
     if (!coresPerSocket || !threadsPerCore || !sockets)
     {
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-        perf_global_ctrl = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
-        fixed_ctr_ctrl = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
-        //ctr0_zero = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
-        //ctr1_zero = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
-        //ctr2_zero = (uint64_t **) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t *));
-        load_thread_batch( IA32_PERF_GLOBAL_CTRL, perf_global_ctrl, COUNTERS_CTR_DATA);
-        load_thread_batch( IA32_FIXED_CTR_CTRL,   fixed_ctr_ctrl, COUNTERS_CTR_DATA);
-        // Limitation of batch reads, can't use 1 array for multiple items
-        load_thread_batch(IA32_FIXED_CTR0, ctr0->value, COUNTERS_DATA);
-        load_thread_batch(IA32_FIXED_CTR1, ctr1->value, COUNTERS_DATA);
-        load_thread_batch(IA32_FIXED_CTR2, ctr2->value, COUNTERS_DATA);
-        // previous data not needed, we are just zeroing things out
+        fixed_ctr_ctrl_storage(&perf_global_ctrl, &fixed_ctr_ctrl);
+        // dont need to read counters data, we are just zeroing things out
     }
     read_batch(COUNTERS_CTR_DATA);
 
@@ -187,17 +203,9 @@ void delta_fixed_ctr_values()
 }
 */
 
+// TODO: could replace all occurences with read_batch
 void 
 get_fixed_ctr_values(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data *ctr2){
-    // TODO: temporarily turn off init here, multiple batch issue
-    static int init = 0;
-    if (init)
-    {
-        load_thread_batch(IA32_FIXED_CTR0, ctr0->value, COUNTERS_DATA);
-        load_thread_batch(IA32_FIXED_CTR1, ctr1->value, COUNTERS_DATA);
-        load_thread_batch(IA32_FIXED_CTR2, ctr2->value, COUNTERS_DATA);
-        init = 0;
-    }
     read_batch(COUNTERS_DATA);
 }
 

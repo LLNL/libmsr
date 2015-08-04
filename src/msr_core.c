@@ -53,6 +53,54 @@
 
 //static int core_fd[NUM_DEVS];
 
+uint64_t num_cores()
+{
+    static uint64_t coresPerSocket = 0, sockets = 0;
+    static int init = 1;
+    if (init)
+    {
+        core_config(&coresPerSocket, NULL, &sockets, NULL);
+        init = 0;
+    }
+    return coresPerSocket * sockets;
+}
+
+uint64_t num_sockets()
+{
+    static uint64_t sockets = 0;
+    static int init = 1;
+    if (init)
+    {
+        core_config(NULL, NULL, &sockets, NULL);
+        init = 0;
+    }
+    return sockets;
+}
+
+uint64_t num_devs()
+{
+    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
+    static int init = 1;
+    if (init)
+    {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+        init = 0;
+    }
+    return coresPerSocket * threadsPerCore * sockets;
+}
+
+uint64_t cores_per_socket()
+{
+    static uint64_t coresPerSocket = 0;
+    static int init = 1;
+    if (init)
+    {
+        core_config(&coresPerSocket, NULL, NULL, NULL);
+        init = 0;
+    }
+    return coresPerSocket;
+}
+
 static int * core_fd(const int dev_idx)
 {
     static int init = 1;
@@ -574,163 +622,6 @@ int write_batch(const int batchnum)
     batch_ops(0, 0, NULL, batchnum, BATCH_WRITE);
     return 0;
 }
-
-/*
-int
-write_all_sockets(   off_t msr, uint64_t  val )
-{
-	int dev_idx;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t threadsPerCore = 0;
-    static uint64_t sockets = 0;
-    if (coresPerSocket == 0 || threadsPerCore == 0 || sockets == 0)
-    {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-    }
-#ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s %s::%d (write_all_sockets) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
-            __FILE__, __LINE__, msr, msr);
-#endif
-	for(dev_idx=0; dev_idx< (NUM_DEVS_NEW); dev_idx += coresPerSocket * threadsPerCore )
-    {
-		if(write_msr_by_idx( dev_idx, msr, val ))
-        {
-            return -1;
-        }
-	}
-    return 0;
-}
-
-int
-write_all_cores(     off_t msr, uint64_t  val )
-{
-	int dev_idx;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t threadsPerCore = 0;
-    static uint64_t sockets = 0;
-    if (coresPerSocket == 0 || threadsPerCore == 0)
-    {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-    }
-#ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s %s::%d (write_all_cores) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
-            __FILE__, __LINE__, msr, msr);
-#endif
-	for(dev_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx += threadsPerCore )
-    {
-		if(write_msr_by_idx( dev_idx, msr, val ))
-        {
-            return -1;
-        }
-	}
-    return 0;
-}
-
-int
-write_all_threads(   off_t msr, uint64_t  **val , const int batchnum)
-{
-	int dev_idx;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t threadsPerCore = 0;
-    static uint64_t sockets = 0;
-    if (coresPerSocket == 0 || threadsPerCore == 0)
-    {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-    }
-#ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s %s::%d (write_all_threads) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
-            __FILE__, __LINE__, msr, msr);
-#endif
-	for(dev_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx++)
-    {
-// TODO: fix this
-        batch_ops(msr, dev_idx, val, batchnum, BATCH_WRITE);
-	//	if(write_msr_by_idx( dev_idx, msr, val ))
-    //    {
-    //        return -1;
-    //    }
-	}
-    return 0;
-}
-
-int
-write_all_sockets_v( off_t msr, uint64_t *val )
-{
-	int dev_idx, val_idx;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t threadsPerCore = 0;
-    static uint64_t sockets = 0;
-    if (coresPerSocket == 0 || threadsPerCore == 0)
-    {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-    }
-#ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s %s::%d (write_all_sockets_v) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
-            __FILE__, __LINE__, msr, msr);
-#endif
-	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); 
-        dev_idx += coresPerSocket * threadsPerCore, val_idx++ )
-    {
-		if(write_msr_by_idx( dev_idx, msr, val[val_idx] ))
-        {
-            return -1;
-        }
-	}
-    return 0;
-}
-
-int
-write_all_cores_v(   off_t msr, uint64_t *val )
-{
-	int dev_idx, val_idx;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t threadsPerCore = 0;
-    static uint64_t sockets = 0;
-    if (coresPerSocket == 0 || threadsPerCore == 0)
-    {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-    }
-#ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s %s::%d (write_all_cores_v) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
-            __FILE__, __LINE__, msr, msr);
-#endif
-	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx += threadsPerCore, val_idx++ )
-    {
-		if (write_msr_by_idx( dev_idx, msr, val[val_idx] ))
-        {
-            return -1;
-        }
-	}
-    return 0;
-}
-
-int
-write_all_threads_v( off_t msr, uint64_t **val , const int batchnum)
-{
-	int dev_idx, val_idx;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t threadsPerCore = 0;
-    static uint64_t sockets = 0;
-    if (coresPerSocket == 0 || threadsPerCore == 0)
-    {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-    }
-#ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s %s %s::%d (write_all_threads_v) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
-            __FILE__, __LINE__, msr, msr);
-#endif
-	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx++, val_idx++ )
-    {
-        batch_ops(msr, dev_idx, &val[val_idx], batchnum, BATCH_WRITE);
-//		if(write_msr_by_idx( dev_idx, msr, val[val_idx] ))
-//        {
-//            return -1;
-//        }
-	}
-    return 0;
-}
-
-*/
 
 int
 load_socket_batch(  off_t msr, uint64_t **val , int batchnum)
