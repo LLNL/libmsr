@@ -302,7 +302,7 @@ int rapl_storage(struct rapl_data ** data, uint64_t ** flags)
     if (init)
     {
         init = 0;
-        core_config(NULL, NULL, &sockets, NULL);
+        sockets = num_sockets();
         rapl = (struct rapl_data *) libmsr_malloc(sockets * sizeof(struct rapl_data));
         rapl_flags = (uint64_t *) libmsr_malloc(sizeof(uint64_t));
         int i;
@@ -360,7 +360,7 @@ static int check_for_locks()
 
     if (rapl_flags == NULL || rapl == NULL || sockets == 0)
     {
-        core_config(NULL, NULL, &sockets, NULL);
+        sockets = num_sockets();
         if (rapl_storage(&rapl, &rapl_flags))
         {
             return -1;
@@ -476,7 +476,7 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 #endif
     if (sockets == 0)
     {
-        core_config(NULL, NULL, &sockets, NULL);
+        sockets = num_sockets();
     }
     if (model == 0)
     {
@@ -1194,7 +1194,7 @@ dump_rapl_terse_label( FILE *writeFile ){
     static uint64_t sockets = 0;
     if (rapl == NULL || rapl_flags == NULL || sockets == 0)
     {
-        core_config(NULL, NULL, &sockets, NULL);
+        sockets = num_sockets();
         if (rapl_storage(&rapl, &rapl_flags))
         {
             return -1;
@@ -1233,7 +1233,7 @@ dump_rapl_terse( FILE * writeFile){
 
     if (rapl == NULL || rapl_flags == NULL || sockets == 0)
     {
-        core_config(NULL, NULL, &sockets, NULL);
+        sockets = num_sockets();
         if (rapl_storage(&rapl, &rapl_flags))
         {
             return -1;
@@ -1343,7 +1343,7 @@ dump_rapl_power_info( FILE *writeFile){
 
     if (rapl_flags == NULL || sockets == 0)
     {
-        core_config(NULL, NULL, &sockets, NULL);
+        sockets = num_sockets();
         if (rapl_storage(NULL, &rapl_flags))
         {
             return -1;
@@ -1537,12 +1537,12 @@ int read_rapl_data(const unsigned socket)
     static struct rapl_data * rapl = NULL;
     static uint64_t * rapl_flags = NULL;
     static uint64_t batch_init = 0;
-    static uint64_t socketcount = 0;
-    if (socketcount == 0)
+    static uint64_t sockets = 0;
+    if (sockets == 0)
     {
         int i;
-        core_config(NULL, NULL, &socketcount, NULL);
-        for (i = 0; i < socketcount; i++)
+        sockets = num_sockets();
+        for (i = 0; i < sockets; i++)
         {
             batch_init |= (0x1 << i);
         }

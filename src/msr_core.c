@@ -109,9 +109,8 @@ static int * core_fd(const int dev_idx)
     if (init)
     {
         init = 0;
-        uint64_t sockets = 0, coresPerSocket = 0, threadsPerCore = 0;
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-        devices = NUM_DEVS_NEW;
+        uint64_t numDevs = num_devs();;
+        devices = numDevs;;
         file_descriptors = (int *) libmsr_malloc(devices * sizeof(int));
     }
     if (dev_idx < devices)
@@ -288,9 +287,9 @@ int sockets_assert(const unsigned * socket, const int location, const char * fil
 {
     static uint64_t sockets = 0;
 
-    if (sockets < 1)
+    if (!sockets)
     {
-        core_config(NULL, NULL, &sockets, NULL);
+        sockets = num_sockets();
     }
     if (*socket > sockets)
     {
@@ -340,15 +339,14 @@ int core_storage(int recover, recover_data * recoverValue)
     static unsigned allocated = 0;
     static recover_data  * recovery = NULL;
     static unsigned size = 0;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t threadsPerCore = 0;
+    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
     int i;
 
     if (recovery == NULL)
     {
+        core_config(&coresPerSocket, &threadsPerCore, &sockets, 0);
         allocated = 2;
         recovery = (recover_data *) libmsr_malloc(allocated * sizeof(recover_data));
-        core_config(&coresPerSocket, &threadsPerCore, NULL, NULL);
     }
     if (recoverValue)
     {
@@ -411,19 +409,16 @@ int init_msr()
 	struct stat statbuf;
 	static int initialized = 0;
     int kerneltype = 0; // 0 is msr_safe, 1 is msr
-    uint64_t coresPerSocket = 0;
-    uint64_t threadsPerCore = 0;
-    uint64_t sockets = 0;
-
-    core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL); 
+    uint64_t numDevs = num_devs();
+    
 #ifdef LIBMSR_DEBUG
-	fprintf(stderr, "%s Initializing %lu device(s).\n", getenv("HOSTNAME"), (NUM_DEVS_NEW));
+	fprintf(stderr, "%s Initializing %lu device(s).\n", getenv("HOSTNAME"), (numDevs));
 #endif
 	if( initialized ){
 		return 0;
 	}
     // open the file descriptor for each device's msr interface
-	for (dev_idx=0; dev_idx < (NUM_DEVS_NEW); dev_idx++)
+	for (dev_idx=0; dev_idx < (numDevs); dev_idx++)
     {
 #ifdef LIBMSR_DEBUG
         fprintf(stderr, "found module %d\n", dev_idx);
@@ -505,21 +500,18 @@ int finalize_msr(const int restore)
 	int dev_idx;
     int rc;
     int * fileDescriptor = NULL;
-    uint64_t coresPerSocket = 0;
-    uint64_t threadsPerCore = 0;
-    uint64_t sockets = 0;
+    uint64_t numDevs = num_devs();
 
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "DEBUG: finalize_msr\n");
 #endif
-    core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
     
     if (restore)
     {
         core_storage(restore, NULL);
     }
     //close the file descriptors
-	for (dev_idx=0; dev_idx < (NUM_DEVS_NEW); dev_idx++)
+	for (dev_idx=0; dev_idx < (numDevs); dev_idx++)
     {
         fileDescriptor = core_fd(dev_idx);
 		if(fileDescriptor)
@@ -565,9 +557,11 @@ write_msr_by_coord( unsigned socket, unsigned core, unsigned thread, off_t msr, 
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s %s::%d (write_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx) val=%lu\n", 
             getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr, val);
-    return write_msr_by_idx_and_verify( (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, val );
+    //return write_msr_by_idx_and_verify( (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, val );
+    return write_msr_by_idx_and_verify( COORD_INDEXING, msr, val );
 #endif
-    return write_msr_by_idx( (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, val );
+    //return write_msr_by_idx( (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, val );
+    return write_msr_by_idx( COORD_INDEXING, msr, val );
 }
 
 int
@@ -585,7 +579,8 @@ read_msr_by_coord(  unsigned socket, unsigned core, unsigned thread, off_t msr, 
     {
         core_config(&coresPerSocket, &threadsPerCore, NULL, NULL);
     }
-	return read_msr_by_idx( (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, val );
+	//return read_msr_by_idx( (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, val );
+	return read_msr_by_idx( COORD_INDEXING, msr, val );
 }
 
 int
@@ -607,7 +602,8 @@ read_msr_by_coord_batch(  unsigned socket, unsigned core, unsigned thread, off_t
     fprintf(stderr, "DEBUG: passed operation on msr 0x%lx (socket %u, core %u, thread %u) to BATCH OPS with destination %p\n", 
             msr, socket, core, thread, val);
 #endif
-    batch_ops(msr, (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, val, batchnum, BATCH_LOAD);
+    //batch_ops(msr, (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, val, batchnum, BATCH_LOAD);
+    batch_ops(msr, COORD_INDEXING, val, batchnum, BATCH_LOAD);
     return 0;
 }
 
