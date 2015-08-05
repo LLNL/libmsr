@@ -1,11 +1,29 @@
-/* checkCPUID.c
+/* cpuid.c
  *
- * Author: Kathleen Shoga
- * Edited by: Scott Walker
- * Initial cpuid function based off of an example on wikipedia:
- * http://en.wikipedia.org/wiki/CPUID#rax.3D0:_Get_vendor_ID
+ * Low-level msr interface.
  *
+ * Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+ * Produced at the Lawrence Livermore National Laboratory  
+ * Written by Kathleen Shoga, shoga1@llnl.gov.
+ * Modified by Scott Walker, walker91@llnl.gov
+ * All rights reserved. 
+ * 
+ * This file is part of libmsr.
+ * 
+ * libmsr is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ * 
+ * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+ * details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License along
+ * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
  */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <sys/sysinfo.h>

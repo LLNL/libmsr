@@ -1,8 +1,11 @@
-/*
- * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
+/* msr_rapl.c
+ *
+ * Low-level msr interface.
+ *
+ * Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
  * Written by Barry Rountree, rountree@llnl.gov.
- * Edited by Scott Walker, walker91@llnl.gov.
+ * Modified by Scott Walker, walker91@llnl.gov
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -20,6 +23,7 @@
  * You should have received a copy of the GNU Lesser General Public License along
  * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
  */
+
 #include <stdio.h>
 #include <math.h>
 #include <tgmath.h>
@@ -449,9 +453,10 @@ int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
     return 0;
 }
 
+// TO BE REMOVED
 // This will free the rapl and rapl flags data
 // You want to put this function after you are done using rapl functions.
-int rapl_finalize()
+/*int rapl_finalize()
 {
     struct rapl_data * rapl = NULL;
     uint64_t * rapl_flags = NULL;
@@ -461,9 +466,8 @@ int rapl_finalize()
         return -1;
     }
     return 0;
-}
+}*/
 
-// TODO: make sure the translation works for all architectures
 // This translates any human supplied units to the format expected in the registers and vice-versa
 static int
 translate( const unsigned socket, uint64_t* bits, double* units, int type){
@@ -482,22 +486,14 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
     {
         cpuid_get_model(&model);
     }
-	//static struct rapl_units ru[*sockets];
-	//uint64_t val[*sockets];
     static struct rapl_units * ru = NULL;
     static uint64_t ** val = NULL;
 	int i;
     uint64_t timeval_x = 0, timeval_y = 0;
     sockets_assert(&socket, __LINE__, __FILE__);
 
-#ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: (translate) first mark\n");
-#endif
 	if(!initialized){
 		initialized=1;
-#ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: (translate) loading units\n");
-#endif
         ru = (struct rapl_units *) libmsr_calloc(sockets, sizeof(struct rapl_units));
         val = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
 		load_socket_batch( MSR_RAPL_POWER_UNIT, val , RAPL_UNIT);
@@ -516,34 +512,17 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 			ru[i].msr_rapl_power_unit = *val[i];
 			// default is 1010b or 976 microseconds
 			ru[i].seconds = (double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit, 19, 16 )));
-#ifdef LIBMSR_DEBUG
-            fprintf(stderr, "The unit register has 0x%lx (%lf)for seconds\n", (uint64_t)  (1<<(MASK_VAL( ru[i].msr_rapl_power_unit, 19, 16 ))), ru[i].seconds);
-#endif
 			// default is 10000b or 15.3 microjoules
             ru[i].joules = (double) (1 << (MASK_VAL(ru[i].msr_rapl_power_unit, 12, 8)));
-#ifdef LIBMSR_DEBUG
-            fprintf(stderr, "The unit register has %ld (%lf) for joules\n", (long)  (1<<(MASK_VAL( ru[i].msr_rapl_power_unit, 12,  8 ))), ru[i].joules);;
-#endif
 			// default is 0011b or 1/8 Watts
 			ru[i].watts   = ((1.0)/((double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit,  3,  0 )))));
-#ifdef LIBMSR_DEBUG
-            fprintf(stderr, "The unit register has 0x%lx (%lf) for power\n", (uint64_t)  (1<<(MASK_VAL( ru[i].msr_rapl_power_unit, 3, 0 ))), ru[i].watts);
-#endif
 		}	
 	}
 	switch(type){
 		case BITS_TO_WATTS: 	
-#ifdef LIBMSR_DEBUG
-            fprintf(stderr, "%s %s::%d DEBUG: the watts unit is %lf, the bits are %lx\n", getenv("HOSTNAME"),
-                    __FILE__, __LINE__, ru[socket].watts, *bits);
-#endif
             *units = (double)(*bits)  * ru[socket].watts; 			
             break;
 		case BITS_TO_JOULES:	
-#ifdef LIBMSR_DEBUG
-            fprintf(stderr, "%s %s::%d DEBUG: the joules unit is %lf, the bits are %lx\n", getenv("HOSTNAME"),
-                    __FILE__, __LINE__, ru[socket].joules, *bits);
-#endif
             //*units = (double)(*bits)  * ru[socket].joules; 		
             *units = (double)(*bits)  / ru[socket].joules; 		
             break;
@@ -558,7 +537,7 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
             timeval_y =  *bits & 0x1F;
             timeval_x = (*bits & 0x60) >> 5;
             *units = ((1 + 0.25 * timeval_x) * pow(2.0, (double) timeval_y)) / ru[socket].seconds;
-            // Temporary fix for haswell difference
+            // Temporary fix for haswell
         //    if (model == 0x3F)
         //    {
         //        *units = *units * 2.5 + 15.0;
@@ -569,7 +548,7 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 #endif
             break;
         case SECONDS_TO_BITS_STD:
-            // Temporary fix for haswell difference
+            // Temporary fix for haswell 
         //    if (model == 0x3F)
         //    {
         //        *units = *units / 2.5 - 15;
@@ -636,7 +615,6 @@ get_rapl_power_info( const unsigned socket, struct rapl_power_info *info){
         read_msr_by_coord( socket, 0, 0, MSR_PKG_POWER_INFO, &(info->msr_pkg_power_info) );
         val = MASK_VAL( info->msr_pkg_power_info,  54, 48 );
         translate( socket, &val, &(info->pkg_max_window), BITS_TO_SECONDS_STD);
-                  //(model == 0x3F ? BITS_TO_SECONDS_HASWELL : BITS_TO_SECONDS_STD));
         
         val = MASK_VAL( info->msr_pkg_power_info,  46, 32 );
         translate( socket, &val, &(info->pkg_max_power), BITS_TO_WATTS );
@@ -650,11 +628,9 @@ get_rapl_power_info( const unsigned socket, struct rapl_power_info *info){
     if (*rapl_flags & DRAM_POWER_INFO)
     {
         read_msr_by_coord( socket, 0, 0, MSR_DRAM_POWER_INFO, &(info->msr_dram_power_info) );
-        // Note that the same units are used in both the PKG and DRAM domains.
 	
         val = MASK_VAL( info->msr_dram_power_info, 54, 48 );
         translate( socket, &val, &(info->dram_max_window), BITS_TO_SECONDS_STD);
-                  //(model == 0x3F ? BITS_TO_SECONDS_HASWELL : BITS_TO_SECONDS_STD) );
 
         val = MASK_VAL( info->msr_dram_power_info, 46, 32 );
         translate( socket, &val, &(info->dram_max_power), BITS_TO_WATTS );
@@ -693,7 +669,6 @@ static int calc_rapl_from_bits(const unsigned socket, struct rapl_limit * limit,
     if (offset < 32)
     {
         translate( socket, &seconds_bits, &limit->seconds, BITS_TO_SECONDS_STD);
-                  //(model == 0x3F ? BITS_TO_SECONDS_HASWELL: BITS_TO_SECONDS_STD) );
     }
     else
     {
@@ -729,7 +704,6 @@ static int calc_rapl_bits(const unsigned socket, struct rapl_limit * limit, cons
     else
     {
         translate( socket, &seconds_bits, &limit->seconds, SECONDS_TO_BITS_STD);
-                 // (model == 0x3F ? SECONDS_TO_BITS_HASWELL : SECONDS_TO_BITS_STD) );
     }
     // there is only 1 translation for watts (so far)
     translate( socket, &watts_bits,   &limit->watts,   WATTS_TO_BITS   );
