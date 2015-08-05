@@ -1,10 +1,11 @@
-/* File: msr_thermal.c
+/* msr_thermal.c
  *
- * Author: Kathleen Shoga
+ * Low-level msr interface.
  *
- * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
+ * Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
  * Written by Kathleen Shoga, shoga1@llnl.gov.
+ * Modified by Scott Walker, walker91@llnl.gov
  * All rights reserved. 
  * 
  * This file is part of libmsr.

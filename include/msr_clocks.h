@@ -1,7 +1,11 @@
-/*
- * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
+/* msr_clocks.h
+ *
+ * Low-level msr interface.
+ *
+ * Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
  * Written by Barry Rountree, rountree@llnl.gov.
+ * Modified by Scott Walker, walker91@llnl.gov
  * All rights reserved. 
  * 
  * This file is part of libmsr.

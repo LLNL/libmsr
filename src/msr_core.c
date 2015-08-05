@@ -2,10 +2,10 @@
  *
  * Low-level msr interface.
  *
- * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
+ * Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
  * Written by Barry Rountree, rountree@llnl.gov.
- * Edited by Scott Walker, walker91@llnl.gov
+ * Modified by Scott Walker, walker91@llnl.gov
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -123,17 +123,94 @@ static int * core_fd(const int dev_idx)
 
 #define BATCH_DEBUG
 
+static int do_batch_op(struct msr_batch_array * batch, int batchnum, int type)
+{
+    int batchfd = 0;
+#ifdef BATCH_DEBUG
+    fprintf(stderr, "BATCH: %s MSRs, numops %u\n", (type == BATCH_READ ? "reading" : "writing"), batch[batchnum].numops);
+#endif
+    if (batchfd == 0)
+    {
+        if ((batchfd = open(MSR_BATCH_DIR, O_RDWR)) < 0)
+        {
+            perror(MSR_BATCH_DIR);
+            // TODO: this should probably return an error code here
+            exit(-1);
+        }
+    }
+
+    // if write switch flag
+    if ((type == BATCH_WRITE && batch[batchnum].ops[0].isrdmsr) ||
+        (type == BATCH_READ && !batch[batchnum].ops[0].isrdmsr))
+    {
+        __u8 readflag = (__u8) (type == BATCH_READ ? 1 : 0);
+        int j;
+        for (j = 0; j < batch[batchnum].numops; j++)
+        {
+            batch[batchnum].ops[j].isrdmsr = readflag;
+        }
+    }
+    int res;
+    res = ioctl(batchfd, X86_IOC_MSR_BATCH, &batch[batchnum]);
+    if ( res < 0)
+    {
+        perror("IOctl failed");
+        fprintf(stderr, "ioctl returned %d\n", res);
+        int i;
+        for (i = 0; i < batch[batchnum].numops; i++)
+        {
+            if (batch[batchnum].ops[i].err)
+            {
+                fprintf(stderr, "CPU %d, RDMSR %x, ERR (%s)\n", batch[batchnum].ops[i].cpu, batch[batchnum].ops[i].msr,
+                        strerror(batch[batchnum].ops[i].err));
+            }
+        }
+    }
+#ifdef BATCH_DEBUG
+    int k;
+    for (k = 0; k < batch[batchnum].numops; k++)
+    {
+        fprintf(stderr, "BATCH %d: msr 0x%x cpu %u data 0x%lx (at %p)\n", batchnum, batch[batchnum].ops[k].msr,
+                batch[batchnum].ops[k].cpu, (uint64_t) batch[batchnum].ops[k].msrdata,
+                &batch[batchnum].ops[k].msrdata);
+    }
+#endif
+    return 0;
+}
+
+static int init_batch_ops(struct msr_batch_array ** batch, unsigned ** size, unsigned arrsize, int batchnum)
+{
+#ifdef BATCH_DEBUG
+        fprintf(stderr, "BATCH: initializing batch ops\n");
+#endif
+        struct msr_batch_array * barray = *batch;
+        unsigned * sizearray = *size;
+        arrsize = (batchnum + 1 > arrsize ? batchnum + 1 : arrsize);
+        sizearray = (unsigned *) libmsr_calloc(arrsize, sizeof(unsigned));
+        barray = (struct msr_batch_array *) libmsr_calloc(arrsize, sizeof(struct msr_batch_array));
+        int i;
+        for (i = 0; i < arrsize; i++)
+        {
+            sizearray[i] = 8;
+            barray[i].ops = NULL;
+        }
+        barray[batchnum].ops = (struct msr_batch_op *) libmsr_calloc(sizearray[batchnum], sizeof(struct msr_batch_op));
+        return 0;
+}
+
 uint64_t * batch_ops(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnum, const int type)
 {
     static struct msr_batch_array * batch = NULL;
     static unsigned arrsize = 1;
     static unsigned * size = NULL;
-    static int batchfd;
+    static int batchfd = 0;
 #ifdef BATCH_DEBUG
     fprintf(stderr, "BATCH: (batch_ops) msr %lx, cpu %lu, dest %p, batchnum %d\n", msr, cpu, dest, batchnum);
 #endif
     if (batch == NULL || size == NULL)
     {
+        //init_batch_ops(&batch, &size, arrsize, batchnum);
+
 #ifdef BATCH_DEBUG
         fprintf(stderr, "BATCH: initializing batch ops\n");
 #endif
@@ -153,6 +230,7 @@ uint64_t * batch_ops(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchn
             // TODO: this should probably return an error code here
             exit(-1);
         }
+
     }
     if (batchnum + 1 > arrsize)
     {
@@ -186,10 +264,12 @@ uint64_t * batch_ops(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchn
     }
     if (type)
     {
+        // perform batch operation
+//        do_batch_op(batch, batchnum, type);
+
 #ifdef BATCH_DEBUG
         fprintf(stderr, "BATCH: %s MSRs, numops %u\n", (type == BATCH_READ ? "reading" : "writing"), batch[batchnum].numops);
 #endif
-        // perform batch operation
         // if write switch flag
         if ((type == BATCH_WRITE && batch[batchnum].ops[0].isrdmsr) ||
             (type == BATCH_READ && !batch[batchnum].ops[0].isrdmsr))
@@ -226,6 +306,7 @@ uint64_t * batch_ops(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchn
                     &batch[batchnum].ops[k].msrdata);
         }
 #endif
+
         return 0;
     }
 #ifdef BATCH_DEBUG
@@ -236,8 +317,6 @@ uint64_t * batch_ops(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchn
     batch[batchnum].ops[batch[batchnum].numops - 1].cpu = (__u16) cpu;
     batch[batchnum].ops[batch[batchnum].numops - 1].isrdmsr = (__u8) 1;
     *dest = (uint64_t *) &batch[batchnum].ops[batch[batchnum].numops - 1].msrdata;
-        // We modify data elsewhere
-        //batch[batchnum].ops[batch[batchnum].numops - 1].msrdata;
 #ifdef BATCH_DEBUG
     fprintf(stderr, "BATCH: destination of msr %lx on core %lx (at %p) is %p\n", msr, cpu, 
             dest, &batch[batchnum].ops[batch[batchnum].numops - 1].msrdata);
@@ -420,9 +499,6 @@ int init_msr()
     // open the file descriptor for each device's msr interface
 	for (dev_idx=0; dev_idx < (numDevs); dev_idx++)
     {
-#ifdef LIBMSR_DEBUG
-        fprintf(stderr, "found module %d\n", dev_idx);
-#endif
         // use the msr_safe module, or default to the msr module
         if (kerneltype)
         {
@@ -431,9 +507,6 @@ int init_msr()
         else
         {
             snprintf(filename, FILENAME_SIZE, "/dev/cpu/%d/msr_safe", dev_idx);
-#ifdef USE_MSR_SAFE_BETA
-            snprintf(filename, FILENAME_SIZE, "/dev/cpu/%d/msr_safe_beta", dev_idx);
-#endif
         }
         // check if the module is there, if not return the appropriate error message.
         if (stat(filename, &statbuf))
@@ -445,7 +518,7 @@ int init_msr()
                 fprintf(stderr, "%s %s::%d FATAL ERROR: could not stat any valid module. Aborting...\n", 
                         getenv("HOSTNAME"), __FILE__, __LINE__);
                 // could not find any msr module so exit
-                exit(1);
+                return -1;
             }
             // could not find msr_safe so try the msr module
             fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s.\n", 
@@ -468,7 +541,7 @@ int init_msr()
                 fprintf(stderr, "%s %s::%d FATAL ERROR: could not find any valid module with correct permissions. Aborting...\n", 
                         getenv("HOSTNAME"), __FILE__, __LINE__);
                 // could not find any msr module with RW permissions, so exit
-                exit(2);
+                return -1;
             }
             continue;
 		}
@@ -485,7 +558,7 @@ int init_msr()
                 fprintf(stderr, "%s %s::%d FATAL ERROR: could not open any valid module. Aborting...\n", 
                         getenv("HOSTNAME"), __FILE__, __LINE__);
                 // could not open any msr module, so exit
-                exit(3);
+                return -1;
             }
             kerneltype = 1;
             dev_idx = -1;

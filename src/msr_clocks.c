@@ -1,7 +1,11 @@
-/*
- * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
+/* msr_clocks.c
+ *
+ * Low-level msr interface.
+ *
+ * Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
  * Written by Barry Rountree, rountree@llnl.gov.
+ * Modified by Scott Walker, walker91@llnl.gov
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -67,26 +71,6 @@ static int clocks_storage(uint64_t *** aperf_val, uint64_t *** mperf_val, uint64
     return 0;
 }
 
-void read_all_clocks(uint64_t ** aperf, uint64_t ** mperf, uint64_t ** tsc)
-{
-    read_batch(CLOCKS_DATA);
-}
-
-void 
-read_all_aperf(uint64_t **aperf){
-    read_batch(CLOCKS_DATA);
-}
-
-void
-read_all_mperf(uint64_t **mperf){
-    read_batch(CLOCKS_DATA);
-}
-
-void 
-read_all_tsc(uint64_t **tsc){
-    read_batch(CLOCKS_DATA);
-}
-
 void
 dump_clocks_terse_label(FILE *writeFile){
 	int thread_idx;
@@ -113,8 +97,7 @@ dump_clocks_terse(FILE *writeFile){
         clocks_storage(&aperf_val, &mperf_val, &tsc_val);
     }
 	int thread_idx;
-    // TODO: could be replaced with read_batch
-    read_all_clocks(aperf_val, mperf_val, tsc_val);
+    read_batch(CLOCKS_DATA);
 	for(thread_idx=0; thread_idx<totalThreads; thread_idx++){
 		fprintf(writeFile, "%20lu %20lu %20lu ", 
 			*aperf_val[thread_idx], *mperf_val[thread_idx], *tsc_val[thread_idx]);
@@ -136,8 +119,7 @@ void dump_clocks_readable(FILE * writeFile)
     fprintf(stderr, "DEBUG: (clocks_readable) totalThreads is %lu\n", totalThreads);
 #endif
 	int thread_idx;
-    // TODO: could be replaced with read_batch
-    read_all_clocks(aperf_val, mperf_val, tsc_val);
+    read_batch(CLOCKS_DATA);
 	for(thread_idx=0; thread_idx<totalThreads; thread_idx++){
 		fprintf(writeFile, "aperf%02d:%20lu mperf%02d:%20lu tsc%02d:%20lu\n", 
 			thread_idx, *aperf_val[thread_idx], thread_idx, *mperf_val[thread_idx], 
