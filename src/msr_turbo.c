@@ -11,76 +11,76 @@
 						//
 #define IA32_PERF_CTL			0x199   // setting bit 32 high DISABLES turbo mode. This is the software control.
 
+int turbo_storage(uint64_t *** val)
+{
+    static uint64_t ** perf_ctl = NULL;
+    static int init = 1;
+    static uint64_t numDevs = 0;
+    if (init)
+    {
+        numDevs = num_devs();
+        perf_ctl = (uint64_t **) libmsr_malloc(numDevs * sizeof(uint64_t *));
+        init = 0;
+    }
+    if (val)
+    {
+        *val = perf_ctl;
+    }
+    return 0;
+}
+
 void
 disable_turbo(){
 
 	int j;
-    static uint64_t sockets = 0;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t threadsPerCore = 0;
-    if (!sockets || !coresPerSocket || !threadsPerCore)
+    static uint64_t numDevs = 0;
+    static uint64_t ** val = NULL;
+    if (!numDevs)
     {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+        numDevs = num_devs();
+        val = (uint64_t **) libmsr_malloc(numDevs * sizeof(uint64_t *));
+        turbo_storage(&val);
     }
-	uint64_t ** val = (uint64_t **) libmsr_malloc(NUM_DEVS_NEW * sizeof(uint64_t *));
-    if (val == NULL)
-    {
-        MEMERR_GENERIC;
-        exit(-1);
-    }
-	// Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 0.
-	load_core_batch(IA32_PERF_CTL, val, PERF_CTL);
+    // Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 0.
     read_batch(PERF_CTL);
-	for(j=0; j<NUM_DEVS_NEW; j++){
+	for(j=0; j<numDevs; j++){
 		*val[j] |= ((uint64_t)1) << 32;
 	}
     write_batch(PERF_CTL);
-	//write_all_cores_v(IA32_PERF_CTL, &val[0] );
-    libmsr_free(val);
 }
 
 
 void
 enable_turbo(){
 	int j;
-    static uint64_t sockets = 0;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t threadsPerCore = 0;
-    if (!sockets || !coresPerSocket || !threadsPerCore)
+    static uint64_t numDevs = 0;
+    static uint64_t ** val =  NULL;
+    if (!numDevs)
     {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+        numDevs = num_devs();
+        val = (uint64_t **) libmsr_malloc(numDevs * sizeof(uint64_t *));
+        turbo_storage(&val);
     }
-	uint64_t ** val = (uint64_t **) libmsr_malloc(NUM_DEVS_NEW * sizeof(uint64_t *));
-    if (val == NULL)
-    {
-        MEMERR_GENERIC;
-        exit(-1);
-    }
-	// Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 1.
-	load_core_batch(IA32_PERF_CTL, val , PERF_CTL);
+    // Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 1.
     read_batch(PERF_CTL);
-	for(j=0; j<NUM_DEVS_NEW;j++){
+	for(j=0; j<numDevs;j++){
 		*val[j] &= ~(((uint64_t)1) << 32);
-    fprintf(stderr, "0x%016lx\t", *val[j] & (((uint64_t)1)<<32));
+        fprintf(stderr, "0x%016lx\t", *val[j] & (((uint64_t)1)<<32));
 	}
 
     write_batch(PERF_CTL);
-	//write_all_cores_v(IA32_PERF_CTL, &val[0] );
-    libmsr_free(val);
 }
 
 void
 dump_turbo(FILE * writeFile){
 	int core;
-    static uint64_t sockets = 0;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t threadsPerCore = 0;
-    if (!sockets || !coresPerSocket || !threadsPerCore)
+    static uint64_t numDevs = 0;
+    if (!numDevs)
     {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+        numDevs = num_devs();
     }
 	uint64_t val;
-    for(core=0; core<NUM_DEVS_NEW; core++){
+    for(core=0; core<numDevs; core++){
         read_msr_by_idx(core, MSR_MISC_ENABLE, &val);
         fprintf(writeFile, "Core: %d\n", core);
         fprintf(writeFile, "0x%016lx\t", val & (((uint64_t)1)<<38));

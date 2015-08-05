@@ -40,7 +40,7 @@ void printData(int i)
     static uint64_t sockets = 0;
     if (!sockets)
     {
-        core_config(NULL, NULL, &sockets, NULL);
+        sockets = num_sockets();
     }
 	signal(SIGALRM, printData);
 	struct timeval currentTime;

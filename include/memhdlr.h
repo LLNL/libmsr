@@ -27,7 +27,7 @@
 // These functions are for libmsr use only. Use outside of libmsr may cause
 // segfaults or disrupt libmsr functions.
 
-#define MEMHDLR_DEBUG
+//#define MEMHDLR_DEBUG
 #define MEMERR_GENERIC (fprintf(stderr, "%s %s::%d ERROR: could not allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__))
 
 enum

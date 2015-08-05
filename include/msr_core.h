@@ -30,6 +30,7 @@
 #define NUM_CORES_NEW (sockets * coresPerSocket)
 // this is the same as num_devs
 #define NUM_THREADS_NEW (sockets * coresPerSocket * threadsPerCore)
+#define COORD_INDEXING ((thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core)
 
 /* MASK_RANGE
  * Create a mask from bit m to n.
@@ -122,6 +123,11 @@ struct msr_batch_array {
 	struct msr_batch_op *ops;	/* In: Array[numops] of operations */
 } msr_batch_array;
 
+uint64_t num_cores();
+uint64_t num_sockets();
+uint64_t num_devs();
+uint64_t cores_per_socket();
+
 int init_msr();
 int finalize_msr(const int restore);
 
@@ -143,15 +149,6 @@ int read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val );
 int write_msr_by_coord( unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t  val );
 int read_msr_by_coord(  unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t *val );
 int read_msr_by_coord_batch(  unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t **val , int batchnum);
-
-/*
-int write_all_sockets(   off_t msr, uint64_t  val  );
-int write_all_sockets_v( off_t msr, uint64_t *val );
-int write_all_cores(     off_t msr, uint64_t  val  );
-int write_all_cores_v(   off_t msr, uint64_t *val );
-int write_all_threads(   off_t msr, uint64_t  **val  , const int batchnum);
-int write_all_threads_v( off_t msr, uint64_t **val , const int batchnum);
-*/
 
 int load_socket_batch(    off_t msr, uint64_t **val , const int batchnum);
 int load_core_batch(      off_t msr, uint64_t **val , const int batchnum);

@@ -189,7 +189,7 @@ void turbo_test()
 #define STRESS_T 1
 
 #ifdef STRESS_T
-char * args[] = {"--cpu", "64", "--io", "128", "--vm", "128", "--vm-bytes", "1G", "--timeout", "10s"};
+char * args[] = {"--cpu", "64", "--io", "128", "--vm", "128", "--vm-bytes", "1G", "--timeout", "5s"};
 #endif
 
 void rapl_r_test(struct rapl_data ** rd)
@@ -214,7 +214,7 @@ void rapl_r_test(struct rapl_data ** rd)
     if (pid == 0)
     {
         fprintf(stderr, "executing stress test\n");
-        execve("/home/walker91/libmsr-walker/test/stress-ng", args, NULL);
+        execve("/g/g19/walker91/Projects/libmsr-walker/test/stress-ng", args, NULL);
         exit(1);
     }
     else if (pid > 0)
