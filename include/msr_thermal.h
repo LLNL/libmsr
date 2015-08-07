@@ -1,8 +1,13 @@
 /* msr_thermal.h
  *
- * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
+ * Low-level msr interface.
+ *
+ * Copyright (c) 2013-2015, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
- * Written by Barry Rountree, rountree@llnl.gov.
+ * Written by Barry Rountree, rountree@llnl.gov
+ *            Scott Walker,   walker91@llnl.gov
+ *            Kathleen Shoga, shoga1@llnl.gov
+ *
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -21,9 +26,6 @@
  * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-/* msrThermal.h
- *
-*/
 #ifndef MSR_THERMAL_H
 #define MSR_THERMAL_H
 #include <stdio.h>

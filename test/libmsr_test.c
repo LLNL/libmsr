@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <sched.h>
 #include <stdio.h>
 #include <sys/wait.h>
 #include <stdlib.h>
@@ -186,15 +187,25 @@ void turbo_test()
     dump_turbo(stdout);
 }
 
-#define STRESS_T 1
+// NOTE: to use this, compile a NAS parallel benchmark of your choice and modify the path below
+//       you will have to compile with the -D_GNU_SOURCE flag for setaffinity 
+//#define MEMTEST 1
 
-#ifdef STRESS_T
-char * args[] = {"--cpu", "64", "--io", "128", "--vm", "128", "--vm-bytes", "1G", "--timeout", "5s"};
+#ifdef MEMTEST
+char * args[] = {"mg.B.1"};
+const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-MPI/bin/mg.B.1";
 #endif
+//#ifdef PROCTEST
+//char *args[] = {"ep.B.24"};
+//const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-MPI/bin/ep.B.24";
+//#endif
+
+// We use 24 for Catalyst, (2 sockets * 12 cores)
+#define NPROCS 24 
 
 void rapl_r_test(struct rapl_data ** rd)
 {
-    struct rapl_data * r1;// = (struct rapl_data *) malloc(sizeof(struct rapl_data));
+    struct rapl_data * r1;
     struct rapl_data * r2;
 
     fprintf(stdout, "\nNEW\n\n");
@@ -207,22 +218,37 @@ void rapl_r_test(struct rapl_data ** rd)
     printf("pkg 2\n");
     dump_rapl_data(r2, stdout);
 
-#ifdef STRESS_T
-    int status = 0;
-    pid_t pid;
-    pid = fork();
-    if (pid == 0)
-    {
-        fprintf(stderr, "executing stress test\n");
-        execve("/g/g19/walker91/Projects/libmsr-walker/test/stress-ng", args, NULL);
-        exit(1);
+#ifdef MEMTEST
+   unsigned nprocs = NPROCS;
+   pid_t pid[NPROCS];
+   int status[NPROCS];
+   cpu_set_t cpuselect;
+
+   int i;
+   for (i = 0; i < nprocs; i++)
+   {   
+       CPU_ZERO(&cpuselect);
+       CPU_SET(i, &cpuselect);
+       pid[i] = fork();
+       if (pid[i] == 0)
+       {   
+           // this is just testing on 1 node 
+           sched_setaffinity(0, sizeof(cpu_set_t), &cpuselect);
+           fprintf(stderr, "executing stress test\n");
+           execve(path, args, NULL);
+           exit(1);
+       }
     }
-    else if (pid > 0)
-    {
-        fprintf(stderr, "waiting for test to complete\n");
-        wait(&status);
+    fprintf(stderr, "waiting for test to complete\n");
+    for (i = 0; i < nprocs; i++)
+    {   
+        wait(&status[i]);
     }
 #endif
+#ifndef MEMTEST
+    sleep(1);
+#endif
+
 
     poll_rapl_data(0, r1);
     poll_rapl_data(1, r2);
@@ -278,10 +304,6 @@ int main(int argc, char** argv)
     printf("\n\nPOWER INFO\n");
     dump_rapl_power_info(stdout);
     printf("\nEND POWER INFO\n\n");
-    rapl_finalize(&rd);
-    //printf("testing CSR read\n");
-    //read_csr(&test);
-    //printf("CSR has %lx\n", test);
     printf("thermal test\n");
     thermal_test();
 

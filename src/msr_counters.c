@@ -1,7 +1,30 @@
 /* msr_counters.c
  *
+ * Low-level msr interface.
+ *
+ * Copyright (c) 2013-2015, Lawrence Livermore National Security, LLC.  
+ * Produced at the Lawrence Livermore National Laboratory  
+ * Written by Barry Rountree, rountree@llnl.gov
+ *            Scott Walker,   walker91@llnl.gov
+ *            Kathleen Shoga, shoga1@llnl.gov
+ *
+ * All rights reserved. 
  * 
-*/
+ * This file is part of libmsr.
+ * 
+ * libmsr is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ * 
+ * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+ * details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License along
+ * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
+ */
 
 #include <stdio.h>
 #include <stdint.h>
@@ -23,7 +46,7 @@
 #define IA32_FIXED_CTR1			(0x30A)	// (R/W) Counts CPU_CLK_Unhalted.Core
 #define IA32_FIXED_CTR2			(0x30B)	// (R/W) Counts CPU_CLK_Unhalted.Ref
 
-//static struct ctr_data c0, c1, c2;
+
 static int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, struct ctr_data ** ctr2)
 {
     static struct ctr_data c0, c1, c2;
@@ -34,6 +57,7 @@ static int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, s
         init_ctr_data(&c0);
         init_ctr_data(&c1);
         init_ctr_data(&c2);
+        specify_batch_size(COUNTERS_DATA, 3UL * num_devs());
         load_thread_batch(IA32_FIXED_CTR0, c0.value, COUNTERS_DATA);
         load_thread_batch(IA32_FIXED_CTR1, c1.value, COUNTERS_DATA);
         load_thread_batch(IA32_FIXED_CTR2, c2.value, COUNTERS_DATA);
@@ -63,6 +87,7 @@ static int fixed_ctr_ctrl_storage(uint64_t *** perf_ctrl, uint64_t *** fixed_ctr
         totalThreads = num_devs();
         perf_global_ctrl = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
         fixed_ctr_ctrl   = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
+        specify_batch_size(COUNTERS_CTR_DATA, 2UL * num_devs());
         load_thread_batch(IA32_PERF_GLOBAL_CTRL, perf_global_ctrl, COUNTERS_CTR_DATA);
         load_thread_batch(IA32_FIXED_CTR_CTRL, fixed_ctr_ctrl, COUNTERS_CTR_DATA);
         init = 0;
@@ -141,8 +166,8 @@ set_fixed_ctr_ctrl(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data
     {
         totalThreads = num_devs();
         fixed_ctr_ctrl_storage(&perf_global_ctrl, &fixed_ctr_ctrl);
-        // dont need to read counters data, we are just zeroing things out
     }
+    // dont need to read counters data, we are just zeroing things out
     read_batch(COUNTERS_CTR_DATA);
 
 	int i;
@@ -176,32 +201,6 @@ get_fixed_counter_data(struct fixed_counter_data *data)
 {
 	data->num_counters = cpuid_num_fixed_perf_counters();
 	data->width = cpuid_width_fixed_perf_counters();
-}
-
-/* calculate difference between counters now, and last time of general sample
-void delta_fixed_ctr_values()
-{
-    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
-    if (!coresPerSocket || !threadsPerCore || !sockets)
-    {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-    }
-    int thread_idx;
-    for (thread_idx = 0; thread_idx < totalThreads; thread_idx++)
-    {
-        ctr0->old[thread_idx] = ctr0->value[thread_idx];
-        ctr1->old[thread_idx] = ctr1->value[thread_idx];
-        ctr2->old[thread_idx] = ctr2->value[thread_idx];
-    }
-    read_all_threads(IA32_FIXED_CTR0, ctr0->
-
-}
-*/
-
-// TODO: could replace all occurences with read_batch
-void 
-get_fixed_ctr_values(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data *ctr2){
-    read_batch(COUNTERS_DATA);
 }
 
 // These four functions use the structs defined in fixed_ctr_storage.
@@ -257,7 +256,7 @@ dump_fixed_terse(FILE *writeFile){
     fixed_ctr_storage(&c0, &c1, &c2);
 
 	int i;
-	get_fixed_ctr_values( c0, c1, c2 );
+    read_batch(COUNTERS_DATA);
 	for(i=0; i<totalThreads; i++){
 		fprintf(writeFile, "%lu %lu %lu ", *c0->value[i], *c1->value[i], *c2->value[i]);
 	}
@@ -297,7 +296,7 @@ void dump_fixed_readable(FILE * writeFile)
     fixed_ctr_storage(&c0, &c1, &c2);
 
 	int i;
-	get_fixed_ctr_values( c0, c1, c2 );
+    read_batch(COUNTERS_DATA);
 	for(i=0; i<totalThreads; i++){
 		fprintf(writeFile, "IR%02d: %lu UCC%02d:%lu URC%02d:%lu\n", i, *c0->value[i], i, *c1->value[i], i, *c2->value[i]);
 	}

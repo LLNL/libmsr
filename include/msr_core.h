@@ -1,8 +1,13 @@
-/* 
- * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
+/* msr_core.h
+ *
+ * Low-level msr interface.
+ *
+ * Copyright (c) 2013-2015, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
- * Written by Barry Rountree, rountree@llnl.gov.
- * Edited by Scott Walker, walker91@llnl.gov
+ * Written by Barry Rountree, rountree@llnl.gov
+ *            Scott Walker,   walker91@llnl.gov
+ *            Kathleen Shoga, shoga1@llnl.gov
+ *
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -20,6 +25,7 @@
  * You should have received a copy of the GNU Lesser General Public License along
  * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
  */
+
 #ifndef MSR_CORE_H
 #define MSR_CORE_H
 #include <stdint.h>
@@ -58,6 +64,7 @@ enum{
 
 enum{
     RAPL_DATA,
+    RAPL_UNIT,
     COUNTERS_DATA,
     COUNTERS_CTR_DATA,
     CLOCKS_DATA,
@@ -68,7 +75,9 @@ enum{
     PKG_THERM_INTERR,
     TEMP_TARGET,
     PERF_CTL,
-    RAPL_UNIT
+    USR_BATCH1, // Set aside for user defined use
+    USR_BATCH2, // Set aside for user defined use
+    USR_BATCH3  // Set aside for user defined use
 };
 
 enum
@@ -131,7 +140,7 @@ uint64_t cores_per_socket();
 int init_msr();
 int finalize_msr(const int restore);
 
-uint64_t * batch_ops(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnum, const int type);
+int specify_batch_size(int batchnum, size_t bsize);
 int read_batch(const int batchnum);
 int write_batch(const int batchnum);
 
