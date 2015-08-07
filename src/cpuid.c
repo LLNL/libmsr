@@ -27,8 +27,8 @@
  *
  * Initial cpuid function based off of an example on wikipedia:
  * http://en.wikipedia.org/wiki/CPUID#rax.3D0:_Get_vendor_ID
- *
  */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <sys/sysinfo.h>
