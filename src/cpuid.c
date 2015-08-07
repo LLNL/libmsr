@@ -1,12 +1,10 @@
-/* cpuid.c 
+/* cpuid.c
  *
- * Low-level msr interface.
- *
- * Copyright (c) 2013-2015, Lawrence Livermore National Security, LLC.  
- * Produced at the Lawrence Livermore National Laboratory  
- * Written by Barry Rountree, rountree@llnl.gov
- *            Scott Walker,   walker91@llnl.gov
- *            Kathleen Shoga, shoga1@llnl.gov
+ * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
+ * Produced at Lawrence Livermore National Laboratory  
+ * Written by  Barry Rountree, rountree@llnl.gov
+ *             Scott Walker,   walker91@llnl.gov
+ *             Kathleen Shoga, shoga1@llnl.gov
  *
  * All rights reserved. 
  * 
@@ -25,8 +23,10 @@
  * You should have received a copy of the GNU Lesser General Public License along
  * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
  *
- * Initial cpuid function based off of an example on wikipedia:
- * http://en.wikipedia.org/wiki/CPUID#rax.3D0:_Get_vendor_ID
+ * This material is based upon work supported by the U.S. Department
+ * of Energy's Lawrence Livermore National Laboratory. Office of
+ * Science, under Award number DE-AC52-07NA27344.
+ *
  */
 
 #include <stdio.h>
