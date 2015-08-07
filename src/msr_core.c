@@ -2,10 +2,12 @@
  *
  * Low-level msr interface.
  *
- * Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+ * Copyright (c) 2013-2015, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
- * Written by Barry Rountree, rountree@llnl.gov.
- * Modified by Scott Walker, walker91@llnl.gov
+ * Written by Barry Rountree, rountree@llnl.gov
+ *            Scott Walker,   walker91@llnl.gov
+ *            Kathleen Shoga, shoga1@llnl.gov
+ *
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -47,11 +49,7 @@
 #include "cpuid.h"
 
 #define LIBMSR_DEBUG_TAG "LIBMSR"
-//#define LIBMSR_DEBUG     1
 #define FILENAME_SIZE 1024
-//#define USE_MSR_SAFE_BETA 1
-
-//static int core_fd[NUM_DEVS];
 
 uint64_t num_cores()
 {
@@ -121,96 +119,15 @@ static int * core_fd(const int dev_idx)
     return NULL;
 }
 
-#define BATCH_DEBUG
+//#define BATCH_DEBUG 1
 
-static int do_batch_op(struct msr_batch_array * batch, int batchnum, int type)
-{
-    int batchfd = 0;
-#ifdef BATCH_DEBUG
-    fprintf(stderr, "BATCH: %s MSRs, numops %u\n", (type == BATCH_READ ? "reading" : "writing"), batch[batchnum].numops);
-#endif
-    if (batchfd == 0)
-    {
-        if ((batchfd = open(MSR_BATCH_DIR, O_RDWR)) < 0)
-        {
-            perror(MSR_BATCH_DIR);
-            // TODO: this should probably return an error code here
-            exit(-1);
-        }
-    }
-
-    // if write switch flag
-    if ((type == BATCH_WRITE && batch[batchnum].ops[0].isrdmsr) ||
-        (type == BATCH_READ && !batch[batchnum].ops[0].isrdmsr))
-    {
-        __u8 readflag = (__u8) (type == BATCH_READ ? 1 : 0);
-        int j;
-        for (j = 0; j < batch[batchnum].numops; j++)
-        {
-            batch[batchnum].ops[j].isrdmsr = readflag;
-        }
-    }
-    int res;
-    res = ioctl(batchfd, X86_IOC_MSR_BATCH, &batch[batchnum]);
-    if ( res < 0)
-    {
-        perror("IOctl failed");
-        fprintf(stderr, "ioctl returned %d\n", res);
-        int i;
-        for (i = 0; i < batch[batchnum].numops; i++)
-        {
-            if (batch[batchnum].ops[i].err)
-            {
-                fprintf(stderr, "CPU %d, RDMSR %x, ERR (%s)\n", batch[batchnum].ops[i].cpu, batch[batchnum].ops[i].msr,
-                        strerror(batch[batchnum].ops[i].err));
-            }
-        }
-    }
-#ifdef BATCH_DEBUG
-    int k;
-    for (k = 0; k < batch[batchnum].numops; k++)
-    {
-        fprintf(stderr, "BATCH %d: msr 0x%x cpu %u data 0x%lx (at %p)\n", batchnum, batch[batchnum].ops[k].msr,
-                batch[batchnum].ops[k].cpu, (uint64_t) batch[batchnum].ops[k].msrdata,
-                &batch[batchnum].ops[k].msrdata);
-    }
-#endif
-    return 0;
-}
-
-static int init_batch_ops(struct msr_batch_array ** batch, unsigned ** size, unsigned arrsize, int batchnum)
-{
-#ifdef BATCH_DEBUG
-        fprintf(stderr, "BATCH: initializing batch ops\n");
-#endif
-        struct msr_batch_array * barray = *batch;
-        unsigned * sizearray = *size;
-        arrsize = (batchnum + 1 > arrsize ? batchnum + 1 : arrsize);
-        sizearray = (unsigned *) libmsr_calloc(arrsize, sizeof(unsigned));
-        barray = (struct msr_batch_array *) libmsr_calloc(arrsize, sizeof(struct msr_batch_array));
-        int i;
-        for (i = 0; i < arrsize; i++)
-        {
-            sizearray[i] = 8;
-            barray[i].ops = NULL;
-        }
-        barray[batchnum].ops = (struct msr_batch_op *) libmsr_calloc(sizearray[batchnum], sizeof(struct msr_batch_op));
-        return 0;
-}
-
-uint64_t * batch_ops(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnum, const int type)
+static int batch_storage(struct msr_batch_array ** batchsel, const int batchnum, unsigned ** opssize)
 {
     static struct msr_batch_array * batch = NULL;
     static unsigned arrsize = 1;
     static unsigned * size = NULL;
-    static int batchfd = 0;
-#ifdef BATCH_DEBUG
-    fprintf(stderr, "BATCH: (batch_ops) msr %lx, cpu %lu, dest %p, batchnum %d\n", msr, cpu, dest, batchnum);
-#endif
-    if (batch == NULL || size == NULL)
+    if (batch == NULL)
     {
-        //init_batch_ops(&batch, &size, arrsize, batchnum);
-
 #ifdef BATCH_DEBUG
         fprintf(stderr, "BATCH: initializing batch ops\n");
 #endif
@@ -222,106 +139,148 @@ uint64_t * batch_ops(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchn
         {
             size[i] = 8;
             batch[i].ops = NULL;
+            batch[i].numops = 0;
         }
-        batch[batchnum].ops = (struct msr_batch_op *) libmsr_calloc(size[batchnum], sizeof(struct msr_batch_op));
-        if ((batchfd = open(MSR_BATCH_DIR, O_RDWR)) < 0)
-        {
-            perror(MSR_BATCH_DIR);
-            // TODO: this should probably return an error code here
-            exit(-1);
-        }
-
     }
     if (batchnum + 1 > arrsize)
     {
 #ifdef BATCH_DEBUG
         fprintf(stderr, "BATCH: reallocating array of batches for batch %d\n", batchnum);
 #endif
+        unsigned oldsize = arrsize;
         arrsize = batchnum + 1;
         batch = (struct msr_batch_array *) libmsr_realloc(batch, arrsize * sizeof(struct msr_batch_array));
         size = (unsigned *) libmsr_realloc(size, arrsize * sizeof(unsigned));
-        size[batchnum] = 8;
-        batch[batchnum].ops = (struct msr_batch_op *) libmsr_calloc(size[batchnum], sizeof(struct msr_batch_op));
+        for (; oldsize < arrsize; oldsize++)
+        {
+            batch[oldsize].ops = NULL;
+            batch[oldsize].numops = 0;
+            size[oldsize] = 8;
+        }
     }
-    if (batch[batchnum].ops == NULL)
+    *batchsel = &batch[batchnum];
+    if (opssize)
     {
-        size[batchnum] = 8;
-        batch[batchnum].ops = (struct msr_batch_op *) libmsr_calloc(size[batchnum], sizeof(struct msr_batch_op));
+        *opssize = &size[batchnum];
     }
-    if (batch[batchnum].numops >= size[batchnum])
+    return 0;
+}
+
+int specify_batch_size(int batchnum, size_t bsize)
+{
+    unsigned * size = NULL;
+    struct msr_batch_array * batch = NULL;
+    if (batch_storage(&batch, batchnum, &size))
     {
+        return -1;
+    }
+    *size = bsize;
+    if (batch->ops != NULL)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: conflicting batch pointers for batch %d, was %p\n", getenv("HOSTNAME"), 
+                __FILE__, __LINE__, batchnum, batch);
+    }
+    batch->ops = (struct msr_batch_op *) libmsr_calloc(*size, sizeof(struct msr_batch_op));
+    int i;
+    for (i = batch->numops; i < *size; i++)
+    {
+        batch->ops[i].err = 0;
+    }
+    return 0;
+}
+
+static int do_batch_op(int batchnum, int type)
+{
+    static int batchfd = 0;
+    struct msr_batch_array * batch = NULL;
+    if (batchfd == 0)
+    {
+        if ((batchfd = open(MSR_BATCH_DIR, O_RDWR)) < 0)
+        {
+            perror(MSR_BATCH_DIR);
+            return -1;
+        }
+    }
+    if (batch_storage(&batch, batchnum, NULL))
+    {
+        return -1;
+    }
 #ifdef BATCH_DEBUG
-    fprintf(stderr, "BATCH: reallocating batch array for batchnum %d (current %d)\n", batchnum, size[batchnum]);
+    fprintf(stderr, "BATCH: %s MSRs, numops %u\n", (type == BATCH_READ ? "reading" : "writing"), batch->numops);
 #endif
-        size[batchnum] *= 2;
-        batch[batchnum].ops = (struct msr_batch_op *) libmsr_realloc(batch[batchnum].ops, 
-                              size[batchnum] * sizeof(struct msr_batch_op));
+
+    // if current flag is the opposite type switch the flags
+    if ((type == BATCH_WRITE && batch->ops[0].isrdmsr) ||
+        (type == BATCH_READ && !batch->ops[0].isrdmsr))
+    {
+        __u8 readflag = (__u8) (type == BATCH_READ ? 1 : 0);
+        int j;
+        for (j = 0; j < batch->numops; j++)
+        {
+            batch->ops[j].isrdmsr = readflag;
+        }
+    }
+    int res;
+    res = ioctl(batchfd, X86_IOC_MSR_BATCH, batch);
+    if ( res < 0)
+    {
+        perror("IOctl failed");
+        fprintf(stderr, "ioctl returned %d\n", res);
         int i;
-        for (i = batch[batchnum].numops; i < size[batchnum]; i++)
+        for (i = 0; i < batch->numops; i++)
         {
-            batch[batchnum].ops[i].err = 0;
+            if (batch->ops[i].err)
+            {
+                fprintf(stderr, "CPU %d, RDMSR %x, ERR (%s)\n", batch->ops[i].cpu, batch->ops[i].msr,
+                        strerror(batch->ops[i].err));
+            }
         }
     }
-    if (type)
+#ifdef BATCH_DEBUG
+    int k;
+    for (k = 0; k < batch->numops; k++)
     {
-        // perform batch operation
-//        do_batch_op(batch, batchnum, type);
-
-#ifdef BATCH_DEBUG
-        fprintf(stderr, "BATCH: %s MSRs, numops %u\n", (type == BATCH_READ ? "reading" : "writing"), batch[batchnum].numops);
-#endif
-        // if write switch flag
-        if ((type == BATCH_WRITE && batch[batchnum].ops[0].isrdmsr) ||
-            (type == BATCH_READ && !batch[batchnum].ops[0].isrdmsr))
-        {
-            __u8 readflag = (__u8) (type == BATCH_READ ? 1 : 0);
-            int j;
-            for (j = 0; j < batch[batchnum].numops; j++)
-            {
-                batch[batchnum].ops[j].isrdmsr = readflag;
-            }
-        }
-        int res;
-        res = ioctl(batchfd, X86_IOC_MSR_BATCH, &batch[batchnum]);
-        if ( res < 0)
-        {
-            perror("IOctl failed");
-            fprintf(stderr, "ioctl returned %d\n", res);
-            int i;
-            for (i = 0; i < batch[batchnum].numops; i++)
-            {
-                if (batch[batchnum].ops[i].err)
-                {
-                    fprintf(stderr, "CPU %d, RDMSR %x, ERR (%s)\n", batch[batchnum].ops[i].cpu, batch[batchnum].ops[i].msr,
-                            strerror(batch[batchnum].ops[i].err));
-                }
-            }
-        }
-#ifdef BATCH_DEBUG
-        int k;
-        for (k = 0; k < batch[batchnum].numops; k++)
-        {
-            fprintf(stderr, "BATCH %d: msr 0x%x cpu %u data 0x%lx (at %p)\n", batchnum, batch[batchnum].ops[k].msr,
-                    batch[batchnum].ops[k].cpu, (uint64_t) batch[batchnum].ops[k].msrdata,
-                    &batch[batchnum].ops[k].msrdata);
-        }
-#endif
-
-        return 0;
+        fprintf(stderr, "BATCH %d: msr 0x%x cpu %u data 0x%lx (at %p)\n", batchnum, batch->ops[k].msr,
+                batch->ops[k].cpu, (uint64_t) batch->ops[k].msrdata,
+                &batch->ops[k].msrdata);
     }
+#endif
+    return 0;
+}
+
+static int create_batch_op(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnum)
+{
+    struct msr_batch_array * batch = NULL;
+    unsigned * size = NULL;
 #ifdef BATCH_DEBUG
     fprintf(stderr, "BATCH: creating new batch operation\n");
 #endif
-    batch[batchnum].numops++;
-    batch[batchnum].ops[batch[batchnum].numops - 1].msr = msr;
-    batch[batchnum].ops[batch[batchnum].numops - 1].cpu = (__u16) cpu;
-    batch[batchnum].ops[batch[batchnum].numops - 1].isrdmsr = (__u8) 1;
-    *dest = (uint64_t *) &batch[batchnum].ops[batch[batchnum].numops - 1].msrdata;
+    if (batch_storage(&batch, batchnum, &size))
+    {
+        return -1;
+    }
+
+#ifdef BATCH_DEBUG
+    fprintf(stderr, "BATCH: batch %d is at %p\n", batchnum, batch);
+#endif
+    if (batch->numops >= *size)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: batch %d is full, you probably used the wrong size\n", getenv("HOSTNAME"),
+                __FILE__, __LINE__, batchnum);
+        return -1; 
+    }
+
+    batch->numops++;
+    batch->ops[batch->numops - 1].msr = msr;
+    batch->ops[batch->numops - 1].cpu = (__u16) cpu;
+    batch->ops[batch->numops - 1].isrdmsr = (__u8) 1;
+    *dest = (uint64_t *) &batch->ops[batch->numops - 1].msrdata;
 #ifdef BATCH_DEBUG
     fprintf(stderr, "BATCH: destination of msr %lx on core %lx (at %p) is %p\n", msr, cpu, 
-            dest, &batch[batchnum].ops[batch[batchnum].numops - 1].msrdata);
+            dest, &batch->ops[batch->numops - 1].msrdata);
 #endif
     return 0;
+
 }
 
 int core_config(uint64_t * coresPerSocket, uint64_t * threadsPerCore, uint64_t * sysSockets, int * HTenabled)
@@ -548,7 +507,6 @@ int init_msr()
         // try to open the msr module, if you cant then return the appropriate error message
         fileDescriptor = core_fd(dev_idx);
         *fileDescriptor = open(filename, O_RDWR);
-		//core_fd[dev_idx] = open( filename, O_RDWR );
 		if(*fileDescriptor == -1)
         {
             fprintf(stderr, "%s %s::%d  ERROR: could not open %s: %s.\n", 
@@ -630,10 +588,8 @@ write_msr_by_coord( unsigned socket, unsigned core, unsigned thread, off_t msr, 
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s %s::%d (write_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx) val=%lu\n", 
             getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr, val);
-    //return write_msr_by_idx_and_verify( (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, val );
     return write_msr_by_idx_and_verify( COORD_INDEXING, msr, val );
 #endif
-    //return write_msr_by_idx( (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, val );
     return write_msr_by_idx( COORD_INDEXING, msr, val );
 }
 
@@ -652,7 +608,6 @@ read_msr_by_coord(  unsigned socket, unsigned core, unsigned thread, off_t msr, 
     {
         core_config(&coresPerSocket, &threadsPerCore, NULL, NULL);
     }
-	//return read_msr_by_idx( (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, val );
 	return read_msr_by_idx( COORD_INDEXING, msr, val );
 }
 
@@ -675,20 +630,19 @@ read_msr_by_coord_batch(  unsigned socket, unsigned core, unsigned thread, off_t
     fprintf(stderr, "DEBUG: passed operation on msr 0x%lx (socket %u, core %u, thread %u) to BATCH OPS with destination %p\n", 
             msr, socket, core, thread, val);
 #endif
-    //batch_ops(msr, (thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, val, batchnum, BATCH_LOAD);
-    batch_ops(msr, COORD_INDEXING, val, batchnum, BATCH_LOAD);
+    create_batch_op(msr, COORD_INDEXING, val, batchnum);
     return 0;
 }
 
 int read_batch(const int batchnum)
 {
-    batch_ops(0, 0, NULL, batchnum, BATCH_READ);
+    do_batch_op(batchnum, BATCH_READ);
     return 0;
 }
 
 int write_batch(const int batchnum)
 {
-    batch_ops(0, 0, NULL, batchnum, BATCH_WRITE);
+    do_batch_op(batchnum, BATCH_WRITE);
     return 0;
 }
 
@@ -708,10 +662,10 @@ load_socket_batch(  off_t msr, uint64_t **val , int batchnum)
             __FILE__, __LINE__, msr, msr);
     fprintf(stderr, "sockets %lu, cores %lu, threads %lu\n", sockets, coresPerSocket, threadsPerCore);
 #endif
-	for(dev_idx=0, val_idx=0; dev_idx< NUM_DEVS_NEW;// (NUM_DEVS_NEW); 
+	for(dev_idx=0, val_idx=0; dev_idx< NUM_DEVS_NEW;
         dev_idx += coresPerSocket * threadsPerCore, val_idx++ )
     {
-        batch_ops(msr, dev_idx, &val[val_idx], batchnum, BATCH_LOAD);
+        create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
 	}
     return 0;
 }
@@ -733,7 +687,7 @@ load_core_batch( off_t msr, uint64_t **val , int batchnum)
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx += threadsPerCore, val_idx++ )
     {
-        batch_ops(msr, dev_idx, &val[val_idx], batchnum, BATCH_LOAD);
+        create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
 	}
     return 0;
 }
@@ -755,7 +709,7 @@ load_thread_batch( off_t msr, uint64_t **val , int batchnum)
 #endif
 	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx++, val_idx++ )
     {
-        batch_ops(msr, dev_idx, &val[val_idx], batchnum, BATCH_LOAD);
+        create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
 	}
     return 0;
 }

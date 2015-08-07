@@ -2,10 +2,12 @@
  *
  * Low-level msr interface.
  *
- * Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+ * Copyright (c) 2013-2015, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
- * Written by Barry Rountree, rountree@llnl.gov.
- * Modified by Scott Walker, walker91@llnl.gov
+ * Written by Barry Rountree, rountree@llnl.gov
+ *            Scott Walker,   walker91@llnl.gov
+ *            Kathleen Shoga, shoga1@llnl.gov
+ *
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -44,7 +46,7 @@
 #define IA32_FIXED_CTR1			(0x30A)	// (R/W) Counts CPU_CLK_Unhalted.Core
 #define IA32_FIXED_CTR2			(0x30B)	// (R/W) Counts CPU_CLK_Unhalted.Ref
 
-//static struct ctr_data c0, c1, c2;
+
 static int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, struct ctr_data ** ctr2)
 {
     static struct ctr_data c0, c1, c2;
@@ -55,6 +57,7 @@ static int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, s
         init_ctr_data(&c0);
         init_ctr_data(&c1);
         init_ctr_data(&c2);
+        specify_batch_size(COUNTERS_DATA, 3UL * num_devs());
         load_thread_batch(IA32_FIXED_CTR0, c0.value, COUNTERS_DATA);
         load_thread_batch(IA32_FIXED_CTR1, c1.value, COUNTERS_DATA);
         load_thread_batch(IA32_FIXED_CTR2, c2.value, COUNTERS_DATA);
@@ -84,6 +87,7 @@ static int fixed_ctr_ctrl_storage(uint64_t *** perf_ctrl, uint64_t *** fixed_ctr
         totalThreads = num_devs();
         perf_global_ctrl = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
         fixed_ctr_ctrl   = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
+        specify_batch_size(COUNTERS_CTR_DATA, 2UL * num_devs());
         load_thread_batch(IA32_PERF_GLOBAL_CTRL, perf_global_ctrl, COUNTERS_CTR_DATA);
         load_thread_batch(IA32_FIXED_CTR_CTRL, fixed_ctr_ctrl, COUNTERS_CTR_DATA);
         init = 0;

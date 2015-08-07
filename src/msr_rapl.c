@@ -2,10 +2,12 @@
  *
  * Low-level msr interface.
  *
- * Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+ * Copyright (c) 2013-2015, Lawrence Livermore National Security, LLC.  
  * Produced at the Lawrence Livermore National Laboratory  
- * Written by Barry Rountree, rountree@llnl.gov.
- * Modified by Scott Walker, walker91@llnl.gov
+ * Written by Barry Rountree, rountree@llnl.gov
+ *            Scott Walker,   walker91@llnl.gov
+ *            Kathleen Shoga, shoga1@llnl.gov
+ *
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -453,21 +455,6 @@ int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
     return 0;
 }
 
-// TO BE REMOVED
-// This will free the rapl and rapl flags data
-// You want to put this function after you are done using rapl functions.
-/*int rapl_finalize()
-{
-    struct rapl_data * rapl = NULL;
-    uint64_t * rapl_flags = NULL;
-
-    if (rapl_storage(&rapl, &rapl_flags))
-    {
-        return -1;
-    }
-    return 0;
-}*/
-
 // This translates any human supplied units to the format expected in the registers and vice-versa
 static int
 translate( const unsigned socket, uint64_t* bits, double* units, int type){
@@ -496,6 +483,7 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 		initialized=1;
         ru = (struct rapl_units *) libmsr_calloc(sockets, sizeof(struct rapl_units));
         val = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        specify_batch_size(RAPL_UNIT, num_sockets());
 		load_socket_batch( MSR_RAPL_POWER_UNIT, val , RAPL_UNIT);
         read_batch(RAPL_UNIT);
         // Initialize the units used for each socket
@@ -1476,7 +1464,6 @@ int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_dat
         }
     }
     // Get watts.
-    //assert(p->elapsed != 0.0 && (initFlags & (0x1 << socket)));
     if(p->elapsed > 0.0){
         // check to see if pkg power limit register exists
         if (*rapl_flags & PKG_POWER_LIMIT)
@@ -1488,12 +1475,10 @@ int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_dat
             p->dram_watts = p->dram_delta_joules / p->elapsed;
         }
     }else{
-        //p->pkg_watts  = -1999.0;
         p->pkg_watts = 0;
         // check to see if dram power limit register exists
         if (*rapl_flags & DRAM_POWER_LIMIT)
         {
-            //p->dram_watts = -1999.0;
             p->dram_watts = 0;
         }
     }
@@ -1502,6 +1487,36 @@ int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_dat
         result = p;
     }
     return 0;
+}
+
+static uint64_t rapl_data_batch_size(uint64_t * rapl_flags)
+{
+    uint64_t size = 0;
+    if (*rapl_flags & PKG_PERF_STATUS)
+    {
+        size++;
+    }
+    if (*rapl_flags & PKG_ENERGY_STATUS)
+    {
+        size++;
+    }
+    if (*rapl_flags & PP0_ENERGY_STATUS)
+    {
+        size++;
+    }
+    if (*rapl_flags & MSR_PP1_ENERGY_STATUS)
+    {
+        size++;
+    }
+    if (*rapl_flags & MSR_DRAM_ENERGY_STATUS)
+    {
+        size++;
+    }
+    if (*rapl_flags & MSR_PKG_ENERGY_STATUS)
+    {
+        size++;
+    }
+    return size;
 }
 
 // read all available rapl data for a given socket
@@ -1529,6 +1544,7 @@ int read_rapl_data(const unsigned socket)
         {
             return -1;
         }
+        specify_batch_size(RAPL_DATA, rapl_data_batch_size(rapl_flags) * num_sockets());
     }
     p = &rapl[socket];
 
