@@ -160,6 +160,8 @@ void counters_test()
 {
     dump_fixed_readable(stdout);
     fprintf(stdout, "\n");
+    dump_pmc_readable(stdout);
+    fprintf(stdout, "\n");
 }
 
 // TODO: test other parts of clocks
@@ -285,6 +287,7 @@ int main(int argc, char** argv)
     }
     printf("init done\n");
     enable_fixed_counters();
+    set_pmc_ctrl();
 	get_limits();
     unsigned i;
     for(i = 0; i < sockets; i++)
