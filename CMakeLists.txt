@@ -13,13 +13,13 @@ endif()
 #
 # Add install RPATH to all executables & libraries.
 #
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" index)
-if (index LESS 0)
-  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-endif()
+#set(CMAKE_SKIP_BUILD_RPATH FALSE)
+#set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+#set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+#list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" index)
+#if (index LESS 0)
+#  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+#endif()
 
 # libmsr headers are in top level include directory
 include_directories(${PROJECT_SOURCE_DIR}/include)
@@ -33,8 +33,9 @@ configure_file(
 
 install(FILES ${PROJECT_BINARY_DIR}/libmsr-config.cmake DESTINATION
 "${CMAKE_INSTALL_PREFIX}/share/cmake/libmsr")
-install(EXPORT libmsr-libs DESTINATION
+install(EXPORT libmsr-morita DESTINATION
 "${CMAKE_INSTALL_PREFIX}/share/cmake/libmsr")
 
 add_subdirectory(src)
 add_subdirectory(cmd)
+add_subdirectory(wrap)
