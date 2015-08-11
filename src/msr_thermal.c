@@ -1,10 +1,11 @@
-/* File: msr_thermal.c
+/* msr_thermal.c 
  *
- * Author: Kathleen Shoga
+ * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
+ * Produced at Lawrence Livermore National Laboratory  
+ * Written by  Barry Rountree, rountree@llnl.gov
+ *             Scott Walker,   walker91@llnl.gov
+ *             Kathleen Shoga, shoga1@llnl.gov
  *
- * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
- * Produced at the Lawrence Livermore National Laboratory  
- * Written by Kathleen Shoga, shoga1@llnl.gov.
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -21,6 +22,11 @@
  * 
  * You should have received a copy of the GNU Lesser General Public License along
  * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
+ *
+ * This material is based upon work supported by the U.S. Department
+ * of Energy's Lawrence Livermore National Laboratory. Office of
+ * Science, under Award number DE-AC52-07NA27344.
+ *
  */
 
 #include <stdio.h>
@@ -43,100 +49,175 @@
 
 // Static structs being defined
 
-static int thermal_storage(struct msr_temp_target ** t, struct therm_stat ** s, struct therm_interrupt ** i, 
-                           struct pkg_therm_stat ** p, struct pkg_therm_interrupt ** k)
+static int init_temp_target(struct msr_temp_target * tt)
+{
+    uint64_t sockets = num_sockets();
+    tt->raw = (uint64_t **) libmsr_malloc(sockets * sizeof(uint64_t *));
+    tt->temp_target = (uint64_t *) libmsr_malloc(sockets * sizeof(uint64_t));
+    specify_batch_size(TEMP_TARGET, num_sockets());
+    load_socket_batch(MSR_TEMPERATURE_TARGET, tt->raw, TEMP_TARGET);
+    return 0;
+}
+
+static int init_therm_stat(struct therm_stat * ts)
+{
+    uint64_t cores = num_cores();
+    ts->raw = (uint64_t **) libmsr_malloc(cores * sizeof(uint64_t *));
+    ts->status = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->status_log = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->PROCHOT_or_FORCEPR_event = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->PROCHOT_or_FORCEPR_log = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->crit_temp_status = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->crit_temp_log = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->therm_thresh1_status = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->therm_thresh1_log = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->therm_thresh2_status = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->therm_thresh2_log = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->power_limit_status = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->power_notification_log = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->readout = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->resolution_deg_celsius = (int *) libmsr_malloc(cores * sizeof(int));
+    ts->readout_valid = (int *) libmsr_malloc(cores * sizeof(int));
+    specify_batch_size(THERM_STAT, num_cores());
+    load_core_batch(IA32_THERM_STATUS, ts->raw, THERM_STAT);
+    return 0;
+}
+
+static int init_therm_interrupt(struct therm_interrupt * ti)
+{
+    uint64_t cores = num_cores();
+    ti->raw = (uint64_t **) libmsr_malloc(cores * sizeof(uint64_t *));
+    ti->high_temp_enable = (int *) libmsr_malloc(cores * sizeof(int));
+    ti->low_temp_enable = (int *) libmsr_malloc(cores * sizeof(int));
+    ti->PROCHOT_enable = (int *) libmsr_malloc(cores * sizeof(int));
+    ti->FORCEPR_enable = (int *) libmsr_malloc(cores * sizeof(int));
+    ti->crit_temp_enable = (int *) libmsr_malloc(cores * sizeof(int));
+    ti->thresh1_val = (int *) libmsr_malloc(cores * sizeof(int));
+    ti->thresh1_enable = (int *) libmsr_malloc(cores * sizeof(int));
+    ti->thresh2_val = (int *) libmsr_malloc(cores * sizeof(int));
+    ti->thresh2_enable = (int *) libmsr_malloc(cores * sizeof(int));
+    ti->pwr_limit_notification_enable = (int *) libmsr_malloc(cores * sizeof(int));
+    specify_batch_size(THERM_INTERR, num_cores());
+    load_core_batch(IA32_THERM_INTERRUPT, ti->raw, THERM_INTERR);
+    return 0;
+}
+
+static int init_pkg_therm_stat(struct pkg_therm_stat * pts)
+{
+    uint64_t sockets = num_sockets();
+    pts->raw = (uint64_t **) libmsr_malloc(sockets * sizeof(uint64_t *));
+    pts->status = (int *) libmsr_malloc(sockets * sizeof(int));
+    pts->status_log = (int *) libmsr_malloc(sockets * sizeof(int));
+    pts->PROCHOT_event = (int *) libmsr_malloc(sockets * sizeof(int));
+    pts->PROCHOT_log = (int *) libmsr_malloc(sockets * sizeof(int));
+    pts->crit_temp_status = (int *) libmsr_malloc(sockets * sizeof(int));
+    pts->crit_temp_log = (int *) libmsr_malloc(sockets * sizeof(int));
+    pts->therm_thresh1_status = (int *) libmsr_malloc(sockets * sizeof(int));
+    pts->therm_thresh1_log = (int *) libmsr_malloc(sockets * sizeof(int));
+    pts->therm_thresh2_status = (int *) libmsr_malloc(sockets * sizeof(int));
+    pts->therm_thresh2_log = (int *) libmsr_malloc(sockets * sizeof(int));
+    pts->power_limit_status = (int *) libmsr_malloc(sockets * sizeof(int));
+    pts->power_notification_log = (int *) libmsr_malloc(sockets * sizeof(int));
+    pts->readout = (int *) libmsr_malloc(sockets * sizeof(int));
+    specify_batch_size(PKG_THERM_STAT, num_sockets());
+    load_socket_batch(IA32_PACKAGE_THERM_STATUS, pts->raw, PKG_THERM_STAT);
+    return 0;
+}
+
+static int init_pkg_therm_interrupt(struct pkg_therm_interrupt * pti)
+{
+    uint64_t sockets = num_sockets();
+    pti->raw = (uint64_t **) libmsr_malloc(sockets * sizeof(uint64_t *));
+    pti->high_temp_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+    pti->low_temp_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+    pti->PROCHOT_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+    pti->crit_temp_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+    pti->thresh1_val = (int *) libmsr_malloc(sockets * sizeof(int));
+    pti->thresh1_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+    pti->thresh2_val = (int *) libmsr_malloc(sockets * sizeof(int));
+    pti->thresh2_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+    pti->pwr_limit_notification_enable = (int *) libmsr_malloc(sockets * sizeof(int));
+    specify_batch_size(PKG_THERM_INTERR, num_sockets());
+    load_socket_batch(IA32_PACKAGE_THERM_INTERRUPT, pti->raw, PKG_THERM_INTERR);
+    return 0;
+}
+
+static int store_temp_target(struct msr_temp_target ** tt)
 {
     static struct msr_temp_target t_target;
-    static struct therm_stat t_stat;
-    static struct therm_interrupt t_interrupt;
-    static struct pkg_therm_stat pkg_stat;
-    static struct pkg_therm_interrupt pkg_interrupt;
-    static uint64_t sockets = 0, coresPerSocket = 0;
     static int init = 1;
     if (init)
     {
+        init_temp_target(&t_target);
         init = 0;
-        core_config(&coresPerSocket, NULL, &sockets, NULL);
-        t_target.raw = (uint64_t *) libmsr_malloc(sockets * sizeof(uint64_t));
-        t_target.temp_target = (uint64_t *) libmsr_malloc(sockets * sizeof(uint64_t));
+    }
+    if (tt)
+    {
+        *tt = &t_target;
+    }
+    return 0;
+}
 
-        t_stat.raw = (uint64_t *) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t));
-        t_stat.status = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.status_log = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.PROCHOT_or_FORCEPR_event = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.PROCHOT_or_FORCEPR_log = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.crit_temp_status = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.crit_temp_log = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.therm_thresh1_status = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.therm_thresh1_log = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.therm_thresh2_status = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.therm_thresh2_log = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.power_limit_status = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.power_notification_log = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.readout = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.resolution_deg_celsius = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_stat.readout_valid = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+static int store_therm_stat(struct therm_stat ** ts)
+{
+    static struct therm_stat t_stat;
+    static int init = 1;
+    if (init)
+    {
+        init_therm_stat(&t_stat);
+        init = 0;
+    }
+    if (ts)
+    {
+        *ts = &t_stat;
+    }
+    return 0;
+}
 
-        t_interrupt.raw = (uint64_t *) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t));
-        t_interrupt.high_temp_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_interrupt.low_temp_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_interrupt.PROCHOT_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_interrupt.FORCEPR_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_interrupt.crit_temp_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_interrupt.thresh1_val = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_interrupt.thresh1_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_interrupt.thresh2_val = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_interrupt.thresh2_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
-        t_interrupt.pwr_limit_notification_enable = (int *) libmsr_malloc(NUM_CORES_NEW * sizeof(int));
+static int store_therm_interrupt(struct therm_interrupt ** ti)
+{
+    static struct therm_interrupt t_interrupt;
+    static int init = 1;
+    if (init)
+    {
+        init_therm_interrupt(&t_interrupt);
+        init = 0;
+    }
+    if (ti)
+    {
+        *ti = &t_interrupt;
+    }
+    return 0;
+}
 
-        pkg_stat.raw = (uint64_t *) libmsr_malloc(sockets * sizeof(uint64_t));
-        pkg_stat.status = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_stat.status_log = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_stat.PROCHOT_event = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_stat.PROCHOT_log = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_stat.crit_temp_status = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_stat.crit_temp_log = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_stat.therm_thresh1_status = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_stat.therm_thresh1_log = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_stat.therm_thresh2_status = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_stat.therm_thresh2_log = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_stat.power_limit_status = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_stat.power_notification_log = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_stat.readout = (int *) libmsr_malloc(sockets * sizeof(int));
+static int store_pkg_therm_stat(struct pkg_therm_stat ** ps)
+{
+    static struct pkg_therm_stat pkg_status;
+    static int init = 1;
+    if (init)
+    {
+        init_pkg_therm_stat(&pkg_status);
+        init = 0;
+    }
+    if (ps)
+    {
+        *ps = &pkg_status;
+    }
+    return 0;
+}
 
-        pkg_interrupt.raw = (uint64_t *) libmsr_malloc(sockets * sizeof(uint64_t));
-#ifdef LIBMSR_DEBUG
-        fprintf(stderr, "DEBUG: pkg_interrupt.raw is at %p\n", pkg_interrupt.raw);
-#endif
-        pkg_interrupt.high_temp_enable = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_interrupt.low_temp_enable = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_interrupt.PROCHOT_enable = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_interrupt.crit_temp_enable = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_interrupt.thresh1_val = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_interrupt.thresh1_enable = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_interrupt.thresh2_val = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_interrupt.thresh2_enable = (int *) libmsr_malloc(sockets * sizeof(int));
-        pkg_interrupt.pwr_limit_notification_enable = (int *) libmsr_malloc(sockets * sizeof(int));
-    }
-    if (t)
+static int store_pkg_therm_interrupt(struct pkg_therm_interrupt ** pi)
+{
+    static struct pkg_therm_interrupt pkg_interrupt;
+    static int init = 1;
+    if (init)
     {
-        *t = &t_target;
+        init_pkg_therm_interrupt(&pkg_interrupt);
+        init = 0;
     }
-    if (s)
+    if (pi)
     {
-        *s = &t_stat;
-    }
-    if (i)
-    {
-        *i = &t_interrupt;
-    }
-    if (p)
-    {
-        *p = &pkg_stat;
-    }
-    if (k)
-    {
-        *k = &pkg_interrupt;
+        *pi = &pkg_interrupt;
     }
     return 0;
 }
@@ -146,17 +227,16 @@ void is_init() {
     static struct msr_temp_target * t_target = NULL;
     if (t_target == NULL)
     {
-        thermal_storage(&t_target, NULL, NULL, NULL, NULL);
+        store_temp_target(&t_target);
     }
 	if(!initialized)
 	{
-        // TODO: shouldnt this set initialized to 1 now?
 		get_temp_target(t_target);
+        initialized = 1;
 	}
 	else
 		return;
 }
-
 
 //---------------------MSR_TEMPERATURE_TARGET functions--------------------------------------------------------
 
@@ -165,10 +245,9 @@ void get_temp_target(struct msr_temp_target *s)
     static uint64_t sockets = 0;
     if (!sockets)
     {
-        core_config(NULL, NULL, &sockets, NULL);
+        sockets = num_sockets();
     }
-	read_all_sockets(MSR_TEMPERATURE_TARGET, s->raw);
-	//read_msr_by_coord(socket, 0, 0, MSR_TEMPERATURE_TARGET, &(s->raw));
+    read_batch(TEMP_TARGET);
 	//s->raw = 64;
 	int i;
 	for(i=0; i<sockets; i++)
@@ -185,17 +264,11 @@ void get_temp_target(struct msr_temp_target *s)
 
 void get_therm_stat(struct therm_stat *s)
 {
-    static uint64_t coresPerSocket = 0;
-    static uint64_t sockets = 0;
-    if (!coresPerSocket || !sockets)
-    {
-        core_config(&coresPerSocket, NULL, &sockets, NULL);
-    }
-	read_all_cores(IA32_THERM_STATUS,s->raw);
-	//read_msr_by_coord(socket, core, 0, IA32_THERM_STATUS, &(s->raw));
+    uint64_t numCores = num_cores();
+    read_batch(THERM_STAT);
 	//s->raw = 56879; //in dec
 	int i;
-	for(i = 0; i< NUM_CORES_NEW ; i++)
+	for(i = 0; i< numCores ; i++)
 	{
 		s->status[i] = MASK_VAL(s->raw[i], 0,0);			// Indicates whether the digital thermal sensor
 									// high-temperature output signal (PROCHOT#) is
@@ -269,17 +342,11 @@ void get_therm_stat(struct therm_stat *s)
 
 void get_therm_interrupt(struct therm_interrupt *s)
 {
-    static uint64_t coresPerSocket = 0;
-    static uint64_t sockets = 0;
-    if (!coresPerSocket || !sockets)
-    {
-        core_config(&coresPerSocket, NULL, &sockets, NULL);
-    }
-	read_all_cores(IA32_THERM_INTERRUPT,s->raw);
-	//read_msr_by_coord(socket, core, 0, IA32_THERM_INTERRUPT, &(s->raw));
+    uint64_t numCores = num_cores();
+    read_batch(THERM_INTERR);
 	//s->raw = 64;	
 	int i;
-	for(i=0;i< NUM_CORES_NEW ;i++)
+	for(i=0;i< numCores ;i++)
 	{
 		s->high_temp_enable[i] = MASK_VAL(s->raw[i], 0, 0);	// Allows the BIOS to enable the generation of an inerrupt on the
 									// transition from low-temp to a high-temp threshold. 
@@ -326,13 +393,8 @@ void get_therm_interrupt(struct therm_interrupt *s)
 
 void get_pkg_therm_stat(struct pkg_therm_stat *s)
 {
-    static uint64_t sockets = 0;
-    if (!sockets)
-    {
-        core_config(NULL, NULL, &sockets, NULL);
-    }
-	read_all_sockets(IA32_PACKAGE_THERM_STATUS,s->raw);
-	//read_msr_by_coord( package, 0, 0, IA32_PACKAGE_THERM_STATUS, &(s->raw) ); 
+    uint64_t sockets = num_sockets();
+    read_batch(PKG_THERM_STAT);
 	//s->raw = 56879; //in dec
 	int i;
 	for(i=0;i<sockets ;i++)
@@ -392,13 +454,8 @@ void get_pkg_therm_stat(struct pkg_therm_stat *s)
 
 void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 {
-    static uint64_t sockets = 0;
-    if (!sockets)
-    {
-        core_config(NULL, NULL, &sockets, NULL);
-    }
-	read_all_sockets(IA32_PACKAGE_THERM_INTERRUPT, s->raw);
-	//read_msr_by_coord( package, 0, 0, IA32_PACKAGE_THERM_INTERRUPT, &(s->raw));
+    uint64_t sockets = num_sockets();
+    read_batch(PKG_THERM_INTERR);
 	//s->raw = 56879;
 	int i;
 	for(i=0;i<sockets ;i++)
@@ -437,18 +494,10 @@ void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 
 void set_therm_stat(struct therm_stat *s)
 {
-    static uint64_t sockets = 0;
-    static uint64_t coresPerSocket = 0;
-    if (!coresPerSocket || !sockets)
-    {
-        core_config(&coresPerSocket, NULL, &sockets, NULL);
-    }
-	uint64_t * msrVal;
-    msrVal = (uint64_t *) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t));
-	read_all_cores(IA32_THERM_STATUS,msrVal);
-	//read_msr_by_coord(socket, core, 0, IA32_THERM_STATUS, &msrVal);
+    uint64_t numCores = num_cores();
+    read_batch(THERM_STAT);
 	int i;
-	for(i=0;i<coresPerSocket ;i++)
+	for(i=0;i<numCores ;i++)
 	{
 		assert(s->status_log[i] == 0 || s->status_log[i] == 1);
 		assert(s->PROCHOT_or_FORCEPR_log[i] == 0 || s->PROCHOT_or_FORCEPR_log[i] == 1);
@@ -457,33 +506,23 @@ void set_therm_stat(struct therm_stat *s)
 		assert(s->therm_thresh2_log[i] == 0 || s->therm_thresh2_log[i] == 1);
 		assert(s->power_notification_log[i] == 0 || s->power_notification_log[i] == 1);
 		
-		msrVal[i] = (msrVal[i] & (~(1<<1))) | (s->status_log[i] << 1);
-		msrVal[i] = (msrVal[i] & (~(1<<3))) | (s->PROCHOT_or_FORCEPR_log[i] << 1);
-		msrVal[i] = (msrVal[i] & (~(1<<5))) | (s->crit_temp_log[i] << 1);
-		msrVal[i] = (msrVal[i] & (~(1<<7))) | (s->therm_thresh1_log[i] << 1);
-		msrVal[i] = (msrVal[i] & (~(1<<9))) | (s->therm_thresh2_log[i] << 1);
-		msrVal[i] = (msrVal[i] & (~(1<<11))) | (s->power_notification_log[i] << 1);
+		*s->raw[i] = (*s->raw[i] & (~(1<<1))) | (s->status_log[i] << 1);
+		*s->raw[i] = (*s->raw[i] & (~(1<<3))) | (s->PROCHOT_or_FORCEPR_log[i] << 1);
+		*s->raw[i] = (*s->raw[i] & (~(1<<5))) | (s->crit_temp_log[i] << 1);
+		*s->raw[i] = (*s->raw[i] & (~(1<<7))) | (s->therm_thresh1_log[i] << 1);
+		*s->raw[i] = (*s->raw[i] & (~(1<<9))) | (s->therm_thresh2_log[i] << 1);
+		*s->raw[i] = (*s->raw[i] & (~(1<<11))) | (s->power_notification_log[i] << 1);
 	}
-	write_all_cores_v(IA32_THERM_STATUS,msrVal);
-	//write_msr_by_coord(socket, core, 0, IA32_THERM_STATUS, msrVal);
+    write_batch(THERM_STAT);
 //Not sure if I should update the struct here or not.
 }
 
 void set_therm_interrupt(struct therm_interrupt *s)
 {
-    static uint64_t sockets = 0;
-    static uint64_t coresPerSocket = 0;
-    if (!coresPerSocket || !sockets)
-    {
-        core_config(&coresPerSocket, NULL, &sockets, NULL);
-    }
-	uint64_t * msrVal;
-    msrVal = (uint64_t *) libmsr_malloc(NUM_CORES_NEW * sizeof(uint64_t));
-
-	read_all_cores(IA32_THERM_INTERRUPT,msrVal);
-	//read_msr_by_coord(socket, core, 0, IA32_THERM_INTERRUPT, &msrVal);
+    uint64_t numCores = num_cores();
+    read_batch(THERM_INTERR);
 	int i;
-	for(i=0;i<coresPerSocket ;i++)
+	for(i=0;i<numCores ;i++)
 	{
 		assert(s->high_temp_enable[i] == 0 || s->high_temp_enable[i] == 1);
 		assert(s->low_temp_enable[i] == 0 || s->low_temp_enable[i] == 1);
@@ -494,33 +533,24 @@ void set_therm_interrupt(struct therm_interrupt *s)
 		assert(s->thresh2_enable[i] == 0 || s->thresh2_enable[i] == 1);
 		assert(s->pwr_limit_notification_enable[i] == 0 || s->pwr_limit_notification_enable[i] == 1);
 	
-		msrVal[i] = (msrVal[i] & (~(1<<0))) | (s->high_temp_enable[i] << 0);
-		msrVal[i] = (msrVal[i] & (~(1<<1))) | (s->low_temp_enable[i] << 1);
-		msrVal[i] = (msrVal[i] & (~(1<<2))) | (s->PROCHOT_enable[i] << 2);
-		msrVal[i] = (msrVal[i] & (~(1<<3))) | (s->FORCEPR_enable[i] << 3);
-		msrVal[i] = (msrVal[i] & (~(1<<4))) | (s->crit_temp_enable[i] << 4);
-		msrVal[i] = (msrVal[i] & (~(7<<8))) | (s->thresh1_val[i] << 8);
-		msrVal[i] = (msrVal[i] & (~(1<<15))) | (s->thresh1_enable[i] << 15);
-		msrVal[i] = (msrVal[i] & (~(7<<16))) | (s->thresh2_val[i] << 16);
-		msrVal[i] = (msrVal[i] & (~(1<<23))) | (s->thresh2_enable[i] << 23);
-		msrVal[i] = (msrVal[i] & (~(1<<24))) | (s->pwr_limit_notification_enable[i] << 24);
-
+		*s->raw[i] = (*s->raw[i] & (~(1<<0))) | (s->high_temp_enable[i] << 0);
+		*s->raw[i] = (*s->raw[i] & (~(1<<1))) | (s->low_temp_enable[i] << 1);
+		*s->raw[i] = (*s->raw[i] & (~(1<<2))) | (s->PROCHOT_enable[i] << 2);
+		*s->raw[i] = (*s->raw[i] & (~(1<<3))) | (s->FORCEPR_enable[i] << 3);
+		*s->raw[i] = (*s->raw[i] & (~(1<<4))) | (s->crit_temp_enable[i] << 4);
+		*s->raw[i] = (*s->raw[i] & (~(7<<8))) | (s->thresh1_val[i] << 8);
+		*s->raw[i] = (*s->raw[i] & (~(1<<15))) | (s->thresh1_enable[i] << 15);
+		*s->raw[i] = (*s->raw[i] & (~(7<<16))) | (s->thresh2_val[i] << 16);
+		*s->raw[i] = (*s->raw[i] & (~(1<<23))) | (s->thresh2_enable[i] << 23);
+		*s->raw[i] = (*s->raw[i] & (~(1<<24))) | (s->pwr_limit_notification_enable[i] << 24);
 	}
-	write_all_cores_v(IA32_THERM_INTERRUPT,msrVal);
-	//write_msr_by_coord(socket, core, 0, IA32_THERM_INTERRUPT, msrVal);
+    write_batch(THERM_INTERR);
 }
 
 void set_pkg_therm_stat(struct pkg_therm_stat *s)
 {
-    static uint64_t sockets = 0;
-    if (!sockets)
-    {
-        core_config(NULL, NULL, &sockets, NULL);
-    }
-	uint64_t * msrVal = NULL;
-    msrVal = (uint64_t *) libmsr_malloc(sockets * sizeof (uint64_t));
-	read_all_sockets(IA32_PACKAGE_THERM_STATUS,msrVal);
-	//read_msr_by_coord(package, 0, 0, IA32_PACKAGE_THERM_INTERRUPT, &msrVal);
+    uint64_t sockets = num_sockets();
+    read_batch(PKG_THERM_STAT);
 	int i;
 	for(i=0;i<sockets ;i++)
 	{
@@ -530,30 +560,21 @@ void set_pkg_therm_stat(struct pkg_therm_stat *s)
 		assert(s->therm_thresh1_log[i] == 0 || s->therm_thresh1_log[i] == 1);
 		assert(s->therm_thresh2_log[i] == 0 || s->therm_thresh2_log[i] == 1);
 		assert(s->power_notification_log[i] == 0 || s->power_notification_log[i] == 1);
-		
-		msrVal[i] = (msrVal[i] & (~(1<<1))) | (s->status_log[i] << 1);
-		msrVal[i] = (msrVal[i] & (~(1<<3))) | (s->PROCHOT_log[i] << 3);
-		msrVal[i] = (msrVal[i] & (~(1<<5))) | (s->crit_temp_log[i] << 5);
-		msrVal[i] = (msrVal[i] & (~(1<<7))) | (s->therm_thresh1_log[i] << 7);
-		msrVal[i] = (msrVal[i] & (~(1<<9))) | (s->therm_thresh2_log[i] << 9);
-		msrVal[i] = (msrVal[i] & (~(1<<11))) | (s->power_notification_log[i] << 11);
+
+		*s->raw[i] = (*s->raw[i] & (~(1<<1))) | (s->status_log[i] << 1);
+		*s->raw[i] = (*s->raw[i] & (~(1<<3))) | (s->PROCHOT_log[i] << 3);
+		*s->raw[i] = (*s->raw[i] & (~(1<<5))) | (s->crit_temp_log[i] << 5);
+		*s->raw[i] = (*s->raw[i] & (~(1<<7))) | (s->therm_thresh1_log[i] << 7);
+		*s->raw[i] = (*s->raw[i] & (~(1<<9))) | (s->therm_thresh2_log[i] << 9);
+		*s->raw[i] = (*s->raw[i] & (~(1<<11))) | (s->power_notification_log[i] << 11);
 	}
-	write_all_sockets_v(IA32_PACKAGE_THERM_STATUS, msrVal);
-	//write_msr_by_coord(package, 0, 0, IA32_PACKAGE_THERM_STATUS, msrVal);
+    write_batch(PKG_THERM_STAT);
 }
 
 void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 {
-    static uint64_t sockets = 0;
-    if (!sockets)
-    {
-        core_config(NULL, NULL, &sockets, NULL);
-    }
-	uint64_t * msrVal = NULL;
-    msrVal = (uint64_t *) libmsr_malloc(sockets * sizeof (uint64_t));
-
-	read_all_sockets(IA32_PACKAGE_THERM_INTERRUPT,msrVal);
-	//read_msr_by_coord(package, 0, 0, IA32_PACKAGE_THERM_INTERRUPT, &msrVal);
+    uint64_t sockets = num_sockets();
+    read_batch(PKG_THERM_INTERR);
 	int i;
 	for(i=0;i<sockets ;i++)
 	{	
@@ -565,33 +586,28 @@ void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 		assert(s->thresh2_enable[i] == 0 || s->thresh2_enable[i] == 1);
 		assert(s->pwr_limit_notification_enable[i] == 0 || s->pwr_limit_notification_enable[i] == 1);
 	
-		msrVal[i] = (msrVal[i] & (~(1<<0))) | (s->high_temp_enable[i] << 0);
-		msrVal[i] = (msrVal[i] & (~(1<<1))) | (s->low_temp_enable[i] << 1);
-		msrVal[i] = (msrVal[i] & (~(1<<2))) | (s->PROCHOT_enable[i] << 2);
-		msrVal[i] = (msrVal[i] & (~(1<<4))) | (s->crit_temp_enable[i] << 4);
-		msrVal[i] = (msrVal[i] & (~(7<<8))) | (s->thresh1_val[i] << 8);	
-		msrVal[i] = (msrVal[i] & (~(1<<15))) | (s->thresh1_enable[i] << 15);
-		msrVal[i] = (msrVal[i] & (~(7<<16))) | (s->thresh2_val[i] << 16);
-		msrVal[i] = (msrVal[i] & (~(1<<23))) | (s->thresh2_enable[i] << 23);
-		msrVal[i] = (msrVal[i] & (~(1<<24))) | (s->pwr_limit_notification_enable[i] << 24);
+		*s->raw[i] = (*s->raw[i] & (~(1<<0))) | (s->high_temp_enable[i] << 0);
+		*s->raw[i] = (*s->raw[i] & (~(1<<1))) | (s->low_temp_enable[i] << 1);
+		*s->raw[i] = (*s->raw[i] & (~(1<<2))) | (s->PROCHOT_enable[i] << 2);
+		*s->raw[i] = (*s->raw[i] & (~(1<<4))) | (s->crit_temp_enable[i] << 4);
+		*s->raw[i] = (*s->raw[i] & (~(7<<8))) | (s->thresh1_val[i] << 8);	
+		*s->raw[i] = (*s->raw[i] & (~(1<<15))) | (s->thresh1_enable[i] << 15);
+		*s->raw[i] = (*s->raw[i] & (~(7<<16))) | (s->thresh2_val[i] << 16);
+		*s->raw[i] = (*s->raw[i] & (~(1<<23))) | (s->thresh2_enable[i] << 23);
+		*s->raw[i] = (*s->raw[i] & (~(1<<24))) | (s->pwr_limit_notification_enable[i] << 24);
 	}	
-	write_all_sockets_v(IA32_PACKAGE_THERM_INTERRUPT,msrVal);
-	//write_msr_by_coord(package, 0, 0, IA32_PACKAGE_THERM_INTERRUPT, msrVal);
+    write_batch(PKG_THERM_INTERR);
 }
 
-
+// TODO: these dumps need work, looping params way off
 void dump_thermal_terse_label( FILE *writeFile )
 {
-	int core,socket;
-    static uint64_t sockets = 0;
-    static uint64_t coresPerSocket = 0;
-    if (!sockets || !coresPerSocket)
-    {
-        core_config(&coresPerSocket, NULL, &sockets, NULL);
-    }
+	int core, socket;
+    uint64_t sockets = num_sockets();
+    uint64_t coresPerSocket = cores_per_socket();
 	for(socket = 0; socket < sockets; socket++)
 	{
-		for(core = NUM_CORES_NEW; core < coresPerSocket * (socket+1); core++)
+		for(core = 0; core < coresPerSocket; core++) //* (socket+1); core++)
 		{
 			fprintf(writeFile,"TempC_%02d_%02d ", socket,core); 
 		}
@@ -605,20 +621,18 @@ void dump_thermal_terse( FILE *writeFile )
     static struct msr_temp_target * t_target = NULL;
     if (t_stat == NULL || t_target == NULL)
     {
-        thermal_storage(&t_target, &t_stat, NULL, NULL, NULL);
+        store_therm_stat(&t_stat);
+        store_temp_target(&t_target);
     }
 	get_therm_stat(t_stat);
 	int core, socket;
 	int actTemp;
-    static uint64_t sockets = 0, coresPerSocket = 0;
-    if (!sockets || !coresPerSocket)
-    {
-        core_config(&coresPerSocket, NULL, &sockets, NULL);
-    }
+    uint64_t sockets = num_sockets();
+    uint64_t coresPerSocket = cores_per_socket();
 
 	for(socket=0; socket < sockets; socket++)
 	{
-		for(core= NUM_CORES_NEW; core < coresPerSocket * (socket+1); core++)
+		for(core= 0; core < coresPerSocket; core++) //* (socket+1); core++)
 		{
 			actTemp = t_target->temp_target[socket] - t_stat->readout[core];
 			fprintf(writeFile,"%d ", actTemp);
@@ -630,12 +644,8 @@ void dump_thermal_verbose_label( FILE *writeFile )
 {
 	int socket;
 	int core;
-    static uint64_t sockets = 0;
-    static uint64_t coresPerSocket = 0;
-    if (!sockets || !coresPerSocket)
-    {
-        core_config(&coresPerSocket, NULL, &sockets, NULL);
-    }
+    uint64_t sockets = num_sockets();
+    uint64_t coresPerSocket = cores_per_socket();
 	for(socket=0; socket < sockets; socket++)
 	{
 		// Registers that are socket granularity
@@ -669,7 +679,7 @@ void dump_thermal_verbose_label( FILE *writeFile )
 		fprintf(writeFile, "socket_pwr_limit_notification_enable_%02d", socket);
 		
 		// Registers that are core granularity
-		for(core= NUM_CORES_NEW; core < coresPerSocket * (socket+1); core++)
+		for(core= 0; core < coresPerSocket; core++) // * (socket+1); core++)
 		{
 			//Thermal Status dump (core)
 			fprintf(writeFile, "core_status_%02d_%02d", socket, core);
@@ -713,9 +723,14 @@ void dump_thermal_verbose( FILE *writeFile )
     static struct therm_interrupt * t_interrupt = NULL;
     static struct pkg_therm_interrupt * pkg_interrupt = NULL;
     static struct pkg_therm_stat * pkg_stat = NULL;
+    static struct msr_temp_target * t_target = NULL;
     if (t_stat == NULL || pkg_stat == NULL || t_interrupt == NULL || pkg_interrupt == NULL)
     {
-        thermal_storage(NULL, &t_stat, &t_interrupt, &pkg_stat, &pkg_interrupt);
+        store_therm_stat(&t_stat);
+        store_therm_interrupt(&t_interrupt);
+        store_pkg_therm_interrupt(&pkg_interrupt);
+        store_pkg_therm_stat(&pkg_stat);
+        store_temp_target(&t_target);
     }
 	get_therm_stat(t_stat);
 	get_therm_interrupt(t_interrupt);
@@ -726,17 +741,8 @@ void dump_thermal_verbose( FILE *writeFile )
 #endif
 	int core, socket;
 	int actTemp;
-    static uint64_t sockets = 0;
-    static uint64_t coresPerSocket = 0;
-    static struct msr_temp_target * t_target = NULL;
-    if (!sockets || !coresPerSocket)
-    {
-        core_config(&coresPerSocket, NULL, &sockets, NULL);
-    }
-    if (t_target == NULL)
-    {
-        thermal_storage(&t_target, NULL, NULL, NULL, NULL);
-    }
+    uint64_t sockets = num_sockets();
+    uint64_t coresPerSocket = cores_per_socket();
 	for(socket=0; socket < sockets; socket++)
 	{
 		// Registers that are socket granularity
@@ -773,7 +779,7 @@ void dump_thermal_verbose( FILE *writeFile )
 		fprintf(writeFile, "%d ", pkg_interrupt->pwr_limit_notification_enable[socket]);
 		
 		// Registers that are core granularity
-		for(core= NUM_CORES_NEW; core < coresPerSocket * (socket+1); core++)
+		for(core= 0; core < coresPerSocket; core++) // * (socket+1); core++)
 		{
 			//Thermal Status dump (core)
 			fprintf(writeFile, "%d ", t_stat->status[core]);

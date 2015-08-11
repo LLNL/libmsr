@@ -1,11 +1,34 @@
-/* checkCPUID.c
+/* cpuid.c
  *
- * Author: Kathleen Shoga
- * Edited by: Scott Walker
- * Initial cpuid function based off of an example on wikipedia:
- * http://en.wikipedia.org/wiki/CPUID#rax.3D0:_Get_vendor_ID
+ * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
+ * Produced at Lawrence Livermore National Laboratory  
+ * Written by  Barry Rountree, rountree@llnl.gov
+ *             Scott Walker,   walker91@llnl.gov
+ *             Kathleen Shoga, shoga1@llnl.gov
+ *
+ * All rights reserved. 
+ * 
+ * This file is part of libmsr.
+ * 
+ * libmsr is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ * 
+ * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+ * details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License along
+ * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
+ *
+ * This material is based upon work supported by the U.S. Department
+ * of Energy's Lawrence Livermore National Laboratory. Office of
+ * Science, under Award number DE-AC52-07NA27344.
  *
  */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <sys/sysinfo.h>
@@ -25,36 +48,6 @@ void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t 
 	        	:"=a" (*rax), "=D" (*rbx), "=c" (*rcx), "=d" (*rdx)
 	        	:"a" (leaf)
 		);
-}
-
-/* may be in its own function some day
-void read_csr(uint64_t * val)
-{
-    uint32_t bus = 1, device = 0x30, function = 2, offset = 0x2;
-    uint32_t rax = 0;
-    //register uint64_t mmio asm("rsi") = 0xC8 + (0x132000);
-    //uint64_t rcx = 0x90 + (0x132000);
-    uint32_t rcx = 0xe0000000 + (uint32_t)((bus << 20) | (device << 15) | (function << 12)) + offset;
-    asm volatile(
-                "mov (%%rcx), %%rax"
-                    :"=a" (rax)
-                    :"c" (rcx));
-                    //:"%rcx", "%rax");
-                    //: "0" (rax), "2" (rsi));
-    *val = (uint64_t) rax; 
-}*/
-
-void read_csr(uint64_t * val)
-{
-    unsigned bus = 1, device = 30, function = 2, offset = 0x2; // device id //0x90; rapl
-    uint32_t address = (bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000;
-    uint16_t data = 0;
-    uint32_t port = 0xCF8;
-    asm volatile("outl %%eax, %%dx" : : "d" (port), "a" (address));
-    port = 0xCFC;
-    asm volatile("inl %%dx, %%eax" : "=a" (data) : "dN" (port));
-    //data = (uint16_t) ((sysInLong(0xCFC) >> ((offset & 2) * 8)) & 0xFFFFFFFFFFFFFFFF);
-    *val = data;
 }
 
 void cpuid_detect_core_conf(uint64_t * coresPerSocket, uint64_t * hyperThreads, uint64_t * sockets, int * HTenabled)

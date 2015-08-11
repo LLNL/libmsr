@@ -1,8 +1,11 @@
 /* msr_thermal.h
  *
- * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
- * Produced at the Lawrence Livermore National Laboratory  
- * Written by Barry Rountree, rountree@llnl.gov.
+ * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
+ * Produced at Lawrence Livermore National Laboratory  
+ * Written by  Barry Rountree, rountree@llnl.gov
+ *             Scott Walker,   walker91@llnl.gov
+ *             Kathleen Shoga, shoga1@llnl.gov
+ *
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -19,11 +22,13 @@
  * 
  * You should have received a copy of the GNU Lesser General Public License along
  * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
+ *
+ * This material is based upon work supported by the U.S. Department
+ * of Energy's Lawrence Livermore National Laboratory. Office of
+ * Science, under Award number DE-AC52-07NA27344.
+ *
  */
 
-/* msrThermal.h
- *
-*/
 #ifndef MSR_THERMAL_H
 #define MSR_THERMAL_H
 #include <stdio.h>
@@ -31,13 +36,13 @@
 // TODO: used num_sockets
 struct msr_temp_target{				//Scope is "unique" for Sandy Bridge
 						//Assuming that it is by socket
-	uint64_t * raw;
+	uint64_t ** raw;
 	uint64_t * temp_target;	//Read only (probably the TCC Activation Temp)
 };
 
 // TODO: used num_cores
 struct therm_stat{			//Scope is "core" for Sandy Bridge
-	uint64_t * raw;
+	uint64_t ** raw;
 	int * status;				//Read only
 
 	int * status_log;			//Read and Write (Sticky bit)
@@ -76,7 +81,7 @@ struct therm_stat{			//Scope is "core" for Sandy Bridge
 
 // TODO: used num_cores
 struct therm_interrupt{			//Core scope
-	uint64_t * raw;
+	uint64_t ** raw;
 	//Below all read and write
 	int * high_temp_enable;
 	int * low_temp_enable;
@@ -92,7 +97,7 @@ struct therm_interrupt{			//Core scope
 
 // TODO: used num_sockets
 struct pkg_therm_stat{			//Package (socket) scope
-	uint64_t * raw;
+	uint64_t ** raw;
 	int * status;		//Read only
 
 	int * status_log;		//Read or Write Sticky bit (default: clear)
@@ -124,7 +129,7 @@ struct pkg_therm_stat{			//Package (socket) scope
 
 // TODO: used num_sockets
 struct pkg_therm_interrupt{			//Package(socket) scope
-	uint64_t * raw;
+	uint64_t ** raw;
 	//All read and write below
 	int * high_temp_enable;
 	int * low_temp_enable;

@@ -1,10 +1,33 @@
-/*File: msr_misc.c
+/* msr_misc.c
  *
- * Author: Kathleen Shoga
+ * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
+ * Produced at Lawrence Livermore National Laboratory  
+ * Written by  Barry Rountree, rountree@llnl.gov
+ *             Scott Walker,   walker91@llnl.gov
+ *             Kathleen Shoga, shoga1@llnl.gov
  *
- * Referenced Intel Documentation
+ * All rights reserved. 
+ * 
+ * This file is part of libmsr.
+ * 
+ * libmsr is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ * 
+ * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+ * details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License along
+ * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
  *
-*/
+ * This material is based upon work supported by the U.S. Department
+ * of Energy's Lawrence Livermore National Laboratory. Office of
+ * Science, under Award number DE-AC52-07NA27344.
+ *
+ */
 
 #include <stdio.h>
 #include <stdint.h>
@@ -28,12 +51,12 @@ struct misc_enable{
 	int branch_trace_storage_unavail;		// Read only (thread scope)
 	int precise_event_based_sampling_unavail;	// Read Only (thread scope)
 	int TM2_enable;					// Read/Write 
-	int enhanced_Intel_SpeedStep_Tech_enable;	// Read/Write (Package scope)
+	int enhanced_Intel_SpeedStep_Tech_enable;	// Read/Write (socket scope)
 	int enable_monitor_fsm;				// Read/Write (thread scope)
 	int limit_CPUID_maxval;				// Read/Write (thread scope)
 	int xTPR_message_disable;			// Read/Write (thread scope)
 	int XD_bit_disable;				// Read/Write (thread scope)
-	int turbo_mode_disable;				// Read/Write (package scope)
+	int turbo_mode_disable;				// Read/Write (socket scope)
 };
 */
 void dump_misc_enable(struct misc_enable *s)
@@ -51,14 +74,16 @@ void dump_misc_enable(struct misc_enable *s)
 	fprintf(stdout, "XD_bit_disable				= %d\n", s->XD_bit_disable);
 	fprintf(stdout, "turbo_mode_disable			= %d\n", s->turbo_mode_disable);
 }
-void get_misc_enable(int package, struct misc_enable *s)
+
+void get_misc_enable(unsigned socket, struct misc_enable *s)
 {
-	read_msr_by_coord(package, 0, 0, IA32_MISC_ENABLE, &(s->raw));
+    sockets_assert(&socket, __LINE__, __FILE__);
+	read_msr_by_coord(socket, 0, 0, IA32_MISC_ENABLE, &(s->raw));
 	//s->raw = 164;
-        s->fast_string_enable = MASK_VAL(s->raw, 0, 0);				// When set, fast-strings feature (for REP MOVS and REP STORS) 
+    s->fast_string_enable = MASK_VAL(s->raw, 0, 0);				// When set, fast-strings feature (for REP MOVS and REP STORS) 
 										// is enabled (default), (cleared = disabled)
 
-        s->auto_TCC_enable = MASK_VAL(s->raw, 3, 3);				// 0 = disabled (default)
+    s->auto_TCC_enable = MASK_VAL(s->raw, 3, 3);				// 0 = disabled (default)
 										// Note: clearing might be ignored in critical thermal
 										// conditions. In this case, TM1, TM2, and adaptive 
 										// thermal throttling will still be active. 
@@ -141,10 +166,11 @@ void get_misc_enable(int package, struct misc_enable *s)
 										// mode is not available. 
 }
 
-void set_misc_enable(int package, struct misc_enable *s)
+void set_misc_enable(unsigned socket, struct misc_enable *s)
 {
 	uint64_t msrVal;
-	read_msr_by_coord(package, 0, 0, IA32_MISC_ENABLE, &msrVal);
+    sockets_assert(&socket, __LINE__, __FILE__);
+	read_msr_by_coord(socket, 0, 0, IA32_MISC_ENABLE, &msrVal);
 	//msrVal = 64; //temp value
 	assert(s->fast_string_enable == 0 || s->fast_string_enable == 1);
 	assert(s->auto_TCC_enable == 0 || s->auto_TCC_enable == 1);
@@ -164,7 +190,7 @@ void set_misc_enable(int package, struct misc_enable *s)
 	msrVal = (msrVal & (~((uint64_t)1<< (uint64_t)34))) | ((uint64_t)s->XD_bit_disable << (uint64_t)34);
 	msrVal = (msrVal & (~((uint64_t)1<< (uint64_t)38))) | ((uint64_t)s->turbo_mode_disable << (uint64_t)38);
 
-	write_msr_by_coord(package, 0, 0, IA32_MISC_ENABLE, msrVal);
+	write_msr_by_coord(socket, 0, 0, IA32_MISC_ENABLE, msrVal);
 }
 
 //---------------------END Misc_Enable functions----------------------------------------------------------------

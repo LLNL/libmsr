@@ -1,7 +1,11 @@
-/*
- * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
- * Produced at the Lawrence Livermore National Laboratory  
- * Written by Barry Rountree, rountree@llnl.gov.
+/* msr_clocks.c
+ *
+ * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
+ * Produced at Lawrence Livermore National Laboratory  
+ * Written by  Barry Rountree, rountree@llnl.gov
+ *             Scott Walker,   walker91@llnl.gov
+ *             Kathleen Shoga, shoga1@llnl.gov
+ *
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -18,6 +22,11 @@
  * 
  * You should have received a copy of the GNU Lesser General Public License along
  * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
+ *
+ * This material is based upon work supported by the U.S. Department
+ * of Energy's Lawrence Livermore National Laboratory. Office of
+ * Science, under Award number DE-AC52-07NA27344.
+ *
  */
 
 #include <stdio.h>
@@ -36,82 +45,91 @@
 						// Must have it enabled and the same for all logical
 						// processors within the physical processor
 
-void 
-read_all_aperf(uint64_t *aperf){
-	read_all_threads( MSR_IA32_APERF, aperf );
-}
-
-void
-read_all_mperf(uint64_t *mperf){
-	read_all_threads( MSR_IA32_MPERF, mperf );
-}
-
-void 
-read_all_tsc(uint64_t *tsc){
-	read_all_threads( IA32_TIME_STAMP_COUNTER, tsc );
+static int clocks_storage(uint64_t *** aperf_val, uint64_t *** mperf_val, uint64_t *** tsc_val)
+{
+    static int init = 1;
+    static uint64_t ** aperf = NULL, ** mperf = NULL, ** tsc = NULL;
+    static uint64_t totalThreads = 0;
+    if (init)
+    {
+        totalThreads = num_devs();
+        aperf = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
+        mperf = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
+        tsc = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
+        specify_batch_size(CLOCKS_DATA, 3UL * num_devs());
+        load_thread_batch(MSR_IA32_APERF, aperf, CLOCKS_DATA);
+        load_thread_batch(MSR_IA32_MPERF, mperf, CLOCKS_DATA);
+        load_thread_batch(IA32_TIME_STAMP_COUNTER, tsc, CLOCKS_DATA);
+        init = 0;
+    }
+    if (aperf_val)
+    {
+        *aperf_val = aperf;
+    }
+    if (mperf_val)
+    {
+        *mperf_val = mperf;
+    }
+    if (tsc_val)
+    {
+        *tsc_val = tsc;
+    }
+    return 0;
 }
 
 void
 dump_clocks_terse_label(FILE *writeFile){
 	int thread_idx;
-    static uint64_t threadsPerCore = 0;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t sockets = 0;
-    if (!threadsPerCore || !coresPerSocket)
+    static uint64_t totalThreads = 0;
+    if (!totalThreads)
     {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+        totalThreads = num_devs();
     }
-	for(thread_idx=0; thread_idx<NUM_THREADS_NEW; thread_idx++){
+	for(thread_idx=0; thread_idx<totalThreads; thread_idx++){
 		fprintf(writeFile, "aperf%02d mperf%02d tsc%02d ", 
 			thread_idx, thread_idx, thread_idx);
 	}
 }
 
-// TODO: may be better if arrays are not re-allocated for every call
 void
 dump_clocks_terse(FILE *writeFile){
-    static uint64_t threadsPerCore = 0;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t sockets = 0;
-    if (!threadsPerCore || !coresPerSocket)
+    static uint64_t totalThreads = 0;
+    static uint64_t ** aperf_val = NULL, 
+                    ** mperf_val = NULL, 
+                    ** tsc_val = NULL;
+    if (!totalThreads)
     {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+        totalThreads = num_devs();
+        clocks_storage(&aperf_val, &mperf_val, &tsc_val);
     }
-    uint64_t * aperf_val = NULL, * mperf_val = NULL, * tsc_val = NULL;
-    aperf_val = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
-    mperf_val = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
-    tsc_val = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
 	int thread_idx;
-	read_all_aperf(aperf_val);
-	read_all_mperf(mperf_val);
-	read_all_tsc  (tsc_val);
-	for(thread_idx=0; thread_idx<NUM_THREADS_NEW; thread_idx++){
+    read_batch(CLOCKS_DATA);
+	for(thread_idx=0; thread_idx<totalThreads; thread_idx++){
 		fprintf(writeFile, "%20lu %20lu %20lu ", 
-			aperf_val[thread_idx], mperf_val[thread_idx], tsc_val[thread_idx]);
+			*aperf_val[thread_idx], *mperf_val[thread_idx], *tsc_val[thread_idx]);
 	}
 }
 
 void dump_clocks_readable(FILE * writeFile)
 {
-    static uint64_t threadsPerCore = 0;
-    static uint64_t coresPerSocket = 0;
-    static uint64_t sockets = 0;
-    if (!threadsPerCore || !coresPerSocket)
+    static uint64_t totalThreads = 0;
+    static uint64_t ** aperf_val = NULL, 
+                    ** mperf_val = NULL, 
+                    ** tsc_val = NULL;
+    if (!totalThreads)
     {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+        totalThreads = num_devs();
+        clocks_storage(&aperf_val, &mperf_val, &tsc_val);
     }
-    uint64_t * aperf_val = NULL, * mperf_val = NULL, * tsc_val = NULL;
-    aperf_val = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
-    mperf_val = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
-    tsc_val = (uint64_t *) libmsr_malloc(NUM_THREADS_NEW * sizeof(uint64_t));
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "DEBUG: (clocks_readable) totalThreads is %lu\n", totalThreads);
+#endif
 	int thread_idx;
-	read_all_aperf(aperf_val);
-	read_all_mperf(mperf_val);
-	read_all_tsc  (tsc_val);
-	for(thread_idx=0; thread_idx<NUM_THREADS_NEW; thread_idx++){
+    read_batch(CLOCKS_DATA);
+	for(thread_idx=0; thread_idx<totalThreads; thread_idx++){
 		fprintf(writeFile, "aperf%02d:%20lu mperf%02d:%20lu tsc%02d:%20lu\n", 
-			thread_idx, aperf_val[thread_idx], thread_idx, mperf_val[thread_idx], 
-            thread_idx, tsc_val[thread_idx]);
+			thread_idx, *aperf_val[thread_idx], thread_idx, *mperf_val[thread_idx], 
+            thread_idx, *tsc_val[thread_idx]);
 	}
 }
 //----------------------------Software Controlled Clock Modulation-----------------------------------------------

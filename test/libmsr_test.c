@@ -1,12 +1,9 @@
 #include <unistd.h>
+#include <sched.h>
 #include <stdio.h>
-<<<<<<< HEAD
-#include <stdlib.h>
-=======
 #include <sys/wait.h>
 #include <stdlib.h>
 #include "../include/cpuid.h"
->>>>>>> barry/master
 #include "../include/msr_core.h"
 #include "../include/msr_rapl.h"
 #include "../include/msr_thermal.h"
@@ -30,10 +27,6 @@ get_limits()
 {
 	int i;
     uint64_t pp_result;
-<<<<<<< HEAD
-    fprintf(stderr, "\nGetting limits...\n");
-	for(i=0; i<NUM_SOCKETS; i++){
-=======
     static uint64_t sockets = 0;
     if (!sockets)
     {
@@ -41,7 +34,6 @@ get_limits()
     }
     fprintf(stderr, "\nGetting limits...\n");
 	for(i=0; i<sockets; i++){
->>>>>>> barry/master
         fprintf(stdout, "\nSocket %d:\n", i);
         printf("PKG\n");
         get_pkg_rapl_limit(i, &l1, &l2);
@@ -99,59 +91,6 @@ void test_socket_1_limits(unsigned s)
     pp_policy = 8;
     set_pp_rapl_policies(1, &pp_policy, NULL);
     get_limits();
-<<<<<<< HEAD
-}
-
-void test_socket_0_limits(unsigned s)
-{
-    printf("\n Testing socket %u limits\n", s);
-    l1.watts = 110;
-	l1.seconds = 1;
-	l1.bits = 0;
-	l2.watts =  135;
-	l2.seconds =  5;
-	l2.bits = 0;
-    set_pkg_rapl_limit(s, &l1, &l2);
-    l3.watts = 35;
-    l3.seconds = 1;
-    l3.bits = 0;
-    set_dram_rapl_limit(s, &l3);
-    l4.watts = 132;
-    l4.seconds = 2;
-    l4.bits = 0;
-    set_pp_rapl_limit(s, &l4, NULL);
-    pp_policy = 1;
-    set_pp_rapl_policies(0, &pp_policy, NULL);
-    get_limits();
-}
-
-void test_all_limits()
-{
-    printf("\n Testing all sockets\n");
-    l1.watts = 120;
-	l1.seconds = 4;
-	l1.bits = 0;
-	l2.watts =  155;
-	l2.seconds =  6;
-	l2.bits = 0;
-    l3.watts = 50;
-    l3.seconds = 6;
-    l3.bits = 0;
-    l4.watts = 110;
-    l4.seconds = 8;
-    l4.bits = 0;
-    pp_policy = 31;
-    int i;
-    for (i = 0; i < NUM_SOCKETS; i++)
-    {
-        set_pkg_rapl_limit(i, &l1, &l2);
-        set_pp_rapl_limit(i, &l4, NULL);
-        set_dram_rapl_limit(i, &l3);
-        set_pp_rapl_policies(i, &pp_policy, NULL);
-    }
-    get_limits();
-=======
->>>>>>> barry/master
 }
 
 void test_socket_0_limits(unsigned s)
@@ -217,23 +156,6 @@ void thermal_test(){
 	fprintf(stdout, "\n");
 }
 
-<<<<<<< HEAD
-void rapl_r_test(struct rapl_data ** rd)
-{
-	// Initialize two separate state objects and read rapl data into them during overlapping time windows
-    struct rapl_data * r1;// = (struct rapl_data *) malloc(sizeof(struct rapl_data));
-
-    fprintf(stdout, "\nNEW\n\n");
-    r1 = &((*rd)[0]);
-    poll_rapl_data(0, r1);
-    dump_rapl_data(r1, stdout);
-    sleep(1);
-
-
-    poll_rapl_data(0, r1);
-    dump_rapl_data(r1, stdout);
-    sleep(1);
-=======
 void counters_test()
 {
     dump_fixed_readable(stdout);
@@ -265,11 +187,25 @@ void turbo_test()
     dump_turbo(stdout);
 }
 
-char * args[] = {"--cpu", "24", "--io", "96", "--vm", "96", "--vm-bytes", "1G", "--timeout", "5s"};
+// NOTE: to use this, compile a NAS parallel benchmark of your choice and modify the path below
+//       you will have to compile with the -D_GNU_SOURCE flag for setaffinity 
+//#define MEMTEST 1
+
+#ifdef MEMTEST
+char * args[] = {"mg.B.1"};
+const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-MPI/bin/mg.B.1";
+#endif
+//#ifdef PROCTEST
+//char *args[] = {"ep.B.24"};
+//const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-MPI/bin/ep.B.24";
+//#endif
+
+// We use 24 for Catalyst, (2 sockets * 12 cores)
+#define NPROCS 24 
 
 void rapl_r_test(struct rapl_data ** rd)
 {
-    struct rapl_data * r1;// = (struct rapl_data *) malloc(sizeof(struct rapl_data));
+    struct rapl_data * r1;
     struct rapl_data * r2;
 
     fprintf(stdout, "\nNEW\n\n");
@@ -282,20 +218,37 @@ void rapl_r_test(struct rapl_data ** rd)
     printf("pkg 2\n");
     dump_rapl_data(r2, stdout);
 
-    int status = 0;
-    pid_t pid;
-    pid = fork();
-    if (pid == 0)
-    {
-        fprintf(stderr, "executing stress test\n");
-        execve("/g/g19/walker91/Projects/libmsr-walker/test/stress-ng", args, NULL);
-        exit(1);
+#ifdef MEMTEST
+   unsigned nprocs = NPROCS;
+   pid_t pid[NPROCS];
+   int status[NPROCS];
+   cpu_set_t cpuselect;
+
+   int i;
+   for (i = 0; i < nprocs; i++)
+   {   
+       CPU_ZERO(&cpuselect);
+       CPU_SET(i, &cpuselect);
+       pid[i] = fork();
+       if (pid[i] == 0)
+       {   
+           // this is just testing on 1 node 
+           sched_setaffinity(0, sizeof(cpu_set_t), &cpuselect);
+           fprintf(stderr, "executing stress test\n");
+           execve(path, args, NULL);
+           exit(1);
+       }
     }
-    else if (pid > 0)
-    {
-        fprintf(stderr, "waiting for test to complete\n");
-        wait(&status);
+    fprintf(stderr, "waiting for test to complete\n");
+    for (i = 0; i < nprocs; i++)
+    {   
+        wait(&status[i]);
     }
+#endif
+#ifndef MEMTEST
+    sleep(1);
+#endif
+
 
     poll_rapl_data(0, r1);
     poll_rapl_data(1, r2);
@@ -303,7 +256,6 @@ void rapl_r_test(struct rapl_data ** rd)
     dump_rapl_data(r1, stdout);
     printf("pkg 2\n");
     dump_rapl_data(r2, stdout);
->>>>>>> barry/master
 }
 
 
@@ -312,14 +264,11 @@ int main(int argc, char** argv)
 {
     struct rapl_data * rd = NULL;
     uint64_t * rapl_flags = NULL;
-<<<<<<< HEAD
-=======
     uint64_t cores = 0, threads = 0, sockets = 0;
     if (!sockets)
     {
         core_config(&cores, &threads, &sockets, NULL);
     }
->>>>>>> barry/master
 	#ifdef MPI
 	MPI_Init(&argc, &argv);
     printf("mpi init done\n");
@@ -335,16 +284,10 @@ int main(int argc, char** argv)
         return -1;
     }
     printf("init done\n");
-<<<<<<< HEAD
-	get_limits();
-    unsigned i;
-    for(i = 0; i < NUM_SOCKETS; i++)
-=======
     enable_fixed_counters();
 	get_limits();
     unsigned i;
     for(i = 0; i < sockets; i++)
->>>>>>> barry/master
     {
         fprintf(stdout, "BEGINNING SOCKET %u TEST\n", i);
 	    test_pkg_lower_limit(i);
@@ -361,13 +304,6 @@ int main(int argc, char** argv)
     printf("\n\nPOWER INFO\n");
     dump_rapl_power_info(stdout);
     printf("\nEND POWER INFO\n\n");
-    rapl_finalize(&rd);
-<<<<<<< HEAD
-	finalize_msr();
-=======
-    //printf("testing CSR read\n");
-    //read_csr(&test);
-    //printf("CSR has %lx\n", test);
     printf("thermal test\n");
     thermal_test();
 
@@ -381,7 +317,6 @@ int main(int argc, char** argv)
     misc_test();
 
 	finalize_msr(1);
->>>>>>> barry/master
 	#ifdef MPI
 	MPI_Finalize();
 	#endif

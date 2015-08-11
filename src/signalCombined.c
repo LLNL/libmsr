@@ -1,7 +1,11 @@
-/*
- * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
- * Produced at the Lawrence Livermore National Laboratory  
- * Written by Kathleen Shoga, shoga1@llnl.gov.
+/* 
+ *
+ * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
+ * Produced at Lawrence Livermore National Laboratory  
+ * Written by  Barry Rountree, rountree@llnl.gov
+ *             Scott Walker,   walker91@llnl.gov
+ *             Kathleen Shoga, shoga1@llnl.gov
+ *
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -18,7 +22,12 @@
  * 
  * You should have received a copy of the GNU Lesser General Public License along
  * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
- * */
+ *
+ * This material is based upon work supported by the U.S. Department
+ * of Energy's Lawrence Livermore National Laboratory. Office of
+ * Science, under Award number DE-AC52-07NA27344.
+ *
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +49,7 @@ void printData(int i)
     static uint64_t sockets = 0;
     if (!sockets)
     {
-        core_config(NULL, NULL, &sockets, NULL);
+        sockets = num_sockets();
     }
 	signal(SIGALRM, printData);
 	struct timeval currentTime;
@@ -68,6 +77,7 @@ void printData(int i)
     {
         poll_rapl_data(sock_idx, rd);
         fprintf(stdout, "Power Socket/PKG/DRAM: %d %8.4lf %8.4lf \n", sock_idx, rd->pkg_watts, rd->dram_watts);
+    }
 
 	tout_val.it_interval.tv_sec = 0;
 	tout_val.it_interval.tv_usec = 0;

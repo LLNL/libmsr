@@ -1,8 +1,11 @@
-/* 
- * Copyright (c) 2013, Lawrence Livermore National Security, LLC.  
- * Produced at the Lawrence Livermore National Laboratory  
- * Written by Barry Rountree, rountree@llnl.gov.
- * Edited by Scott Walker, walker91@llnl.gov
+/* msr_core.h
+ *
+ * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
+ * Produced at Lawrence Livermore National Laboratory  
+ * Written by  Barry Rountree, rountree@llnl.gov
+ *             Scott Walker,   walker91@llnl.gov
+ *             Kathleen Shoga, shoga1@llnl.gov
+ *
  * All rights reserved. 
  * 
  * This file is part of libmsr.
@@ -19,17 +22,24 @@
  * 
  * You should have received a copy of the GNU Lesser General Public License along
  * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
+ *
+ * This material is based upon work supported by the U.S. Department
+ * of Energy's Lawrence Livermore National Laboratory. Office of
+ * Science, under Award number DE-AC52-07NA27344.
+ *
  */
+
 #ifndef MSR_CORE_H
 #define MSR_CORE_H
 #include <stdint.h>
 #include <sys/types.h>
 #include <linux/types.h>
-#define LIBMSR_DEBUG 1
+//#define LIBMSR_DEBUG 1
 #define NUM_DEVS_NEW (sockets * coresPerSocket * threadsPerCore)
 #define NUM_CORES_NEW (sockets * coresPerSocket)
 // this is the same as num_devs
 #define NUM_THREADS_NEW (sockets * coresPerSocket * threadsPerCore)
+#define COORD_INDEXING ((thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core)
 
 /* MASK_RANGE
  * Create a mask from bit m to n.
@@ -55,6 +65,31 @@ enum{
 	MSR_XOR
 };
 
+enum{
+    RAPL_DATA,
+    RAPL_UNIT,
+    COUNTERS_DATA,
+    COUNTERS_CTR_DATA,
+    CLOCKS_DATA,
+    CLOCKS_CTR_DATA,
+    THERM_STAT,
+    THERM_INTERR,
+    PKG_THERM_STAT,
+    PKG_THERM_INTERR,
+    TEMP_TARGET,
+    PERF_CTL,
+    USR_BATCH1, // Set aside for user defined use
+    USR_BATCH2, // Set aside for user defined use
+    USR_BATCH3  // Set aside for user defined use
+};
+
+enum
+{
+    BATCH_LOAD,
+    BATCH_WRITE,
+    BATCH_READ
+};
+
 // Depending on their function, MSRs can be addressed at either
 // the socket (aka cpu) or core level, and possibly the hardware
 // thread level.
@@ -72,7 +107,10 @@ extern "C" {
 #endif
 
 #define MSR_MAX_BATCH_OPS 50
-#define X86_IOC_MSR_BATCH _IOWR('c', 0xA2, struct msr_bundle_desc)
+//#define X86_IOC_MSR_BATCH _IOWR('c', 0xA2, struct msr_bundle_desc)
+//#define  X86_IOC_MSR_RDMSR_BATCH _IOWR('c', 0xA2, msr_batch_rdmsr_array)
+#define  X86_IOC_MSR_BATCH _IOWR('c', 0xA2, msr_batch_array)
+#define MSR_BATCH_DIR "/dev/cpu/msr_batch"
 
 typedef struct recover_data
 {
@@ -83,36 +121,31 @@ typedef struct recover_data
     off_t msr;
 } recover_data;
 
-struct msr_op
-{
-    union msrdata
-    {
-        __u32 data32[2];
-        __u64 data64;
-    } d;
-    __u64 mask;
-    __u32 msr;
-    __u32 isread;
-    int error;
+struct msr_batch_op {
+	__u16 cpu;		/* In: CPU to execute {rd/wr}msr ins. */
+	__u16 isrdmsr;		/* In: 0=wrmsr, non-zero=rdmsr */
+    __s32 err;
+	__u32 msr;		/* In: MSR Address to perform op */
+	__u64 msrdata;		/* In/Out: Input/Result to/from operation */
+	__u64 wmask;		/* Out: Write mask applied to wrmsr */
 };
 
-struct msr_cpu_ops
-{
-    __u32 cpu;
-    int nOps;
-    struct msr_op ops[MSR_MAX_BATCH_OPS];
-};
+struct msr_batch_array {
+	__u32 numops;			/* In: # of operations in ops array */
+	struct msr_batch_op *ops;	/* In: Array[numops] of operations */
+} msr_batch_array;
 
-struct msr_bundle_desc
-{
-    int numMsrBundles;
-    struct msr_cpu_ops * bundle;
-};
+uint64_t num_cores();
+uint64_t num_sockets();
+uint64_t num_devs();
+uint64_t cores_per_socket();
 
 int init_msr();
 int finalize_msr(const int restore);
-uint64_t * batch_ops(struct msr_op * op, uint64_t cpu, uint64_t * dest);
-int read_batch();
+
+int specify_batch_size(int batchnum, size_t bsize);
+int read_batch(const int batchnum);
+int write_batch(const int batchnum);
 
 int core_storage(int recover, recover_data * recoverValue);
 int core_config(uint64_t * coresPerSocket, uint64_t * threadsPerCore, uint64_t * sockets, int * HTenabled);
@@ -127,18 +160,11 @@ int read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val );
 
 int write_msr_by_coord( unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t  val );
 int read_msr_by_coord(  unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t *val );
-int read_msr_by_coord_batch(  unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t *val );
+int read_msr_by_coord_batch(  unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t **val , int batchnum);
 
-int write_all_sockets(   off_t msr, uint64_t  val  );
-int write_all_sockets_v( off_t msr, uint64_t *val );
-int write_all_cores(     off_t msr, uint64_t  val  );
-int write_all_cores_v(   off_t msr, uint64_t *val );
-int write_all_threads(   off_t msr, uint64_t  val  );
-int write_all_threads_v( off_t msr, uint64_t *val );
-
-int read_all_sockets(    off_t msr, uint64_t *val );
-int read_all_cores(      off_t msr, uint64_t *val );
-int read_all_threads(    off_t msr, uint64_t *val );
+int load_socket_batch(    off_t msr, uint64_t **val , const int batchnum);
+int load_core_batch(      off_t msr, uint64_t **val , const int batchnum);
+int load_thread_batch(    off_t msr, uint64_t **val , const int batchnum);
 
 #ifdef __cplusplus
 }

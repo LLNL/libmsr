@@ -30,12 +30,12 @@ configure_file(
     ${PROJECT_BINARY_DIR}/libmsr-config.cmake
     @ONLY)
 
-
 install(FILES ${PROJECT_BINARY_DIR}/libmsr-config.cmake DESTINATION
 "${CMAKE_INSTALL_PREFIX}/share/cmake/libmsr")
 install(EXPORT libmsr-morita DESTINATION
 "${CMAKE_INSTALL_PREFIX}/share/cmake/libmsr")
 
 add_subdirectory(src)
+add_subdirectory(include)
 add_subdirectory(cmd)
 add_subdirectory(wrap)

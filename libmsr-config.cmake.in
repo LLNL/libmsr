@@ -1,5 +1,6 @@
 # Lauren Morita
-#libmsr config
+
+# libmsr config
 if (NOT libmsr_CONFIG_LOADED)
     set(libmsr_CONFIG_LOADED TRUE)
 
