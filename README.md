@@ -32,7 +32,7 @@ free to contact the authors with questions and suggestions.
 
 Authors
 ---------------------
+  * Scott Walker (walker91@llnl.gov)
   * Kathleen Shoga (shoga1@llnl.gov)
   * Barry Rountreee (rountree@llnl.gov)
-
 
