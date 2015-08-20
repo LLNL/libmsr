@@ -32,7 +32,7 @@ set (CMAKE_SHARED_LINKER_FLAGS "-lm")
 # Install target should install the two library targets above.
 #
 install(TARGETS msr msr-static DESTINATION
-"${CMAKE_INSTALL_PREFIX}/share/cmake/libmsr" EXPORT libmsr-libs)
+"${CMAKE_INSTALL_PREFIX}/lib" EXPORT libmsr-libs)
 
 # Headers are in ../include
 include_directories(${PROJECT_SOURCE_DIR}/include)

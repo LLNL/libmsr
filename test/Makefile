@@ -1,5 +1,8 @@
 libmsr_test: libmsr_test.c 
-	gcc -g -Wall -o libmsr_test libmsr_test.c -L ../lib -lmsr -lm -D_GNU_SOURCE
+	gcc -g -Wall -o libmsr_test libmsr_test.c -L../install/share/cmake/libmsr -lmsr -D_GNU_SOURCE
+
+batch_test: batch_test.c 
+	gcc -g -Wall -o batch_test batch_test.c -L../install/share/cmake/libmsr -lmsr 
 
 libmsr_powercap_test: libmsr_powercap_test.c
 	gcc -Wall -o libmsr_powercap_test libmsr_powercap_test.c -L ../lib -lmsr

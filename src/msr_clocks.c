@@ -56,7 +56,7 @@ static int clocks_storage(uint64_t *** aperf_val, uint64_t *** mperf_val, uint64
         aperf = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
         mperf = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
         tsc = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
-        specify_batch_size(CLOCKS_DATA, 3UL * num_devs());
+        allocate_batch(CLOCKS_DATA, 3UL * num_devs());
         load_thread_batch(MSR_IA32_APERF, aperf, CLOCKS_DATA);
         load_thread_batch(MSR_IA32_MPERF, mperf, CLOCKS_DATA);
         load_thread_batch(IA32_TIME_STAMP_COUNTER, tsc, CLOCKS_DATA);

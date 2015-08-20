@@ -486,7 +486,7 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 		initialized=1;
         ru = (struct rapl_units *) libmsr_calloc(sockets, sizeof(struct rapl_units));
         val = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
-        specify_batch_size(RAPL_UNIT, num_sockets());
+        allocate_batch(RAPL_UNIT, num_sockets());
 		load_socket_batch( MSR_RAPL_POWER_UNIT, val , RAPL_UNIT);
         read_batch(RAPL_UNIT);
         // Initialize the units used for each socket
@@ -1343,7 +1343,7 @@ dump_rapl_power_info( FILE *writeFile){
 // This checks the current rapl data and calculates the deltas from the previous call of this function
 // If this function has not been called before the data will be initialized to zeros.
 // NOTE: this is now what you use instead of read_rapl_data
-int poll_rapl_data(const unsigned socket, struct rapl_data * result)
+int poll_rapl_data(const unsigned socket, struct rapl_data ** result)
 {
     struct rapl_data * p;
     static struct rapl_data * rapl = NULL;
@@ -1375,7 +1375,7 @@ int poll_rapl_data(const unsigned socket, struct rapl_data * result)
 }
 
 // This checks how much the rapl data has changed over time to get values such as power
-int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_data * result)
+int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_data ** result)
 {
     // The energy status register holds 32 bits, this is max unsigned int
 	uint64_t  maxbits=4294967296;
@@ -1414,6 +1414,11 @@ int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_dat
     {
         initFlags |= (0x1 << socket);
         p->elapsed = 0;
+        if (result)
+        {
+            *result = p;
+        }
+
         return 0;
     }
     // Get delta joules.
@@ -1487,7 +1492,7 @@ int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_dat
     }
     if (result)
     {
-        result = p;
+        *result = p;
     }
     return 0;
 }
@@ -1547,7 +1552,7 @@ int read_rapl_data(const unsigned socket)
         {
             return -1;
         }
-        specify_batch_size(RAPL_DATA, rapl_data_batch_size(rapl_flags) * num_sockets());
+        allocate_batch(RAPL_DATA, rapl_data_batch_size(rapl_flags) * num_sockets());
     }
     p = &rapl[socket];
 

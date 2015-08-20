@@ -169,7 +169,7 @@ static int batch_storage(struct msr_batch_array ** batchsel, const int batchnum,
     return 0;
 }
 
-int specify_batch_size(int batchnum, size_t bsize)
+int allocate_batch(int batchnum, size_t bsize)
 {
     unsigned * size = NULL;
     struct msr_batch_array * batch = NULL;
@@ -192,6 +192,22 @@ int specify_batch_size(int batchnum, size_t bsize)
     return 0;
 }
 
+int free_batch(int batchnum)
+{
+    struct msr_batch_array * batch = NULL;
+    static unsigned * size = NULL;
+    if (batch == NULL)
+    {
+        if (batch_storage(&batch, batchnum, &size))
+        {
+            return -1;     
+        }
+    }
+    size[batchnum] = 0;
+    libmsr_free(batch[batchnum].ops);
+    return 0;
+}
+
 static int do_batch_op(int batchnum, int type)
 {
     static int batchfd = 0;
@@ -209,7 +225,7 @@ static int do_batch_op(int batchnum, int type)
         return -1;
     }
 #ifdef BATCH_DEBUG
-    fprintf(stderr, "BATCH: %s MSRs, numops %u\n", (type == BATCH_READ ? "reading" : "writing"), batch->numops);
+    fprintf(stderr, "BATCH %d: %s MSRs, numops %u\n", batchnum, (type == BATCH_READ ? "reading" : "writing"), batch->numops);
 #endif
 
     // if current flag is the opposite type switch the flags
@@ -251,7 +267,7 @@ static int do_batch_op(int batchnum, int type)
     return 0;
 }
 
-static int create_batch_op(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnum)
+int create_batch_op(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnum)
 {
     struct msr_batch_array * batch = NULL;
     unsigned * size = NULL;
@@ -680,15 +696,17 @@ load_core_batch( off_t msr, uint64_t **val , int batchnum)
     static uint64_t coresPerSocket = 0;
     static uint64_t threadsPerCore = 0;
     static uint64_t sockets = 0;
+    static uint64_t coretotal = 0; 
     if (coresPerSocket == 0 || threadsPerCore == 0)
     {
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+        coretotal = num_devs() / 2;
     }
 #ifdef LIBMSR_DEBUG
 	fprintf(stderr, "%s %s %s::%d (read_all_cores) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
-	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx += threadsPerCore, val_idx++ )
+	for(dev_idx=0, val_idx=0; dev_idx< coretotal; dev_idx += threadsPerCore, val_idx++ )
     {
         create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
 	}

@@ -2,7 +2,7 @@ project(libmsr C)
 cmake_minimum_required(VERSION 2.8)
 
 # Add -Wall if it is not there already.
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3")
 
 # Force default build type to be RelWithDebInfo
 if (NOT CMAKE_BUILD_TYPE)

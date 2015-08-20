@@ -96,7 +96,7 @@ static int init_evtsel(struct evtsel * evt)
         case 1:
             evt->perf_evtsel0 = (uint64_t **) libmsr_calloc(numDevs, sizeof(uint64_t *));
     }
-    specify_batch_size(COUNTERS_CTRL, avail * numDevs);
+    allocate_batch(COUNTERS_CTRL, avail * numDevs);
     switch (avail)
     {
         case 8:
@@ -146,7 +146,7 @@ static int init_pmc(struct pmc * p)
         case 1:
             p->pmc0 = (uint64_t **) libmsr_calloc(numDevs, sizeof(uint64_t *));
     }
-    specify_batch_size(COUNTERS_DATA, avail * numDevs);
+    allocate_batch(COUNTERS_DATA, avail * numDevs);
     switch (avail)
     {
         case 8:
@@ -372,7 +372,7 @@ static int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, s
         init_ctr_data(&c0);
         init_ctr_data(&c1);
         init_ctr_data(&c2);
-        specify_batch_size(FIXED_COUNTERS_DATA, 3UL * num_devs());
+        allocate_batch(FIXED_COUNTERS_DATA, 3UL * num_devs());
         load_thread_batch(IA32_FIXED_CTR0, c0.value, FIXED_COUNTERS_DATA);
         load_thread_batch(IA32_FIXED_CTR1, c1.value, FIXED_COUNTERS_DATA);
         load_thread_batch(IA32_FIXED_CTR2, c2.value, FIXED_COUNTERS_DATA);
@@ -402,7 +402,7 @@ static int fixed_ctr_ctrl_storage(uint64_t *** perf_ctrl, uint64_t *** fixed_ctr
         totalThreads = num_devs();
         perf_global_ctrl = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
         fixed_ctr_ctrl   = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
-        specify_batch_size(FIXED_COUNTERS_CTR_DATA, 2UL * num_devs());
+        allocate_batch(FIXED_COUNTERS_CTR_DATA, 2UL * num_devs());
         load_thread_batch(IA32_PERF_GLOBAL_CTRL, perf_global_ctrl, FIXED_COUNTERS_CTR_DATA);
         load_thread_batch(IA32_FIXED_CTR_CTRL, fixed_ctr_ctrl, FIXED_COUNTERS_CTR_DATA);
         init = 0;
