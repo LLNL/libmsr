@@ -457,13 +457,52 @@ int core_storage(int recover, recover_data * recoverValue)
     return 0;
 }
 
+int stat_module(char * filename, int * kerneltype, int * dev_idx)
+{
+	struct stat statbuf;
+    if (stat(filename, &statbuf))
+    {
+        if (*kerneltype)
+        {
+            fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s\n", 
+                    getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
+            fprintf(stderr, "%s %s::%d FATAL ERROR: could not stat any valid module. Aborting...\n", 
+                    getenv("HOSTNAME"), __FILE__, __LINE__);
+            // could not find any msr module so exit
+            return -1;
+        }
+        // could not find msr_safe so try the msr module
+        fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s.\n", 
+                getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
+        *kerneltype = 1;
+        // restart loading file descriptors for each device
+        *dev_idx = -1;
+        return 0;
+    }
+    if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR) || 
+       !(statbuf.st_mode & S_IRGRP) || !(statbuf.st_mode & S_IWGRP))
+    {
+        fprintf(stderr, "%s %s::%d  ERROR: Read/write permissions denied for %s.\n", 
+                getenv("HOSTNAME"),__FILE__, __LINE__, filename);
+        *kerneltype = 1;
+        *dev_idx = -1;
+        if (kerneltype)
+        {
+            fprintf(stderr, "%s %s::%d FATAL ERROR: could not find any valid module with correct permissions. Aborting...\n", 
+                    getenv("HOSTNAME"), __FILE__, __LINE__);
+            // could not find any msr module with RW permissions, so exit
+            return -1;
+        }
+    }
+    return 0;
+}
+
 // Initialize the MSR module file descriptors
 int init_msr()
 {
 	int dev_idx;
     int * fileDescriptor = NULL;
-	char filename[1025];
-	struct stat statbuf;
+	char filename[FILENAME_SIZE];
 	static int initialized = 0;
     int kerneltype = 0; // 0 is msr_safe, 1 is msr
     uint64_t numDevs = num_devs();
@@ -486,43 +525,14 @@ int init_msr()
         {
             snprintf(filename, FILENAME_SIZE, "/dev/cpu/%d/msr_safe", dev_idx);
         }
-        // check if the module is there, if not return the appropriate error message.
-        if (stat(filename, &statbuf))
+        if (stat_module(filename, &kerneltype, &dev_idx) < 0)
         {
-            if (kerneltype)
-            {
-                fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s\n", 
-                        getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
-                fprintf(stderr, "%s %s::%d FATAL ERROR: could not stat any valid module. Aborting...\n", 
-                        getenv("HOSTNAME"), __FILE__, __LINE__);
-                // could not find any msr module so exit
-                return -1;
-            }
-            // could not find msr_safe so try the msr module
-            fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s.\n", 
-                    getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
-            kerneltype = 1;
-            // restart loading file descriptors for each device
-            dev_idx = -1;
-            continue;
-		}
-        // check to see if the module has the correct permissions
-		if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR) || 
-           !(statbuf.st_mode & S_IRGRP) || !(statbuf.st_mode & S_IWGRP))
+            return -1;
+        }
+        if (dev_idx < 0)
         {
-			fprintf(stderr, "%s %s::%d  ERROR: Read/write permissions denied for %s.\n", 
-				    getenv("HOSTNAME"),__FILE__, __LINE__, filename);
-            kerneltype = 1;
-            dev_idx = -1;
-            if (kerneltype)
-            {
-                fprintf(stderr, "%s %s::%d FATAL ERROR: could not find any valid module with correct permissions. Aborting...\n", 
-                        getenv("HOSTNAME"), __FILE__, __LINE__);
-                // could not find any msr module with RW permissions, so exit
-                return -1;
-            }
             continue;
-		}
+        }
         // try to open the msr module, if you cant then return the appropriate error message
         fileDescriptor = core_fd(dev_idx);
         *fileDescriptor = open(filename, O_RDWR);
