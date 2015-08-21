@@ -1,29 +1,30 @@
 /* msr_clocks.c
+ *
+ * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
+ * Produced at Lawrence Livermore National Laboratory  
+ * Written by  Barry Rountree, rountree@llnl.gov
+ *             Scott Walker,   walker91@llnl.gov
+ *             Kathleen Shoga, shoga1@llnl.gov
+ *
+ * All rights reserved. 
  * 
- * Copyright (c) 2011, 2012, 2013, 2014 by Lawrence Livermore National Security, LLC. LLNL-CODE-645430 
- * Produced at the Lawrence Livermore National Laboratory.
- * Written by Kathleen Shoga and Barry Rountree (shoga1|rountree@llnl.gov).
- * All rights reserved.
- *
  * This file is part of libmsr.
- *
- * libmsr is free software: you can redistribute it and/or 
- * modify it under the terms of the GNU Lesser General Public 
- * License as published by the Free Software Foundation, either 
- * version 3 of the License, or (at your option) any
+ * 
+ * libmsr is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
  * later version.
- *
- * libmsr is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public 
- * License along
- * with libmsr. If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+ * details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License along
+ * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
  *
  * This material is based upon work supported by the U.S. Department
- * of Energy's Lawrence Livermore National Laboratory. Office of 
+ * of Energy's Lawrence Livermore National Laboratory. Office of
  * Science, under Award number DE-AC52-07NA27344.
  *
  */
@@ -31,7 +32,7 @@
 #include <stdio.h>
 #include "msr_core.h"
 #include "msr_clocks.h"
-#include <assert.h>
+#include "memhdlr.h"
 
 
 #define MSR_IA32_MPERF 		0x000000e7
@@ -43,25 +44,47 @@
 						// Must have it enabled and the same for all logical
 						// processors within the physical processor
 
-void 
-read_all_aperf(uint64_t *aperf){
-	read_all_threads( MSR_IA32_APERF, aperf );
-}
-
-void
-read_all_mperf(uint64_t *mperf){
-	read_all_threads( MSR_IA32_MPERF, mperf );
-}
-
-void 
-read_all_tsc(uint64_t *tsc){
-	read_all_threads( IA32_TIME_STAMP_COUNTER, tsc );
+static int clocks_storage(uint64_t *** aperf_val, uint64_t *** mperf_val, uint64_t *** tsc_val)
+{
+    static int init = 1;
+    static uint64_t ** aperf = NULL, ** mperf = NULL, ** tsc = NULL;
+    static uint64_t totalThreads = 0;
+    if (init)
+    {
+        totalThreads = num_devs();
+        aperf = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
+        mperf = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
+        tsc = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
+        allocate_batch(CLOCKS_DATA, 3UL * num_devs());
+        load_thread_batch(MSR_IA32_APERF, aperf, CLOCKS_DATA);
+        load_thread_batch(MSR_IA32_MPERF, mperf, CLOCKS_DATA);
+        load_thread_batch(IA32_TIME_STAMP_COUNTER, tsc, CLOCKS_DATA);
+        init = 0;
+    }
+    if (aperf_val)
+    {
+        *aperf_val = aperf;
+    }
+    if (mperf_val)
+    {
+        *mperf_val = mperf;
+    }
+    if (tsc_val)
+    {
+        *tsc_val = tsc;
+    }
+    return 0;
 }
 
 void
 dump_clocks_terse_label(FILE *writeFile){
 	int thread_idx;
-	for(thread_idx=0; thread_idx<NUM_THREADS; thread_idx++){
+    static uint64_t totalThreads = 0;
+    if (!totalThreads)
+    {
+        totalThreads = num_devs();
+    }
+	for(thread_idx=0; thread_idx<totalThreads; thread_idx++){
 		fprintf(writeFile, "aperf%02d mperf%02d tsc%02d ", 
 			thread_idx, thread_idx, thread_idx);
 	}
@@ -69,17 +92,45 @@ dump_clocks_terse_label(FILE *writeFile){
 
 void
 dump_clocks_terse(FILE *writeFile){
-	uint64_t aperf_val[NUM_THREADS], mperf_val[NUM_THREADS], tsc_val[NUM_THREADS];
+    static uint64_t totalThreads = 0;
+    static uint64_t ** aperf_val = NULL, 
+                    ** mperf_val = NULL, 
+                    ** tsc_val = NULL;
+    if (!totalThreads)
+    {
+        totalThreads = num_devs();
+        clocks_storage(&aperf_val, &mperf_val, &tsc_val);
+    }
 	int thread_idx;
-	read_all_aperf(aperf_val);
-	read_all_mperf(mperf_val);
-	read_all_tsc  (tsc_val);
-	for(thread_idx=0; thread_idx<NUM_THREADS; thread_idx++){
+    read_batch(CLOCKS_DATA);
+	for(thread_idx=0; thread_idx<totalThreads; thread_idx++){
 		fprintf(writeFile, "%20lu %20lu %20lu ", 
-			aperf_val[thread_idx], mperf_val[thread_idx], tsc_val[thread_idx]);
+			*aperf_val[thread_idx], *mperf_val[thread_idx], *tsc_val[thread_idx]);
 	}
 }
 
+void dump_clocks_readable(FILE * writeFile)
+{
+    static uint64_t totalThreads = 0;
+    static uint64_t ** aperf_val = NULL, 
+                    ** mperf_val = NULL, 
+                    ** tsc_val = NULL;
+    if (!totalThreads)
+    {
+        totalThreads = num_devs();
+        clocks_storage(&aperf_val, &mperf_val, &tsc_val);
+    }
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "DEBUG: (clocks_readable) totalThreads is %lu\n", totalThreads);
+#endif
+	int thread_idx;
+    read_batch(CLOCKS_DATA);
+	for(thread_idx=0; thread_idx<totalThreads; thread_idx++){
+		fprintf(writeFile, "aperf%02d:%20lu mperf%02d:%20lu tsc%02d:%20lu\n", 
+			thread_idx, *aperf_val[thread_idx], thread_idx, *mperf_val[thread_idx], 
+            thread_idx, *tsc_val[thread_idx]);
+	}
+}
 //----------------------------Software Controlled Clock Modulation-----------------------------------------------
 /*struct clock_mod{
 	uint64_t raw;
@@ -156,18 +207,26 @@ void get_clock_mod(int socket, int core, struct clock_mod *s)
 								// 1 = enabled, 0 disabled
 }
 
-void set_clock_mod(int socket, int core, struct clock_mod *s)
+int set_clock_mod(int socket, int core, struct clock_mod *s)
 {
 	uint64_t msrVal;
 	read_msr_by_coord(socket, core, 0, IA32_CLOCK_MODULATION, &msrVal);
 	//msrVal = 64; // temp value
-	assert(s->duty_cycle > 0 && s->duty_cycle <8);
-	assert(s->duty_cycle_enable == 0 || s->duty_cycle_enable == 1);
+    // replaced asserts with these two conditionals
+    if (!(s->duty_cycle > 0 && s->duty_cycle < 8))
+    {
+        return -1;
+    }
+    if (!(s->duty_cycle_enable == 0 || s->duty_cycle_enable == 1))
+    {
+        return -1;
+    }
 
 	msrVal = (msrVal & (~(3<<1))) | (s->duty_cycle << 1);
 	msrVal = (msrVal & (~(1<<4))) | (s->duty_cycle_enable << 4);
 
 	write_msr_by_coord(socket, core, 0, IA32_CLOCK_MODULATION, msrVal);
+    return 0;
 }
 
 //---------------------------------END CLOCK MODULATION FUNCTIONS-----------------------------------------------------------
