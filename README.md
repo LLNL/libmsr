@@ -34,5 +34,5 @@ Authors
 ---------------------
   * Kathleen Shoga (shoga1@llnl.gov)
   * Barry Rountreee (rountree@llnl.gov)
-
-
+  * Scott Walker (walker91@llnl.gov)
+  * Lauren Morita (morita4@llnl.gov)
