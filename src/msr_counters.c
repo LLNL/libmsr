@@ -33,7 +33,6 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <stddef.h>
-#include <assert.h>
 #include "msr_core.h"
 #include "memhdlr.h"
 #include "msr_counters.h"
@@ -255,6 +254,7 @@ int set_all_pmc_ctrl(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t ev
     return 0;
 }
 
+/*
 static int test_pmc_ctrl()
 {
     uint64_t cmask = 0x0;
@@ -264,6 +264,7 @@ static int test_pmc_ctrl()
     set_all_pmc_ctrl(cmask, flags, umask, eventsel, 1);
     return 0;
 }
+*/
 
 int enable_pmc()
 {

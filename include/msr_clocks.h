@@ -72,7 +72,7 @@ void dump_clocks_terse_label(FILE *w);
 void dump_clocks_readable(FILE * writeFile);
 void dump_clock_mod(struct clock_mod *s, FILE *w);
 void get_clock_mod(int socket, int core, struct clock_mod *s);
-void set_clock_mod(int socket, int core, struct clock_mod *s);
+int set_clock_mod(int socket, int core, struct clock_mod *s);
 
 #ifdef __cplusplus
 }

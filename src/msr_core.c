@@ -42,7 +42,6 @@
 #include <fcntl.h>	
 #include <stdint.h>	
 #include <errno.h>
-#include <assert.h>
 #include <string.h>
 #include <linux/types.h>
 #include <linux/ioctl.h>

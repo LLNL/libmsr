@@ -29,7 +29,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include "msr_core.h"

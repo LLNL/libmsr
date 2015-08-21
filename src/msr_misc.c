@@ -33,7 +33,6 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <stddef.h>
-#include <assert.h>
 #include "msr_core.h"
 #include "msr_misc.h"
 
@@ -61,18 +60,18 @@ struct misc_enable{
 */
 void dump_misc_enable(struct misc_enable *s)
 {
-	fprintf(stdout, "fast_string_enable			= %d\n", s->fast_string_enable);
-	fprintf(stdout, "auto_TCC_enable				= %d\n", s->auto_TCC_enable);
-	fprintf(stdout, "performance_monitoring			= %d\n", s->performance_monitoring);
-	fprintf(stdout, "branch_trace_storage_unavail		= %d\n", s->branch_trace_storage_unavail);
-	fprintf(stdout, "precise_event_based_sampling_unavail	= %d\n", s->precise_event_based_sampling_unavail);
-	fprintf(stdout, "TM2_enable				= %d\n", s->TM2_enable);
-	fprintf(stdout, "enhanced_Intel_SpeedStep_Tech_enable	= %d\n", s->enhanced_Intel_SpeedStep_Tech_enable);
-	fprintf(stdout, "enable_monitor_fsm			= %d\n", s->enable_monitor_fsm);
-	fprintf(stdout, "limit_CPUID_maxval			= %d\n", s->limit_CPUID_maxval);
-	fprintf(stdout, "xTPR_message_disable			= %d\n", s->xTPR_message_disable);
-	fprintf(stdout, "XD_bit_disable				= %d\n", s->XD_bit_disable);
-	fprintf(stdout, "turbo_mode_disable			= %d\n", s->turbo_mode_disable);
+	fprintf(stdout, "fast_string_enable			= %u\n", s->fast_string_enable);
+	fprintf(stdout, "auto_TCC_enable				= %u\n", s->auto_TCC_enable);
+	fprintf(stdout, "performance_monitoring			= %u\n", s->performance_monitoring);
+	fprintf(stdout, "branch_trace_storage_unavail		= %u\n", s->branch_trace_storage_unavail);
+	fprintf(stdout, "precise_event_based_sampling_unavail	= %u\n", s->precise_event_based_sampling_unavail);
+	fprintf(stdout, "TM2_enable				= %u\n", s->TM2_enable);
+	fprintf(stdout, "enhanced_Intel_SpeedStep_Tech_enable	= %u\n", s->enhanced_Intel_SpeedStep_Tech_enable);
+	fprintf(stdout, "enable_monitor_fsm			= %u\n", s->enable_monitor_fsm);
+	fprintf(stdout, "limit_CPUID_maxval			= %u\n", s->limit_CPUID_maxval);
+	fprintf(stdout, "xTPR_message_disable			= %u\n", s->xTPR_message_disable);
+	fprintf(stdout, "XD_bit_disable				= %u\n", s->XD_bit_disable);
+	fprintf(stdout, "turbo_mode_disable			= %u\n", s->turbo_mode_disable);
 }
 
 void get_misc_enable(unsigned socket, struct misc_enable *s)
@@ -172,6 +171,7 @@ void set_misc_enable(unsigned socket, struct misc_enable *s)
     sockets_assert(&socket, __LINE__, __FILE__);
 	read_msr_by_coord(socket, 0, 0, IA32_MISC_ENABLE, &msrVal);
 	//msrVal = 64; //temp value
+    /*
 	assert(s->fast_string_enable == 0 || s->fast_string_enable == 1);
 	assert(s->auto_TCC_enable == 0 || s->auto_TCC_enable == 1);
 	assert(s->TM2_enable == 0 || s->TM2_enable == 1);
@@ -180,6 +180,7 @@ void set_misc_enable(unsigned socket, struct misc_enable *s)
 	assert(s->xTPR_message_disable == 0 || s->xTPR_message_disable == 1);
 	assert(s->XD_bit_disable == 0 || s->XD_bit_disable == 1);
 	assert(s->turbo_mode_disable == 0 || s->turbo_mode_disable == 1);
+    */
 
 	msrVal = (msrVal & (~(1<< 0))) | (s->fast_string_enable << 0);
 	msrVal = (msrVal & (~(1<< 3))) | (s->auto_TCC_enable << 3);

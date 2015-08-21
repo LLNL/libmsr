@@ -35,7 +35,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <assert.h>
 #include <omp.h>
 #include "msr_core.h"
 #include "memhdlr.h"

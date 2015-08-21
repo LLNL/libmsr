@@ -33,7 +33,6 @@
 #include "msr_core.h"
 #include "msr_clocks.h"
 #include "memhdlr.h"
-#include <assert.h>
 
 
 #define MSR_IA32_MPERF 		0x000000e7
@@ -208,18 +207,26 @@ void get_clock_mod(int socket, int core, struct clock_mod *s)
 								// 1 = enabled, 0 disabled
 }
 
-void set_clock_mod(int socket, int core, struct clock_mod *s)
+int set_clock_mod(int socket, int core, struct clock_mod *s)
 {
 	uint64_t msrVal;
 	read_msr_by_coord(socket, core, 0, IA32_CLOCK_MODULATION, &msrVal);
 	//msrVal = 64; // temp value
-	assert(s->duty_cycle > 0 && s->duty_cycle <8);
-	assert(s->duty_cycle_enable == 0 || s->duty_cycle_enable == 1);
+    // replaced asserts with these two conditionals
+    if (!(s->duty_cycle > 0 && s->duty_cycle < 8))
+    {
+        return -1;
+    }
+    if (!(s->duty_cycle_enable == 0 || s->duty_cycle_enable == 1))
+    {
+        return -1;
+    }
 
 	msrVal = (msrVal & (~(3<<1))) | (s->duty_cycle << 1);
 	msrVal = (msrVal & (~(1<<4))) | (s->duty_cycle_enable << 4);
 
 	write_msr_by_coord(socket, core, 0, IA32_CLOCK_MODULATION, msrVal);
+    return 0;
 }
 
 //---------------------------------END CLOCK MODULATION FUNCTIONS-----------------------------------------------------------
