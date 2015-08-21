@@ -1,0 +1,2 @@
+/g/g19/walker91/Projects/libmsr-walker/src/CMakeFiles/msr-static.dir
+/g/g19/walker91/Projects/libmsr-walker/src/CMakeFiles/msr.dir

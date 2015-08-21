@@ -1,0 +1,33 @@
+==========================================
+libmsr
+Author: Barry Rountree (rountree@llnl.gov)
+
+Tapasya Patki and Peter Bailey contributed
+to earlier versions of this library.
+==========================================
+
+To build the library:
+
+Set NUM_PACKAGES and NUM_CORES_PER_PACKAGE in msr_core.h.  
+Run make.
+
+
+A note on terminology:
+
+"Socket" is equivalent to the Intel term "package".
+
+
+libmsr allows simpler reading and writing of model-specific 
+registers.  This release targets the server version of the
+Intel Sandy Bridge processors.  The library requires the
+msr kernel module to be loaded.  
+
+libmsr also provides higher-level APIs.  This version 
+contains an interface to control Intel's Running Average
+Power Limit (RAPL) features.  Future APIs will include
+turbo mode, clocks, fixed-function hardware performance
+counters, thermal management and Precise Event-Based
+Sampling (PEBS), as well as support for hyperthreading
+and other processors.
+
+
