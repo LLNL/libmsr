@@ -75,7 +75,7 @@ void printData(int i)
     unsigned sock_idx;
     for (sock_idx = 0; sock_idx < sockets; sock_idx++)
     {
-        poll_rapl_data(sock_idx, rd);
+        poll_rapl_data(sock_idx, &rd);
         fprintf(stdout, "Power Socket/PKG/DRAM: %d %8.4lf %8.4lf \n", sock_idx, rd->pkg_watts, rd->dram_watts);
     }
 

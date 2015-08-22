@@ -55,17 +55,51 @@ struct fixed_counter_data{
 	int width;		//when found, this is the bit width of the fixed counter MSRs
 };
 
+struct evtsel
+{
+    uint64_t ** perf_evtsel0;
+    uint64_t ** perf_evtsel1;
+    uint64_t ** perf_evtsel2;
+    uint64_t ** perf_evtsel3;
+    uint64_t ** perf_evtsel4;
+    uint64_t ** perf_evtsel5;
+    uint64_t ** perf_evtsel6;
+    uint64_t ** perf_evtsel7;
+};
+
+struct pmc
+{
+    uint64_t ** pmc0;
+    uint64_t ** pmc1;
+    uint64_t ** pmc2;
+    uint64_t ** pmc3;
+    uint64_t ** pmc4;
+    uint64_t ** pmc5;
+    uint64_t ** pmc6;
+    uint64_t ** pmc7;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+int enable_pmc();
+int clear_pmc();
+int dump_pmc_readable(FILE * writefile);
+int set_pmc_ctrl_flags(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pmcnum, unsigned thread);
+int set_all_pmc_ctrl(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pmcnum);
+
 void init_ctr_data(struct ctr_data * ctr);
+
 void get_fixed_ctr_ctrl(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data *ctr2);
 void set_fixed_ctr_ctrl(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data *ctr2);
+
 void get_fixed_counter_data(struct fixed_counter_data *data);
 void get_fixed_ctr_values(struct ctr_data *ctr0, struct ctr_data *ctr1, struct ctr_data *ctr2);
+
 void enable_fixed_counters();
 void disable_fixed_counters();
+
 void dump_fixed_terse(FILE *w);
 void dump_fixed_terse_label(FILE *w);
 void dump_fixed_readable(FILE *w);

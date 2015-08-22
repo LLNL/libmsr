@@ -181,8 +181,8 @@ int get_pp_rapl_limit(const unsigned socket, struct rapl_limit * limit0, struct 
 void dump_rapl_limit( struct rapl_limit *L, FILE *w );
 
 int read_rapl_data(const unsigned socket);
-int poll_rapl_data(const unsigned socket, struct rapl_data * result);
-int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_data * result);
+int poll_rapl_data(const unsigned socket, struct rapl_data ** result);
+int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_data ** result);
 int dump_rapl_data( struct rapl_data *r, FILE *w );
 
 int dump_rapl_terse(FILE *w);

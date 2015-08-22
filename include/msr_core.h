@@ -68,8 +68,10 @@ enum{
 enum{
     RAPL_DATA,
     RAPL_UNIT,
+    FIXED_COUNTERS_DATA,
+    FIXED_COUNTERS_CTR_DATA,
     COUNTERS_DATA,
-    COUNTERS_CTR_DATA,
+    COUNTERS_CTRL,
     CLOCKS_DATA,
     CLOCKS_CTR_DATA,
     THERM_STAT,
@@ -143,9 +145,10 @@ uint64_t cores_per_socket();
 int init_msr();
 int finalize_msr(const int restore);
 
-int specify_batch_size(int batchnum, size_t bsize);
+int allocate_batch(int batchnum, size_t bsize);
 int read_batch(const int batchnum);
 int write_batch(const int batchnum);
+int free_batch(int batchnum);
 
 int core_storage(int recover, recover_data * recoverValue);
 int core_config(uint64_t * coresPerSocket, uint64_t * threadsPerCore, uint64_t * sockets, int * HTenabled);

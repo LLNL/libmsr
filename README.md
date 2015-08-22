@@ -27,12 +27,16 @@ capabilities to the binaries) are other options.
 
 Call `msr_init()` before using any of the APIs.
 
-Sample code and API documentation will be forthcoming.  Please feel
-free to contact the authors with questions and suggestions.
+For sample code, see libmsr_test.c in the test folder.
+
+Our most up-to-date documentation for libmsr use is the pdf files in the documentation folder, however there
+is some additional useful information in API as well.
+
+Please feel free to contact the authors with questions and suggestions.
 
 Authors
 ---------------------
   * Scott Walker (walker91@llnl.gov)
   * Kathleen Shoga (shoga1@llnl.gov)
   * Barry Rountreee (rountree@llnl.gov)
-
+  * Lauren Morita (morita4@llnl.gov)

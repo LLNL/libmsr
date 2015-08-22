@@ -12,4 +12,4 @@ set(LIBMSR_HEADERS
   memhdlr.h
   profile.h)
 
-install(FILES ${LIBMSR_HEADERS} DESTINATION include)
+install(FILES ${LIBMSR_HEADERS} DESTINATION include/msr)

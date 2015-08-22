@@ -33,21 +33,22 @@
 #define MSR_MISC_H
 #include <stdio.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 struct misc_enable{
 	uint64_t raw;
-	int fast_string_enable;			// Read/Write (thread scope)
-	int auto_TCC_enable;				// Read/Write
-	int performance_monitoring;			// Read	(thread scope)
-	int branch_trace_storage_unavail;		// Read only (thread scope)
-	int precise_event_based_sampling_unavail;	// Read Only (thread scope)
-	int TM2_enable;					// Read/Write
-	int enhanced_Intel_SpeedStep_Tech_enable;	// Read/Write (Package scope)
-	int enable_monitor_fsm;				// Read/Write (thread scope)
-	int limit_CPUID_maxval;				// Read/Write (thread scope)
-	int xTPR_message_disable;			// Read/Write (thread scope)
-	int XD_bit_disable;				// Read/Write (thread scope)
-	int turbo_mode_disable;				// Read/Write (package scope)
+	__u8 fast_string_enable;			// Read/Write (thread scope)
+	__u8 auto_TCC_enable;				// Read/Write
+	__u8 performance_monitoring;			// Read	(thread scope)
+	__u8 branch_trace_storage_unavail;		// Read only (thread scope)
+	__u8 precise_event_based_sampling_unavail;	// Read Only (thread scope)
+	__u8 TM2_enable;					// Read/Write
+	__u8 enhanced_Intel_SpeedStep_Tech_enable;	// Read/Write (Package scope)
+	__u8 enable_monitor_fsm;				// Read/Write (thread scope)
+	__u8 limit_CPUID_maxval;				// Read/Write (thread scope)
+	__u8 xTPR_message_disable;			// Read/Write (thread scope)
+	__u8 XD_bit_disable;				// Read/Write (thread scope)
+	__u8 turbo_mode_disable;				// Read/Write (package scope)
 };
 
 #ifdef __cplusplus

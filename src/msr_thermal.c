@@ -33,7 +33,6 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <stddef.h>
-#include <assert.h>
 #include "msr_core.h"
 #include "memhdlr.h"
 #include "msr_thermal.h"
@@ -54,7 +53,7 @@ static int init_temp_target(struct msr_temp_target * tt)
     uint64_t sockets = num_sockets();
     tt->raw = (uint64_t **) libmsr_malloc(sockets * sizeof(uint64_t *));
     tt->temp_target = (uint64_t *) libmsr_malloc(sockets * sizeof(uint64_t));
-    specify_batch_size(TEMP_TARGET, num_sockets());
+    allocate_batch(TEMP_TARGET, num_sockets());
     load_socket_batch(MSR_TEMPERATURE_TARGET, tt->raw, TEMP_TARGET);
     return 0;
 }
@@ -78,7 +77,7 @@ static int init_therm_stat(struct therm_stat * ts)
     ts->readout = (int *) libmsr_malloc(cores * sizeof(int));
     ts->resolution_deg_celsius = (int *) libmsr_malloc(cores * sizeof(int));
     ts->readout_valid = (int *) libmsr_malloc(cores * sizeof(int));
-    specify_batch_size(THERM_STAT, num_cores());
+    allocate_batch(THERM_STAT, num_cores());
     load_core_batch(IA32_THERM_STATUS, ts->raw, THERM_STAT);
     return 0;
 }
@@ -97,7 +96,7 @@ static int init_therm_interrupt(struct therm_interrupt * ti)
     ti->thresh2_val = (int *) libmsr_malloc(cores * sizeof(int));
     ti->thresh2_enable = (int *) libmsr_malloc(cores * sizeof(int));
     ti->pwr_limit_notification_enable = (int *) libmsr_malloc(cores * sizeof(int));
-    specify_batch_size(THERM_INTERR, num_cores());
+    allocate_batch(THERM_INTERR, num_cores());
     load_core_batch(IA32_THERM_INTERRUPT, ti->raw, THERM_INTERR);
     return 0;
 }
@@ -119,7 +118,7 @@ static int init_pkg_therm_stat(struct pkg_therm_stat * pts)
     pts->power_limit_status = (int *) libmsr_malloc(sockets * sizeof(int));
     pts->power_notification_log = (int *) libmsr_malloc(sockets * sizeof(int));
     pts->readout = (int *) libmsr_malloc(sockets * sizeof(int));
-    specify_batch_size(PKG_THERM_STAT, num_sockets());
+    allocate_batch(PKG_THERM_STAT, num_sockets());
     load_socket_batch(IA32_PACKAGE_THERM_STATUS, pts->raw, PKG_THERM_STAT);
     return 0;
 }
@@ -137,7 +136,7 @@ static int init_pkg_therm_interrupt(struct pkg_therm_interrupt * pti)
     pti->thresh2_val = (int *) libmsr_malloc(sockets * sizeof(int));
     pti->thresh2_enable = (int *) libmsr_malloc(sockets * sizeof(int));
     pti->pwr_limit_notification_enable = (int *) libmsr_malloc(sockets * sizeof(int));
-    specify_batch_size(PKG_THERM_INTERR, num_sockets());
+    allocate_batch(PKG_THERM_INTERR, num_sockets());
     load_socket_batch(IA32_PACKAGE_THERM_INTERRUPT, pti->raw, PKG_THERM_INTERR);
     return 0;
 }
@@ -499,12 +498,13 @@ void set_therm_stat(struct therm_stat *s)
 	int i;
 	for(i=0;i<numCores ;i++)
 	{
-		assert(s->status_log[i] == 0 || s->status_log[i] == 1);
+	/*	assert(s->status_log[i] == 0 || s->status_log[i] == 1);
 		assert(s->PROCHOT_or_FORCEPR_log[i] == 0 || s->PROCHOT_or_FORCEPR_log[i] == 1);
 		assert(s->crit_temp_log[i] == 0 || s->crit_temp_log[i] == 1);
 		assert(s->therm_thresh1_log[i] == 0 || s->therm_thresh1_log[i] == 1);
 		assert(s->therm_thresh2_log[i] == 0 || s->therm_thresh2_log[i] == 1);
 		assert(s->power_notification_log[i] == 0 || s->power_notification_log[i] == 1);
+        */
 		
 		*s->raw[i] = (*s->raw[i] & (~(1<<1))) | (s->status_log[i] << 1);
 		*s->raw[i] = (*s->raw[i] & (~(1<<3))) | (s->PROCHOT_or_FORCEPR_log[i] << 1);
@@ -524,7 +524,7 @@ void set_therm_interrupt(struct therm_interrupt *s)
 	int i;
 	for(i=0;i<numCores ;i++)
 	{
-		assert(s->high_temp_enable[i] == 0 || s->high_temp_enable[i] == 1);
+/*		assert(s->high_temp_enable[i] == 0 || s->high_temp_enable[i] == 1);
 		assert(s->low_temp_enable[i] == 0 || s->low_temp_enable[i] == 1);
 		assert(s->PROCHOT_enable[i] == 0 || s->PROCHOT_enable[i] == 1);
 		assert(s->FORCEPR_enable[i] == 0 || s->FORCEPR_enable[i] == 1);
@@ -532,6 +532,7 @@ void set_therm_interrupt(struct therm_interrupt *s)
 		assert(s->thresh1_enable[i] == 0 || s->thresh1_enable[i] == 1);
 		assert(s->thresh2_enable[i] == 0 || s->thresh2_enable[i] == 1);
 		assert(s->pwr_limit_notification_enable[i] == 0 || s->pwr_limit_notification_enable[i] == 1);
+        */
 	
 		*s->raw[i] = (*s->raw[i] & (~(1<<0))) | (s->high_temp_enable[i] << 0);
 		*s->raw[i] = (*s->raw[i] & (~(1<<1))) | (s->low_temp_enable[i] << 1);
@@ -554,12 +555,13 @@ void set_pkg_therm_stat(struct pkg_therm_stat *s)
 	int i;
 	for(i=0;i<sockets ;i++)
 	{
-		assert(s->status_log[i] == 0 || s->status_log[i] == 1);
+		/*assert(s->status_log[i] == 0 || s->status_log[i] == 1);
 		assert(s->PROCHOT_log[i] == 0 || s->PROCHOT_log[i] == 1);
 		assert(s->crit_temp_log[i] == 0 || s->PROCHOT_log[i] == 1);
 		assert(s->therm_thresh1_log[i] == 0 || s->therm_thresh1_log[i] == 1);
 		assert(s->therm_thresh2_log[i] == 0 || s->therm_thresh2_log[i] == 1);
 		assert(s->power_notification_log[i] == 0 || s->power_notification_log[i] == 1);
+        */
 
 		*s->raw[i] = (*s->raw[i] & (~(1<<1))) | (s->status_log[i] << 1);
 		*s->raw[i] = (*s->raw[i] & (~(1<<3))) | (s->PROCHOT_log[i] << 3);
@@ -578,13 +580,14 @@ void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 	int i;
 	for(i=0;i<sockets ;i++)
 	{	
-		assert(s->high_temp_enable[i] == 0 || s->high_temp_enable[i] == 1);
+	/*	assert(s->high_temp_enable[i] == 0 || s->high_temp_enable[i] == 1);
 		assert(s->low_temp_enable[i] == 0 || s->low_temp_enable[i] == 1);
 		assert(s->PROCHOT_enable[i] == 0 || s->PROCHOT_enable[i] == 1);
 		assert(s->crit_temp_enable[i] == 0 || s->crit_temp_enable[i] == 1);
 		assert(s->thresh1_enable[i] == 0 || s->thresh1_enable[i] == 1);
 		assert(s->thresh2_enable[i] == 0 || s->thresh2_enable[i] == 1);
 		assert(s->pwr_limit_notification_enable[i] == 0 || s->pwr_limit_notification_enable[i] == 1);
+        */
 	
 		*s->raw[i] = (*s->raw[i] & (~(1<<0))) | (s->high_temp_enable[i] << 0);
 		*s->raw[i] = (*s->raw[i] & (~(1<<1))) | (s->low_temp_enable[i] << 1);

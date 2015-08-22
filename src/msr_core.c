@@ -42,7 +42,6 @@
 #include <fcntl.h>	
 #include <stdint.h>	
 #include <errno.h>
-#include <assert.h>
 #include <string.h>
 #include <linux/types.h>
 #include <linux/ioctl.h>
@@ -169,7 +168,7 @@ static int batch_storage(struct msr_batch_array ** batchsel, const int batchnum,
     return 0;
 }
 
-int specify_batch_size(int batchnum, size_t bsize)
+int allocate_batch(int batchnum, size_t bsize)
 {
     unsigned * size = NULL;
     struct msr_batch_array * batch = NULL;
@@ -192,6 +191,22 @@ int specify_batch_size(int batchnum, size_t bsize)
     return 0;
 }
 
+int free_batch(int batchnum)
+{
+    struct msr_batch_array * batch = NULL;
+    static unsigned * size = NULL;
+    if (batch == NULL)
+    {
+        if (batch_storage(&batch, batchnum, &size))
+        {
+            return -1;     
+        }
+    }
+    size[batchnum] = 0;
+    libmsr_free(batch[batchnum].ops);
+    return 0;
+}
+
 static int do_batch_op(int batchnum, int type)
 {
     static int batchfd = 0;
@@ -209,7 +224,7 @@ static int do_batch_op(int batchnum, int type)
         return -1;
     }
 #ifdef BATCH_DEBUG
-    fprintf(stderr, "BATCH: %s MSRs, numops %u\n", (type == BATCH_READ ? "reading" : "writing"), batch->numops);
+    fprintf(stderr, "BATCH %d: %s MSRs, numops %u\n", batchnum, (type == BATCH_READ ? "reading" : "writing"), batch->numops);
 #endif
 
     // if current flag is the opposite type switch the flags
@@ -251,7 +266,7 @@ static int do_batch_op(int batchnum, int type)
     return 0;
 }
 
-static int create_batch_op(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnum)
+int create_batch_op(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnum)
 {
     struct msr_batch_array * batch = NULL;
     unsigned * size = NULL;
@@ -441,13 +456,52 @@ int core_storage(int recover, recover_data * recoverValue)
     return 0;
 }
 
+int stat_module(char * filename, int * kerneltype, int * dev_idx)
+{
+	struct stat statbuf;
+    if (stat(filename, &statbuf))
+    {
+        if (*kerneltype)
+        {
+            fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s\n", 
+                    getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
+            fprintf(stderr, "%s %s::%d FATAL ERROR: could not stat any valid module. Aborting...\n", 
+                    getenv("HOSTNAME"), __FILE__, __LINE__);
+            // could not find any msr module so exit
+            return -1;
+        }
+        // could not find msr_safe so try the msr module
+        fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s.\n", 
+                getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
+        *kerneltype = 1;
+        // restart loading file descriptors for each device
+        *dev_idx = -1;
+        return 0;
+    }
+    if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR) || 
+       !(statbuf.st_mode & S_IRGRP) || !(statbuf.st_mode & S_IWGRP))
+    {
+        fprintf(stderr, "%s %s::%d  ERROR: Read/write permissions denied for %s.\n", 
+                getenv("HOSTNAME"),__FILE__, __LINE__, filename);
+        *kerneltype = 1;
+        *dev_idx = -1;
+        if (kerneltype)
+        {
+            fprintf(stderr, "%s %s::%d FATAL ERROR: could not find any valid module with correct permissions. Aborting...\n", 
+                    getenv("HOSTNAME"), __FILE__, __LINE__);
+            // could not find any msr module with RW permissions, so exit
+            return -1;
+        }
+    }
+    return 0;
+}
+
 // Initialize the MSR module file descriptors
 int init_msr()
 {
 	int dev_idx;
     int * fileDescriptor = NULL;
-	char filename[1025];
-	struct stat statbuf;
+	char filename[FILENAME_SIZE];
 	static int initialized = 0;
     int kerneltype = 0; // 0 is msr_safe, 1 is msr
     uint64_t numDevs = num_devs();
@@ -470,43 +524,14 @@ int init_msr()
         {
             snprintf(filename, FILENAME_SIZE, "/dev/cpu/%d/msr_safe", dev_idx);
         }
-        // check if the module is there, if not return the appropriate error message.
-        if (stat(filename, &statbuf))
+        if (stat_module(filename, &kerneltype, &dev_idx) < 0)
         {
-            if (kerneltype)
-            {
-                fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s\n", 
-                        getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
-                fprintf(stderr, "%s %s::%d FATAL ERROR: could not stat any valid module. Aborting...\n", 
-                        getenv("HOSTNAME"), __FILE__, __LINE__);
-                // could not find any msr module so exit
-                return -1;
-            }
-            // could not find msr_safe so try the msr module
-            fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s.\n", 
-                    getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
-            kerneltype = 1;
-            // restart loading file descriptors for each device
-            dev_idx = -1;
-            continue;
-		}
-        // check to see if the module has the correct permissions
-		if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR) || 
-           !(statbuf.st_mode & S_IRGRP) || !(statbuf.st_mode & S_IWGRP))
+            return -1;
+        }
+        if (dev_idx < 0)
         {
-			fprintf(stderr, "%s %s::%d  ERROR: Read/write permissions denied for %s.\n", 
-				    getenv("HOSTNAME"),__FILE__, __LINE__, filename);
-            kerneltype = 1;
-            dev_idx = -1;
-            if (kerneltype)
-            {
-                fprintf(stderr, "%s %s::%d FATAL ERROR: could not find any valid module with correct permissions. Aborting...\n", 
-                        getenv("HOSTNAME"), __FILE__, __LINE__);
-                // could not find any msr module with RW permissions, so exit
-                return -1;
-            }
             continue;
-		}
+        }
         // try to open the msr module, if you cant then return the appropriate error message
         fileDescriptor = core_fd(dev_idx);
         *fileDescriptor = open(filename, O_RDWR);
@@ -680,15 +705,17 @@ load_core_batch( off_t msr, uint64_t **val , int batchnum)
     static uint64_t coresPerSocket = 0;
     static uint64_t threadsPerCore = 0;
     static uint64_t sockets = 0;
+    static uint64_t coretotal = 0; 
     if (coresPerSocket == 0 || threadsPerCore == 0)
     {
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
+        coretotal = num_devs() / 2;
     }
 #ifdef LIBMSR_DEBUG
 	fprintf(stderr, "%s %s %s::%d (read_all_cores) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
-	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx += threadsPerCore, val_idx++ )
+	for(dev_idx=0, val_idx=0; dev_idx< coretotal; dev_idx += threadsPerCore, val_idx++ )
     {
         create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
 	}
