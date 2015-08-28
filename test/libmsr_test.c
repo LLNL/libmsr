@@ -124,7 +124,7 @@ void test_all_limits()
         core_config(NULL, NULL, &sockets, NULL);
     }
     printf("\n Testing all sockets\n");
-    l1.watts = 115;
+    l1.watts = 80;
 	l1.seconds = 1;
 	l1.bits = 0;
 	l2.watts =  180;
@@ -160,6 +160,8 @@ void counters_test()
 {
     dump_fixed_readable(stdout);
     fprintf(stdout, "\n");
+    dump_pmc_readable(stdout);
+    fprintf(stdout, "\n");
 }
 
 // TODO: test other parts of clocks
@@ -189,7 +191,7 @@ void turbo_test()
 
 // NOTE: to use this, compile a NAS parallel benchmark of your choice and modify the path below
 //       you will have to compile with the -D_GNU_SOURCE flag for setaffinity 
-//#define MEMTEST 1
+#define MEMTEST 1
 
 #ifdef MEMTEST
 char * args[] = {"mg.B.1"};
@@ -205,14 +207,16 @@ const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-MPI/bin/mg.B.1";
 
 void rapl_r_test(struct rapl_data ** rd)
 {
-    struct rapl_data * r1;
-    struct rapl_data * r2;
+    struct rapl_data * r1 = NULL;
+    struct rapl_data * r2 = NULL;
 
     fprintf(stdout, "\nNEW\n\n");
-    r1 = &((*rd)[0]);
-    r2 = &((*rd)[1]);
-    poll_rapl_data(0, r1);
-    poll_rapl_data(1, r2);
+    //r1 = &((*rd)[0]);
+    //r2 = &((*rd)[1]);
+    poll_rapl_data(0, &r1);
+    poll_rapl_data(1, &r2);
+    //poll_rapl_data(0, NULL);
+    //poll_rapl_data(1, NULL);
     printf("pkg 1\n");
     dump_rapl_data(r1, stdout);
     printf("pkg 2\n");
@@ -250,8 +254,8 @@ void rapl_r_test(struct rapl_data ** rd)
 #endif
 
 
-    poll_rapl_data(0, r1);
-    poll_rapl_data(1, r2);
+    poll_rapl_data(0, &r1);
+    poll_rapl_data(1, &r2);
     printf("pkg 1\n");
     dump_rapl_data(r1, stdout);
     printf("pkg 2\n");
