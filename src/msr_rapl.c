@@ -165,6 +165,7 @@
 #define PP1_ENERGY_STATUS (0x4000L)
 #define PP1_POLICY (0x8000L)
 
+
 //#define STORAGE_DEBUG 1
 
 enum{
@@ -200,6 +201,80 @@ struct rapl_power_info{
 	double dram_max_window;		// seconds
 	double dram_therm_power;	// watts
 };
+
+int print_available_rapl()
+{
+    uint64_t * rapl_flags = NULL;
+    if (rapl_storage(NULL, &rapl_flags))
+    {
+        return -1;
+    }
+    if (*rapl_flags & POWER_UNIT)
+    {
+        fprintf(stdout, "MSR_RAPL_POWER_UNIT, 606h\n");
+    }
+    if (*rapl_flags & PKG_POWER_LIMIT)
+    {
+        fprintf(stdout, "MSR_PKG_POWER_LIMIT, 610h\n");
+    }
+    if (*rapl_flags & PKG_ENERGY_STATUS)
+    {
+        fprintf(stdout, "MSR_PKG_ENERGY_STATUS, 611h\n");
+    }
+    if (*rapl_flags & PKG_PERF_STATUS)
+    {
+        fprintf(stdout, "MSR_PKG_PERF_STATUS, 613h\n");
+    }
+    if (*rapl_flags & PKG_POWER_INFO)
+    {
+        fprintf(stdout, "MSR_PKG_POWER_INFO, 614h\n");
+    }
+    if (*rapl_flags & DRAM_POWER_LIMIT)
+    {
+        fprintf(stdout, "MSR_DRAM_POWER_LIMIT, 618h\n");
+    }
+    if (*rapl_flags & DRAM_ENERGY_STATUS)
+    {
+        fprintf(stdout, "MSR_DRAM_ENERGY_STATUS, 619h\n");
+    }
+    if (*rapl_flags & DRAM_PERF_STATUS)
+    {
+        fprintf(stdout, "MSR_DRAM_PERF_STATUS, 61Bh\n");
+    }
+    if (*rapl_flags & DRAM_POWER_INFO)
+    {
+        fprintf(stdout, "MSR_DRAM_POWER_INFO, 61Ch\n");
+    }
+    if (*rapl_flags & PP0_POWER_LIMIT)
+    {
+        fprintf(stdout, "MSR_PP0_POWER_LIMIT, 638h\n");
+    }
+    if (*rapl_flags & PP0_ENERGY_STATUS)
+    {
+        fprintf(stdout, "MSR_PP0_ENERGY_STATUS, 639h\n");
+    }
+    if (*rapl_flags & PP0_POLICY)
+    {
+        fprintf(stdout, "MSR_PP0_POLICY, 63Ah\n");
+    }
+    if (*rapl_flags & PP0_PERF_STATUS)
+    {
+        fprintf(stdout, "MSR_PP0_PERF_STATUS, 63Bh\n");
+    }
+    if (*rapl_flags & PP1_POWER_LIMIT)
+    {
+        fprintf(stdout, "MSR_PP1_POWER_LIMIT, 640h\n");
+    }
+    if (*rapl_flags & PP1_ENERGY_STATUS)
+    {
+        fprintf(stdout, "MSR_PP1_ENERGY_STATUS, 641h\n");
+    }
+    if (*rapl_flags & PP1_POLICY)
+    {
+        fprintf(stdout, "MSR_PP1_POLICY, 642h\n");
+    }
+    return 0;
+}
 
 // Set the flags indicating available registers by looking up the model number of the CPU
 static int setflags(uint64_t * rapl_flags)

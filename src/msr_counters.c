@@ -68,6 +68,47 @@
 #define IA32_PERFEVTSEL6 (0x18C)
 #define IA32_PERFEVTSEL7 (0x18D)
 
+int print_available_counters()
+{
+    fprintf(stdout, "IA32_FIXED_CTR_CTRL, 38Dh\nIA32_PERF_GLOBAL_CTRL, 38Fh\nIA32_PERF_GLOBAL_STATUS, 38Eh\n");
+    fprintf(stdout, "IA32_PERF_GLOBAL_OVF_CTRL, 390h\nIA32_FIXED_CTR0, 309h\nIA32_FIXED_CTR1, 30Ah\n");
+    fprintf(stdout, "IA32_FIXED_CTR2, 30Bh\n");
+    int avail = cpuid_PMC_num();
+    if (avail > 0)
+    {
+        fprintf(stdout, "IA32_PMC0, C1h\nIA32_PERFEVTSEL0, 186h\n");
+    }
+    if (avail > 1)
+    {
+        fprintf(stdout, "IA32_PMC1, C2h\nIA32_PERFEVTSEL1, 187h\n");
+    }
+    if (avail > 2)
+    {
+        fprintf(stdout, "IA32_PMC2, C3h\nIA32_PERFEVTSEL2, 188h\n");
+    }
+    if (avail > 3)
+    {
+        fprintf(stdout, "IA32_PMC3, C4h\nIA32_PERFEVTSEL3, 189h\n");
+    }
+    if (avail > 4)
+    {
+        fprintf(stdout, "IA32_PMC4, C5h\nIA32_PERFEVTSEL4, 18Ah\n");
+    }
+    if (avail > 5)
+    {
+        fprintf(stdout, "IA32_PMC5, C6h\nIA32_PERFEVTSEL5, 18Bh\n");
+    }
+    if (avail > 6)
+    {
+        fprintf(stdout, "IA32_PMC6, C7h\nIA32_PERFEVTSEL6, 18Ch\n");
+    }
+    if (avail > 7)
+    {
+        fprintf(stdout, "IA32_PMC7, C8h\nIA32_PERFEVTSEL7, 18Dh\n");
+    }
+    return 0;
+}
+
 static int init_evtsel(struct evtsel * evt)
 {
     uint64_t numDevs = num_devs();

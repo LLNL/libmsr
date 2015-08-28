@@ -46,6 +46,8 @@
 #define MSR_TEMPERATURE_TARGET		(0x1A2)	// unique scope (Noted in documentation but do no know 
 						// what it means exactly)
 
+//#define THERM_DEBUG 1
+
 // Static structs being defined
 
 static int init_temp_target(struct msr_temp_target * tt)
@@ -77,7 +79,7 @@ static int init_therm_stat(struct therm_stat * ts)
     ts->readout = (int *) libmsr_malloc(cores * sizeof(int));
     ts->resolution_deg_celsius = (int *) libmsr_malloc(cores * sizeof(int));
     ts->readout_valid = (int *) libmsr_malloc(cores * sizeof(int));
-    allocate_batch(THERM_STAT, num_cores());
+    allocate_batch(THERM_STAT, cores);
     load_core_batch(IA32_THERM_STATUS, ts->raw, THERM_STAT);
     return 0;
 }
@@ -96,7 +98,7 @@ static int init_therm_interrupt(struct therm_interrupt * ti)
     ti->thresh2_val = (int *) libmsr_malloc(cores * sizeof(int));
     ti->thresh2_enable = (int *) libmsr_malloc(cores * sizeof(int));
     ti->pwr_limit_notification_enable = (int *) libmsr_malloc(cores * sizeof(int));
-    allocate_batch(THERM_INTERR, num_cores());
+    allocate_batch(THERM_INTERR, cores);
     load_core_batch(IA32_THERM_INTERRUPT, ti->raw, THERM_INTERR);
     return 0;
 }
@@ -118,7 +120,7 @@ static int init_pkg_therm_stat(struct pkg_therm_stat * pts)
     pts->power_limit_status = (int *) libmsr_malloc(sockets * sizeof(int));
     pts->power_notification_log = (int *) libmsr_malloc(sockets * sizeof(int));
     pts->readout = (int *) libmsr_malloc(sockets * sizeof(int));
-    allocate_batch(PKG_THERM_STAT, num_sockets());
+    allocate_batch(PKG_THERM_STAT, sockets);
     load_socket_batch(IA32_PACKAGE_THERM_STATUS, pts->raw, PKG_THERM_STAT);
     return 0;
 }
@@ -136,7 +138,7 @@ static int init_pkg_therm_interrupt(struct pkg_therm_interrupt * pti)
     pti->thresh2_val = (int *) libmsr_malloc(sockets * sizeof(int));
     pti->thresh2_enable = (int *) libmsr_malloc(sockets * sizeof(int));
     pti->pwr_limit_notification_enable = (int *) libmsr_malloc(sockets * sizeof(int));
-    allocate_batch(PKG_THERM_INTERR, num_sockets());
+    allocate_batch(PKG_THERM_INTERR, sockets);
     load_socket_batch(IA32_PACKAGE_THERM_INTERRUPT, pti->raw, PKG_THERM_INTERR);
     return 0;
 }
@@ -251,7 +253,7 @@ void get_temp_target(struct msr_temp_target *s)
 	int i;
 	for(i=0; i<sockets; i++)
 	{
-		s->temp_target[i] = MASK_VAL(s->raw[i], 23, 16);	// Minimum temperature at which PROCHOT will
+		s->temp_target[i] = MASK_VAL(*s->raw[i], 23, 16);	// Minimum temperature at which PROCHOT will
 	}							// be asserted in degree Celsius (Probably 
 								// the TCC Activation Temperature)	
 }
@@ -269,20 +271,20 @@ void get_therm_stat(struct therm_stat *s)
 	int i;
 	for(i = 0; i< numCores ; i++)
 	{
-		s->status[i] = MASK_VAL(s->raw[i], 0,0);			// Indicates whether the digital thermal sensor
+		s->status[i] = MASK_VAL(*s->raw[i], 0,0);			// Indicates whether the digital thermal sensor
 									// high-temperature output signal (PROCHOT#) is
 									// currently active.
 									// (1=active)
 	
-		s->status_log[i] = MASK_VAL(s->raw[i], 1,1);			// Indicates the history of the thermal sensor high
+		s->status_log[i] = MASK_VAL(*s->raw[i], 1,1);			// Indicates the history of the thermal sensor high
 									// temperature output signal (PROCHOT#)
 									// If equals 1, PROCHOT# has been asserted since a 
 									// previous RESET or clear 0 by user
 									
-		s->PROCHOT_or_FORCEPR_event[i] = MASK_VAL(s->raw[i], 2,2);	// Indicates whether PROCHOT# or FORCEPR# is being 
+		s->PROCHOT_or_FORCEPR_event[i] = MASK_VAL(*s->raw[i], 2,2);	// Indicates whether PROCHOT# or FORCEPR# is being 
 									// asserted by another agent on the platform
 	
-		s->PROCHOT_or_FORCEPR_log[i] = MASK_VAL(s->raw[i], 3, 3);	// Indicates whether PROCHOT# or FORCEPR# has been 
+		s->PROCHOT_or_FORCEPR_log[i] = MASK_VAL(*s->raw[i], 3, 3);	// Indicates whether PROCHOT# or FORCEPR# has been 
 									// asserted by aother agent on the platform since
 									// the last clearing of the bit or a reset.
 									// (1=has been externally asserted)
@@ -290,52 +292,52 @@ void get_therm_stat(struct therm_stat *s)
 									// External PROCHOT# assertions are only acknowledged
 									// if the Bidirectional Prochot feature is enabled
 		
-		s->crit_temp_status[i] = MASK_VAL(s->raw[i], 4, 4);		// Indicates whether actual temp is currently higher
+		s->crit_temp_status[i] = MASK_VAL(*s->raw[i], 4, 4);		// Indicates whether actual temp is currently higher
 									// than or equal to the value set in Thermal Thresh 1
 									// (0 then actual temp is lower)
 									// (1 then equal to or higher)
 		
-		s->crit_temp_log[i] = MASK_VAL(s->raw[i], 5, 5);		// Sticky bit indicates whether the crit temp detector
+		s->crit_temp_log[i] = MASK_VAL(*s->raw[i], 5, 5);		// Sticky bit indicates whether the crit temp detector
 									// output signal has been asserted since the last reset
 									// or clear 
 									// (0 cleared) (1 asserted)
 	
-		s->therm_thresh1_status[i] = MASK_VAL(s->raw[i], 6,6);	// Indicates whether actual temp is currently higher than 
+		s->therm_thresh1_status[i] = MASK_VAL(*s->raw[i], 6,6);	// Indicates whether actual temp is currently higher than 
 									// or equal to the value set in Thermal Threshold 1
 									// (0 actual temp is lower) 
 									// (1 actual temp is greater than or equal to TT#1)
 		
-		s->therm_thresh1_log[i] = MASK_VAL(s->raw[i], 7, 7);		// Sticky bit indicates whether Thermal Threshold #1 has 
+		s->therm_thresh1_log[i] = MASK_VAL(*s->raw[i], 7, 7);		// Sticky bit indicates whether Thermal Threshold #1 has 
 									// been reached since last reset or clear 0. 
 		
-		s->therm_thresh2_status[i] = MASK_VAL(s->raw[i], 8,8);	// Same as therm_thresh1_status, except for Thermal Threshold #2
-		s->therm_thresh2_log[i] = MASK_VAL(s->raw[i], 9, 9);		// Same as therm_thresh1_log, except for Thermal Threshold #2
+		s->therm_thresh2_status[i] = MASK_VAL(*s->raw[i], 8,8);	// Same as therm_thresh1_status, except for Thermal Threshold #2
+		s->therm_thresh2_log[i] = MASK_VAL(*s->raw[i], 9, 9);		// Same as therm_thresh1_log, except for Thermal Threshold #2
 	
-		s->power_limit_status[i] = MASK_VAL(s->raw[i], 10, 10);	// Indicates whether the processor is currently operating below
+		s->power_limit_status[i] = MASK_VAL(*s->raw[i], 10, 10);	// Indicates whether the processor is currently operating below
 									// OS-requested P-state (specified in IA32_PERF_CTL), or 
 									// OS-requested clock modulation duty cycle (in IA32_CLOCK_MODULATION)
 									// This field supported only if CPUID.06H:EAX[bit 4] = 1
 									// Package level power limit notification can be delivered 
 									// independently to IA32_PACKAGE_THERM_STATUS MSR
 		
-		s->power_notification_log[i] = MASK_VAL(s->raw[i], 11, 11);	// Sticky bit indicates the processor went below OS-requested P-state
+		s->power_notification_log[i] = MASK_VAL(*s->raw[i], 11, 11);	// Sticky bit indicates the processor went below OS-requested P-state
 									// or OS-requested clock modulation duty cycle since last RESET
 									// or clear 0. Supported only if CPUID.06H:EAX[bit 4] = 1
 									// Package level power limit notification is indicated independently
 									// in IA32_PACKAGE_THERM_STATUS MSR
 	
-		s->readout[i] = MASK_VAL(s->raw[i], 22, 16);			// Digital temperature reading in 1 degree Celsius relative to the 
+		s->readout[i] = MASK_VAL(*s->raw[i], 22, 16);			// Digital temperature reading in 1 degree Celsius relative to the 
 									// TCC activation temperature
 									// (0: TCC Activation temperature)
 									// (1: (TCC Activation -1)... etc. )
 	
-		s->resolution_deg_celsius[i] = MASK_VAL(s->raw[i], 30, 27);	// Specifies the resolution (tolerance) of the digital thermal
+		s->resolution_deg_celsius[i] = MASK_VAL(*s->raw[i], 30, 27);	// Specifies the resolution (tolerance) of the digital thermal
 									// sensor. The value is in degrees Celsius. Recommended that
 									// new threshold values be offset from the current temperature by 
 									// at least the resolution + 1 in order to avoid hysteresis of
 									// interrupt generation
 	
-		s->readout_valid[i] = MASK_VAL(s->raw[i], 31, 31);		// Indicates if the digital readout is valid (valid if = 1)
+		s->readout_valid[i] = MASK_VAL(*s->raw[i], 31, 31);		// Indicates if the digital readout is valid (valid if = 1)
 	}
 }
 
@@ -347,41 +349,41 @@ void get_therm_interrupt(struct therm_interrupt *s)
 	int i;
 	for(i=0;i< numCores ;i++)
 	{
-		s->high_temp_enable[i] = MASK_VAL(s->raw[i], 0, 0);	// Allows the BIOS to enable the generation of an inerrupt on the
+		s->high_temp_enable[i] = MASK_VAL(*s->raw[i], 0, 0);	// Allows the BIOS to enable the generation of an inerrupt on the
 									// transition from low-temp to a high-temp threshold. 
 									// 0 (default) disable[i]s interrupts (1 enables interrupts)
 	
-		s->low_temp_enable[i] = MASK_VAL(s->raw[i], 1, 1);	// Allows the BIOS to enable generation of an interrupt on the
+		s->low_temp_enable[i] = MASK_VAL(*s->raw[i], 1, 1);	// Allows the BIOS to enable generation of an interrupt on the
 									// transistion from high temp to low temp (TCC de-activation)
 									// 0 (default) disable[i]s interrupts (1 enables interrupts)
 	
-		s->PROCHOT_enable[i] = MASK_VAL(s->raw[i], 2, 2);	// Allows BIOS or OS to enable generation of an interrupt when 
+		s->PROCHOT_enable[i] = MASK_VAL(*s->raw[i], 2, 2);	// Allows BIOS or OS to enable generation of an interrupt when 
 									// PROCHOT has been asserted by another agent on the platform
 									// and the Bidirectional Prochot feature is enable[i]d
 									// (0 disable[i]s) (1 enables)
 	
-		s->FORCEPR_enable[i] = MASK_VAL(s->raw[i], 3, 3);	// Allows the BIOS or OS to enable generation of an interrupt when
+		s->FORCEPR_enable[i] = MASK_VAL(*s->raw[i], 3, 3);	// Allows the BIOS or OS to enable generation of an interrupt when
 									// FORCEPR # has been asserted by another agent on the platform. 
 									// (0 disable[i]s the interrupt) (2 enables)
 	
-		s->crit_temp_enable[i] = MASK_VAL(s->raw[i], 4, 4);	// Enables generations of interrupt when the critical temperature 
+		s->crit_temp_enable[i] = MASK_VAL(*s->raw[i], 4, 4);	// Enables generations of interrupt when the critical temperature 
 									// detector has detected a critical thermal condition. 
 									// Recommended responce: system shutdown
 									// (0 disable[i]s interrupt) (1 enables)
 	
-		s->thresh1_val[i] = MASK_VAL(s->raw[i], 14, 8);		// A temp threshold. Encoded relative to the TCC Activation temperature 
+		s->thresh1_val[i] = MASK_VAL(*s->raw[i], 14, 8);		// A temp threshold. Encoded relative to the TCC Activation temperature 
 									// (same format as digital readout) 
 									// used to generate therm_thresh1_status and therm_thresh1_log and
 									// Threshold #1 thermal interrupt delivery
 	
-		s->thresh1_enable[i] = MASK_VAL(s->raw[i], 15, 15);	// Enables generation of an interrupt when the actual temperature  
+		s->thresh1_enable[i] = MASK_VAL(*s->raw[i], 15, 15);	// Enables generation of an interrupt when the actual temperature  
 									// crosses Threshold #1 setting in any direction 
 									// (ZERO ENABLES the interrupt) (ONE DISABLES the interrupt)
 	
-		s->thresh2_val[i] = MASK_VAL(s->raw[i], 22, 16);	// See above description for thresh1_val (just for thresh2)
-		s->thresh2_enable[i] = MASK_VAL(s->raw[i], 23, 23);	// See above description for thresh1_enable (just for thresh2)
+		s->thresh2_val[i] = MASK_VAL(*s->raw[i], 22, 16);	// See above description for thresh1_val (just for thresh2)
+		s->thresh2_enable[i] = MASK_VAL(*s->raw[i], 23, 23);	// See above description for thresh1_enable (just for thresh2)
 	
-		s->pwr_limit_notification_enable[i] = MASK_VAL(s->raw[i], 24, 24);// Enables generation of power notification events when the processor
+		s->pwr_limit_notification_enable[i] = MASK_VAL(*s->raw[i], 24, 24);// Enables generation of power notification events when the processor
 										// went below OS-requested P-state or OS-requested clock modulation 
 										// duty cycle. 
 										// THIS FIELD SUPPORTED ONLY IF CPUID.06H:EAX[bit 4] = 1
@@ -398,52 +400,52 @@ void get_pkg_therm_stat(struct pkg_therm_stat *s)
 	int i;
 	for(i=0;i<sockets ;i++)
 	{
-		s->status[i] = MASK_VAL(s->raw[i],0,0);			// Indicates whether the digital thermal sensor 
+		s->status[i] = MASK_VAL(*s->raw[i],0,0);			// Indicates whether the digital thermal sensor 
 									// high-temp output signal (PROCHOT#) for the pkg
 									// currently active. (1=active)
 	
-		s->status_log[i] = MASK_VAL(s->raw[i],1,1);		// Indicates the history of thermal sensor high
+		s->status_log[i] = MASK_VAL(*s->raw[i],1,1);		// Indicates the history of thermal sensor high
 	       								// temp output signal (PROCHOT#) of pkg. 
 									// (1= pkg PROCHOT# has been asserted since previous 
 									// reset or last time software cleared bit.
 	
-		s->PROCHOT_event[i] = MASK_VAL(s->raw[i],2,2);		// Indicates whether pkg PROCHOT# is being asserted by
+		s->PROCHOT_event[i] = MASK_VAL(*s->raw[i],2,2);		// Indicates whether pkg PROCHOT# is being asserted by
 									// another agent on the platform
 	
-		s->PROCHOT_log[i] = MASK_VAL(s->raw[i],3,3);		// Indicates whether pkg PROCHET# has been asserted by 
+		s->PROCHOT_log[i] = MASK_VAL(*s->raw[i],3,3);		// Indicates whether pkg PROCHET# has been asserted by 
 									// another agent on the platform since the last clearing
 									// of the bit by software or reset. (1= has been externally
 									// asserted) (write 0 to clear)
 	
-		s->crit_temp_status[i] = MASK_VAL(s->raw[i],4,4);	// Indicates whether pkg crit temp detector output signal
+		s->crit_temp_status[i] = MASK_VAL(*s->raw[i],4,4);	// Indicates whether pkg crit temp detector output signal
 									// is currently active (1=active)
 	
-		s->crit_temp_log[i] = MASK_VAL(s->raw[i],5,5);		// Indicates whether pkg crit temp detector output signal
+		s->crit_temp_log[i] = MASK_VAL(*s->raw[i],5,5);		// Indicates whether pkg crit temp detector output signal
 	       								//been asserted since the last clearing of bit or reset 
 									//(1=has been asserted) (set 0 to clear)
 	
-		s->therm_thresh1_status[i] = MASK_VAL(s->raw[i],6,6);	// Indicates whether actual pkg temp is currently higher 
+		s->therm_thresh1_status[i] = MASK_VAL(*s->raw[i],6,6);	// Indicates whether actual pkg temp is currently higher 
 									// than or equal to value set in Package Thermal Threshold #1
 									// (0=actual temp lower) (1= actual temp >= PTT#1)
 	
-		s->therm_thresh1_log[i] = MASK_VAL(s->raw[i],7,7);	// Indicates whether pkg therm threshold #1 has been reached 
+		s->therm_thresh1_log[i] = MASK_VAL(*s->raw[i],7,7);	// Indicates whether pkg therm threshold #1 has been reached 
 									// since last software clear of bit or reset. (1= reached)
 									// (clear with 0)
 	
-		s->therm_thresh2_status[i] = MASK_VAL(s->raw[i],8,8);	// Same as above (therm_thresh1_stat) except it is for threshold #2
-		s->therm_thresh2_log[i] = MASK_VAL(s->raw[i],9,9);	// Same as above (therm_thresh2_log) except it is for treshold #2
+		s->therm_thresh2_status[i] = MASK_VAL(*s->raw[i],8,8);	// Same as above (therm_thresh1_stat) except it is for threshold #2
+		s->therm_thresh2_log[i] = MASK_VAL(*s->raw[i],9,9);	// Same as above (therm_thresh2_log) except it is for treshold #2
 	
-		s->power_limit_status[i] = MASK_VAL(s->raw[i],10,10);	// Indicates pkg power limit forcing 1 or more processors to  
+		s->power_limit_status[i] = MASK_VAL(*s->raw[i],10,10);	// Indicates pkg power limit forcing 1 or more processors to  
 									// operate below OS-requested P-state
 									// (Note: pkg power limit violation may be caused by processor
 									// cores or by devices residing in the uncore - examine 
 									// IA32_THERM_STATUS to determine if cause from processor core)
 	
-		s->power_notification_log[i] = MASK_VAL(s->raw[i],11,11);// Indicates any processor from package went below OS-requested
+		s->power_notification_log[i] = MASK_VAL(*s->raw[i],11,11);// Indicates any processor from package went below OS-requested
 									// P-state or OS-requested clock modulation duty cycle since
 									// last clear or RESET
 	
-		s->readout[i] = MASK_VAL(s->raw[i],22,16); 			// Pkg digital temp reading in 1 degree Celsius relative to
+		s->readout[i] = MASK_VAL(*s->raw[i],22,16); 			// Pkg digital temp reading in 1 degree Celsius relative to
 									// the pkg TCC activation temp
 									// (0 = Package TTC activation temp)
 									// (1 = (PTCC Activation - 1) etc. 
@@ -459,35 +461,35 @@ void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 	int i;
 	for(i=0;i<sockets ;i++)
 	{
-		s->high_temp_enable[i] = MASK_VAL(s->raw[i], 0, 0);	// Allows the BIOS to enable the generation of an interrupt on transition
+		s->high_temp_enable[i] = MASK_VAL(*s->raw[i], 0, 0);	// Allows the BIOS to enable the generation of an interrupt on transition
 								// from low temp to pkg high temp threshold
 								// (0 (default)- disables interrupts) (1=enables interrupts)
 	
-		s->low_temp_enable[i] = MASK_VAL(s->raw[i], 1, 1);	// Allows BIOS to enable the generation of an interrupt on transition
+		s->low_temp_enable[i] = MASK_VAL(*s->raw[i], 1, 1);	// Allows BIOS to enable the generation of an interrupt on transition
 								// from high temp to a low temp (TCC de-activation)
 								// (0 (default)- diabales interrupts) (1=enables interrupts)
 	
-		s->PROCHOT_enable[i] = MASK_VAL(s->raw[i], 2, 2);	// Allows BIOS or OS to enable generation of an interrupt when pkg PROCHOT#
+		s->PROCHOT_enable[i] = MASK_VAL(*s->raw[i], 2, 2);	// Allows BIOS or OS to enable generation of an interrupt when pkg PROCHOT#
 								// has been asserted by another agent on the platform and the Bidirectional
 								// Prochot feature is enabled. (0 disables interrupt) (1 enables interrupt)
 	
-		s->crit_temp_enable[i] = MASK_VAL(s->raw[i], 4, 4);	// Enables generation of interrupt when pkg crit temp detector has detected
+		s->crit_temp_enable[i] = MASK_VAL(*s->raw[i], 4, 4);	// Enables generation of interrupt when pkg crit temp detector has detected
 								// a crit thermal condition. Recommended response: system shut down.
 								// (0 disables interrupt) (1 enables)
 								
-		s->thresh1_val[i] = MASK_VAL(s->raw[i], 14, 8);	// A temp threshold, encoded relative to the Package TCC Activation temp
+		s->thresh1_val[i] = MASK_VAL(*s->raw[i], 14, 8);	// A temp threshold, encoded relative to the Package TCC Activation temp
 								// using format as Digital Readout
 								// Compared against the Package Digital Readout and used to generate 
 								// Package Thermal Threshold #1 status and log bits as well as 
 								// the Package Threshold #1 thermal interrupt delivery
-		s->thresh1_enable[i] = MASK_VAL(s->raw[i], 15, 15);	// Enables the generation of an interrupt when the actual temp crosses 
+		s->thresh1_enable[i] = MASK_VAL(*s->raw[i], 15, 15);	// Enables the generation of an interrupt when the actual temp crosses 
 								// the thresh1_val setting in any direction
 								// (0 enables interrupt) (1 disables interrupt)
 								
-		s->thresh2_val[i] = MASK_VAL(s->raw[i], 22, 16);	// See thresh1_val
-		s->thresh2_enable[i] = MASK_VAL(s->raw[i], 23, 23);	// See thresh1_enable
+		s->thresh2_val[i] = MASK_VAL(*s->raw[i], 22, 16);	// See thresh1_val
+		s->thresh2_enable[i] = MASK_VAL(*s->raw[i], 23, 23);	// See thresh1_enable
 	
-		s->pwr_limit_notification_enable[i] = MASK_VAL(s->raw[i], 24, 24);	// Enables generation of package power notification events
+		s->pwr_limit_notification_enable[i] = MASK_VAL(*s->raw[i], 24, 24);	// Enables generation of package power notification events
 	}
 }
 
@@ -505,7 +507,6 @@ void set_therm_stat(struct therm_stat *s)
 		assert(s->therm_thresh2_log[i] == 0 || s->therm_thresh2_log[i] == 1);
 		assert(s->power_notification_log[i] == 0 || s->power_notification_log[i] == 1);
         */
-		
 		*s->raw[i] = (*s->raw[i] & (~(1<<1))) | (s->status_log[i] << 1);
 		*s->raw[i] = (*s->raw[i] & (~(1<<3))) | (s->PROCHOT_or_FORCEPR_log[i] << 1);
 		*s->raw[i] = (*s->raw[i] & (~(1<<5))) | (s->crit_temp_log[i] << 1);
@@ -719,6 +720,54 @@ void dump_thermal_verbose_label( FILE *writeFile )
 	}
 }
 
+void dump_therm_reading(FILE *writeFile)
+{
+	is_init();
+    static struct therm_stat * t_stat = NULL;
+    static struct therm_interrupt * t_interrupt = NULL;
+    static struct pkg_therm_stat * pkg_stat = NULL;
+    static struct msr_temp_target * t_target = NULL;
+    static struct pkg_therm_interrupt * pkg_interrupt = NULL;
+    if (pkg_stat == NULL)
+    {
+        store_therm_stat(&t_stat);
+        store_therm_interrupt(&t_interrupt);
+        store_pkg_therm_stat(&pkg_stat);
+        store_temp_target(&t_target);
+        store_pkg_therm_interrupt(&pkg_interrupt);
+    }
+	get_therm_stat(t_stat);
+	get_therm_interrupt(t_interrupt);
+    get_pkg_therm_stat(pkg_stat);
+    get_pkg_therm_interrupt(pkg_interrupt);
+    get_temp_target(t_target);
+    uint64_t sockets = num_sockets();
+    uint64_t cores = num_cores();
+    int actTemp = 0;
+    int i, j;
+    for (i = 0; i < sockets; i++)
+    {
+//        fprintf(writeFile, "temp target RAW: %lu\n", *t_target->raw[i]);
+//        fprintf(writeFile, "RAW: %lu\n", *pkg_stat->raw[i]);
+        fprintf(writeFile, "socket reading actual TCC\n");
+        fprintf(writeFile, "%14d", pkg_stat->readout[i]);
+		actTemp=(t_target->temp_target[i] - pkg_stat->readout[i]);
+		fprintf(writeFile, "%7d", actTemp);
+        fprintf(writeFile, "%4lu\n", t_target->temp_target[i]);
+        
+        fprintf(writeFile, "core reading actual valid\n");
+        for (j = 0; j < cores; j++)
+        {
+            
+            fprintf(writeFile, "%12d", t_stat->readout[j]);
+			actTemp=(t_target->temp_target[i]-t_stat->readout[j]);
+			fprintf(writeFile, "%7d", actTemp);
+			fprintf(writeFile, "%6d\n", t_stat->readout_valid[j]);
+           
+        }
+    }
+}
+
 void dump_thermal_verbose( FILE *writeFile )
 {
 	is_init();
@@ -739,6 +788,7 @@ void dump_thermal_verbose( FILE *writeFile )
 	get_therm_interrupt(t_interrupt);
 	get_pkg_therm_stat(pkg_stat);
 	get_pkg_therm_interrupt(pkg_interrupt);
+    get_temp_target(t_target);
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d DEBUG: (dump_thermal_verbose)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
