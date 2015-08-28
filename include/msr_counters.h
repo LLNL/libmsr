@@ -83,6 +83,8 @@ struct pmc
 extern "C" {
 #endif
 
+int print_available_counters();
+
 int enable_pmc();
 int clear_pmc();
 int dump_pmc_readable(FILE * writefile);

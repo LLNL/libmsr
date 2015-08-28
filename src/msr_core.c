@@ -53,6 +53,32 @@
 #define LIBMSR_DEBUG_TAG "LIBMSR"
 #define FILENAME_SIZE 1024
 
+/*
+static int restore_storage(off_t msr, int restore)
+{
+    static short msrtracker[1024];
+    static struct msr_batch_array restore_batch;
+    static uint64_t * stdrestore;
+    static unsigned std_restore_size = 8;
+    static unsigned batch_restore_size = 8;
+    static unsigned last = 0;
+    static int init = 1;
+    if (init)
+    {
+        int i;
+        for (i = 0; i < 1024; i++)
+        {
+            msrtracker[i] = 0;
+        }
+        init = 0;
+        stdrestore = (uint64_t *) libmsr_malloc(std_restore_size * sizeof(uint64_t));
+        restore_batch.ops = (msr_batch_op *) libmsr_calloc(batch_restore_size, sizeof(msr_batch_op));
+        restore_batch.numops = 0;
+    }
+    
+}
+*/
+
 uint64_t num_cores()
 {
     static uint64_t coresPerSocket = 0, sockets = 0;
@@ -709,7 +735,7 @@ load_core_batch( off_t msr, uint64_t **val , int batchnum)
     if (coresPerSocket == 0 || threadsPerCore == 0)
     {
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
-        coretotal = num_devs() / 2;
+        coretotal = sockets * coresPerSocket;
     }
 #ifdef LIBMSR_DEBUG
 	fprintf(stderr, "%s %s %s::%d (read_all_cores) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 

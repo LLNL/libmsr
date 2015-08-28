@@ -166,6 +166,8 @@ struct rapl_limit{
 extern "C" {
 #endif
 
+int print_available_rapl();
+
 int rapl_storage(struct rapl_data ** data, uint64_t ** flags);
 int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags);
 int rapl_finalize();
