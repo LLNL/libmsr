@@ -1,0 +1,4 @@
+CREATE PERSISTENTTABLE cluster (
+   node varchar(128) primary key,
+   state integer
+)

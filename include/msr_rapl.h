@@ -32,6 +32,7 @@
 #ifndef MSR_RAPL_H
 #define MSR_RAPL_H
 #include <stdint.h>
+#include <stdio.h>
 #include <sys/time.h>
 // TLCC2 architecture uses 062D processors; 
 // those are the only ones we care about.
