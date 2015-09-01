@@ -1,0 +1,7 @@
+subscribe p to PowerIn;
+associate po with poweractuals;
+sequence s;
+behavior {
+    s = Sequence( p.node, p.sock0con, p.sock1con, p.sock0alloc, p.sock1alloc );
+    insert( po, Identifier(p.node), s );
+}
