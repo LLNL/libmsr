@@ -1,3 +1,4 @@
+// NOTE: this code has not been updated in a while, see libmsr_test.c for working examples
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>

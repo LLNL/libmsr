@@ -150,10 +150,11 @@ void test_all_limits()
 
 // TODO: test other parts of thermal
 void thermal_test(){
-	dump_thermal_verbose_label(stdout);
-	fprintf(stdout, "\n");
-	dump_thermal_verbose(stdout);
-	fprintf(stdout, "\n");
+	//dump_thermal_verbose_label(stdout);
+	//fprintf(stdout, "\n");
+	//dump_thermal_verbose(stdout);
+	//fprintf(stdout, "\n");
+    dump_therm_reading(stdout);
 }
 
 void counters_test()
@@ -288,6 +289,8 @@ int main(int argc, char** argv)
         return -1;
     }
     printf("init done\n");
+    print_available_rapl();
+    print_available_counters();
     enable_fixed_counters();
 	get_limits();
     unsigned i;
@@ -320,7 +323,7 @@ int main(int argc, char** argv)
     printf("misc test\n");
     misc_test();
 
-	finalize_msr(1);
+	finalize_msr();
 	#ifdef MPI
 	MPI_Finalize();
 	#endif

@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
   } else {
     usage();
   }
-  finalize_msr(1);
+  finalize_msr();
 
   exit(0);
 }

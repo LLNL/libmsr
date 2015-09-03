@@ -53,32 +53,6 @@
 #define LIBMSR_DEBUG_TAG "LIBMSR"
 #define FILENAME_SIZE 1024
 
-/*
-static int restore_storage(off_t msr, int restore)
-{
-    static short msrtracker[1024];
-    static struct msr_batch_array restore_batch;
-    static uint64_t * stdrestore;
-    static unsigned std_restore_size = 8;
-    static unsigned batch_restore_size = 8;
-    static unsigned last = 0;
-    static int init = 1;
-    if (init)
-    {
-        int i;
-        for (i = 0; i < 1024; i++)
-        {
-            msrtracker[i] = 0;
-        }
-        init = 0;
-        stdrestore = (uint64_t *) libmsr_malloc(std_restore_size * sizeof(uint64_t));
-        restore_batch.ops = (msr_batch_op *) libmsr_calloc(batch_restore_size, sizeof(msr_batch_op));
-        restore_batch.numops = 0;
-    }
-    
-}
-*/
-
 uint64_t num_cores()
 {
     static uint64_t coresPerSocket = 0, sockets = 0;
@@ -416,72 +390,6 @@ int cores_assert(const unsigned * core, const int location, const char * file)
     return 0;
 }
 
-int core_storage(int recover, recover_data * recoverValue)
-{
-    static unsigned allocated = 0;
-    static recover_data  * recovery = NULL;
-    static unsigned size = 0;
-    static uint64_t coresPerSocket = 0, threadsPerCore = 0, sockets = 0;
-    int i;
-
-    if (recovery == NULL)
-    {
-        core_config(&coresPerSocket, &threadsPerCore, &sockets, 0);
-        allocated = 2;
-        recovery = (recover_data *) libmsr_malloc(allocated * sizeof(recover_data));
-    }
-    if (recoverValue)
-    {
-        if (size > allocated)
-        {
-            fprintf(stderr, "%s %s::%d ERROR: allocation error\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-            return -1;
-        }
-        else
-        {
-            if (size == allocated)
-            {
-                recover_data * temp = recovery;
-                allocated *= 2;
-                temp = (recover_data *) libmsr_realloc(recovery, allocated * sizeof(recover_data));
-#ifdef LIBMSR_DEBUG
-                fprintf(stderr, "ALLOC: realloc from %p to %p, space %u, size %u\n", recovery, temp, allocated, size);
-#endif 
-                recovery = temp;
-            }
-            if (recoverValue)
-            {
-                for (i = 0; i < size; i++)
-                {
-                    if (recovery[i].msr == recoverValue->msr && recovery[i].socket == recoverValue->socket &&
-                        recovery[i].core == recoverValue->core && recovery[i].thread == recoverValue->thread)
-                    {
-                        return 0;
-                    }
-                }
-                recovery[size] = *recoverValue;
-                size++;
-            }
-        }
-    }
-    if (recover)
-    {
-        for( i = 0; i < size; i++)
-        {
-#ifdef LIBMSR_DEBUG
-            fprintf(stderr, "DEBUG: item %d, recovering msr %lx, on socket %d, core %d, thread %d, with data %lx\n",
-                    i, recovery[i].msr, recovery[i].socket, recovery[i].core, recovery[i].thread, recovery[i].bits);
-#endif
-            write_msr_by_idx(recovery[i].socket * coresPerSocket + recovery[i].core * threadsPerCore +
-                             recovery[i].thread, recovery[i].msr, recovery[i].bits);
-        }
-#ifdef LIBMSR_DEBUG 
-        fprintf(stderr, "DEBUG: core storage is at %p, first value is %lx\n", recovery, recovery[0].bits);
-#endif
-    }
-    return 0;
-}
-
 int stat_module(char * filename, int * kerneltype, int * dev_idx)
 {
 	struct stat statbuf;
@@ -580,7 +488,7 @@ int init_msr()
 	return 0;
 }
 
-int finalize_msr(const int restore)
+int finalize_msr()
 {
 	int dev_idx;
     int rc;
@@ -591,10 +499,6 @@ int finalize_msr(const int restore)
     fprintf(stderr, "DEBUG: finalize_msr\n");
 #endif
     
-    if (restore)
-    {
-        core_storage(restore, NULL);
-    }
     //close the file descriptors
 	for (dev_idx=0; dev_idx < (numDevs); dev_idx++)
     {
@@ -626,19 +530,12 @@ write_msr_by_coord( unsigned socket, unsigned core, unsigned thread, off_t msr, 
     sockets_assert(&socket, __LINE__, __FILE__);
     cores_assert(&core, __LINE__, __FILE__);
     threads_assert(&thread, __LINE__, __FILE__);
-    recover_data oldvalue;
-    oldvalue.socket = socket;
-    oldvalue.core = core;
-    oldvalue.thread = thread;
-    oldvalue.msr = msr;
     static uint64_t coresPerSocket = 0;
     static uint64_t threadsPerCore = 0;
     if (coresPerSocket == 0 || threadsPerCore == 0)
     {
         core_config(&coresPerSocket, &threadsPerCore, NULL, NULL);
     }
-    read_msr_by_idx((thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core, msr, &oldvalue.bits);
-    core_storage(0, &oldvalue);
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s %s::%d (write_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx) val=%lu\n", 
             getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr, val);

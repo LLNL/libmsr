@@ -114,15 +114,6 @@ extern "C" {
 #define  X86_IOC_MSR_BATCH _IOWR('c', 0xA2, msr_batch_array)
 #define MSR_BATCH_DIR "/dev/cpu/msr_batch"
 
-typedef struct recover_data
-{
-    uint64_t bits;
-    unsigned socket;
-    unsigned core;
-    unsigned thread;
-    off_t msr;
-} recover_data;
-
 struct msr_batch_op {
 	__u16 cpu;		/* In: CPU to execute {rd/wr}msr ins. */
 	__u16 isrdmsr;		/* In: 0=wrmsr, non-zero=rdmsr */
@@ -143,14 +134,13 @@ uint64_t num_devs();
 uint64_t cores_per_socket();
 
 int init_msr();
-int finalize_msr(const int restore);
+int finalize_msr();
 
 int allocate_batch(int batchnum, size_t bsize);
 int read_batch(const int batchnum);
 int write_batch(const int batchnum);
 int free_batch(int batchnum);
 
-int core_storage(int recover, recover_data * recoverValue);
 int core_config(uint64_t * coresPerSocket, uint64_t * threadsPerCore, uint64_t * sockets, int * HTenabled);
 
 int sockets_assert(const unsigned * socket, const int location, const char * file);
