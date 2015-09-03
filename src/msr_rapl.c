@@ -187,21 +187,6 @@ struct rapl_units{
 	double watts;
 };
 
-struct rapl_power_info{
-	uint64_t msr_pkg_power_info;	// raw msr values
-
-	double pkg_max_power;		// watts
-	double pkg_min_power;
-	double pkg_max_window;		// seconds
-	double pkg_therm_power;		// watts
-
-	uint64_t msr_dram_power_info;
-	double dram_max_power;		// watts
-	double dram_min_power;
-	double dram_max_window;		// seconds
-	double dram_therm_power;	// watts
-};
-
 int print_available_rapl()
 {
     uint64_t * rapl_flags = NULL;
@@ -653,8 +638,7 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 }
 
 // This retrieves the data from the POWER_INFO registers for all available rapl domains
-static int
-get_rapl_power_info( const unsigned socket, struct rapl_power_info *info){
+int get_rapl_power_info( const unsigned socket, struct rapl_power_info *info){
 	uint64_t val = 0;
     static uint64_t * rapl_flags = NULL;
     static uint64_t model = 0;

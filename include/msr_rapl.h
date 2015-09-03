@@ -140,6 +140,20 @@ struct rapl_limit{
 	uint64_t 	bits;		// User-unfriendly interface.
 };
 
+struct rapl_power_info{
+	uint64_t msr_pkg_power_info;	// raw msr values
+
+	double pkg_max_power;		// watts
+	double pkg_min_power;
+	double pkg_max_window;		// seconds
+	double pkg_therm_power;		// watts
+
+	uint64_t msr_dram_power_info;
+	double dram_max_power;		// watts
+	double dram_min_power;
+	double dram_max_window;		// seconds
+	double dram_therm_power;	// watts
+};
 
 // We're going to overload this interface a bit...
 //
@@ -171,6 +185,8 @@ int print_available_rapl();
 int rapl_storage(struct rapl_data ** data, uint64_t ** flags);
 int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags);
 int rapl_finalize();
+
+int get_rapl_power_info(const unsigned socket, struct rapl_power_info &info);
 
 int set_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1, struct rapl_limit * limit2);
 int set_dram_rapl_limit(const unsigned socket, struct rapl_limit * limit);

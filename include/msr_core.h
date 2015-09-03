@@ -80,9 +80,17 @@ enum{
     PKG_THERM_INTERR,
     TEMP_TARGET,
     PERF_CTL,
+    USR_BATCH0,// Set aside for user defined use
     USR_BATCH1, // Set aside for user defined use
     USR_BATCH2, // Set aside for user defined use
-    USR_BATCH3  // Set aside for user defined use
+    USR_BATCH3,  // Set aside for user defined use
+    USR_BATCH4,
+    USR_BATCH5,
+    USR_BATCH6,
+    USR_BATCH7,
+    USR_BATCH8,
+    USR_BATCH9,
+    USR_BATCH10
 };
 
 enum
@@ -136,6 +144,7 @@ uint64_t cores_per_socket();
 int init_msr();
 int finalize_msr();
 
+int create_batch_op(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnum);
 int allocate_batch(int batchnum, size_t bsize);
 int read_batch(const int batchnum);
 int write_batch(const int batchnum);
