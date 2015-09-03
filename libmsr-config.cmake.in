@@ -11,18 +11,8 @@ if (NOT libmsr_CONFIG_LOADED)
 
     #Includes needed to use libmsr
     set(libmsr_INCLUDE_PATH     ${libmsr_INCLUDE_DIR})
-    set(libmsr_LIB_PATH         @{libmsr_LIB_DIR})
-    #Whether the library was bulit with MPI
-    set(libmsr_HAVE_MPI         @LIBMSR_HAVE_MPI@)
-    set(libmsr_INSTALL_PREFIX	@CMAKE_INSTALL_PREFIX@)
-    set(libmsr_INCLUDE_DIR	${libmsr_INSTALL_PREFIX}/include)
-    set(libmsr_LIB_DIR		${libmsr_INSTALL_PREFIX}/lib)
+    set(libmsr_LIB_PATH         ${libmsr_LIB_DIR})
 
-    #Includes needed to use libmsr
-    set(libmsr_INCLUDE_PATH	${libmsr_INCLUDE_DIR})
-    set(libmsr_LIB_PATH		@{libmsr_LIB_DIR})
-    #Whether the library was bulit with MPI
-    set(libmsr_HAVE_MPI 	@LIBMSR_HAVE_MPI@)
     #Library targets imported from file
-    include(${libmsr_CMAKE_DIR}/libmsr-libs.cmake)
+    include(${libmsr_INSTALL_PREFIX}/share/cmake/libmsr/libmsr-libs.cmake)
 endif()
