@@ -186,7 +186,7 @@ int rapl_storage(struct rapl_data ** data, uint64_t ** flags);
 int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags);
 int rapl_finalize();
 
-int get_rapl_power_info(const unsigned socket, struct rapl_power_info &info);
+int get_rapl_power_info(const unsigned socket, struct rapl_power_info * info);
 
 int set_pkg_rapl_limit(const unsigned socket, struct rapl_limit * limit1, struct rapl_limit * limit2);
 int set_dram_rapl_limit(const unsigned socket, struct rapl_limit * limit);
