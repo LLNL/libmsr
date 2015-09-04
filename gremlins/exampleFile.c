@@ -78,10 +78,10 @@ FILE* getFileID();
 
 static int fortran_init = 0;
 /* ================== C Wrappers for MPI_Init ================== */
-_EXTERN_C_ int PMPI_Init(int *arg_0, char ***arg_1);
-_EXTERN_C_ int MPI_Init(int *arg_0, char ***arg_1) { 
+_EXTERN_C_ int PMPI_Init(int *argc, char ***argv);
+_EXTERN_C_ int MPI_Init(int *argc, char ***argv) { 
     int _wrap_py_return_val = 0;
-    if (in_wrapper) return PMPI_Init(arg_0, arg_1);
+    if (in_wrapper) return PMPI_Init(argc, argv);
     in_wrapper = 1;
 
 	    if (fortran_init) {
@@ -102,7 +102,7 @@ _EXTERN_C_ int MPI_Init(int *arg_0, char ***arg_1) {
         pmpi_init_(&_wrap_py_return_val);
 #endif /* !PIC */
     } else {
-        _wrap_py_return_val = PMPI_Init(arg_0, arg_1);
+        _wrap_py_return_val = PMPI_Init(argc, argv);
     }
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);

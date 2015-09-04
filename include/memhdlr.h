@@ -35,6 +35,8 @@
 
 // These functions are for libmsr use only. Use outside of libmsr may cause
 // segfaults or disrupt libmsr functions.
+// The primary purpose of these functions is to simplify memory management and debugging 
+// (debugging much easier), but there are plans to add more functionality in the future.
 
 //#define MEMHDLR_DEBUG
 #define MEMERR_GENERIC (fprintf(stderr, "%s %s::%d ERROR: could not allocate memory\n", getenv("HOSTNAME"), __FILE__, __LINE__))

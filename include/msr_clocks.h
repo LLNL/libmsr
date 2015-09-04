@@ -62,6 +62,10 @@ struct clock_mod{
 extern "C" {
 #endif
 
+// This function allows access to the raw MSR data
+// there are plans to change these to structs so the indirection is less crazy
+int clocks_storage(uint64_t *** aperf_val, uint64_t *** mperf_val, uint64_t *** tsc_val);
+
 void read_all_clocks(uint64_t ** aperf, uint64_t ** mperf, uint64_t ** tsc);
 void read_all_aperf(uint64_t **aperf);
 void read_all_mperf(uint64_t **mperf);

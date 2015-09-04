@@ -80,9 +80,17 @@ enum{
     PKG_THERM_INTERR,
     TEMP_TARGET,
     PERF_CTL,
+    USR_BATCH0,// Set aside for user defined use
     USR_BATCH1, // Set aside for user defined use
     USR_BATCH2, // Set aside for user defined use
-    USR_BATCH3  // Set aside for user defined use
+    USR_BATCH3,  // Set aside for user defined use
+    USR_BATCH4,
+    USR_BATCH5,
+    USR_BATCH6,
+    USR_BATCH7,
+    USR_BATCH8,
+    USR_BATCH9,
+    USR_BATCH10
 };
 
 enum
@@ -114,15 +122,6 @@ extern "C" {
 #define  X86_IOC_MSR_BATCH _IOWR('c', 0xA2, msr_batch_array)
 #define MSR_BATCH_DIR "/dev/cpu/msr_batch"
 
-typedef struct recover_data
-{
-    uint64_t bits;
-    unsigned socket;
-    unsigned core;
-    unsigned thread;
-    off_t msr;
-} recover_data;
-
 struct msr_batch_op {
 	__u16 cpu;		/* In: CPU to execute {rd/wr}msr ins. */
 	__u16 isrdmsr;		/* In: 0=wrmsr, non-zero=rdmsr */
@@ -143,14 +142,14 @@ uint64_t num_devs();
 uint64_t cores_per_socket();
 
 int init_msr();
-int finalize_msr(const int restore);
+int finalize_msr();
 
+int create_batch_op(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnum);
 int allocate_batch(int batchnum, size_t bsize);
 int read_batch(const int batchnum);
 int write_batch(const int batchnum);
 int free_batch(int batchnum);
 
-int core_storage(int recover, recover_data * recoverValue);
 int core_config(uint64_t * coresPerSocket, uint64_t * threadsPerCore, uint64_t * sockets, int * HTenabled);
 
 int sockets_assert(const unsigned * socket, const int location, const char * file);

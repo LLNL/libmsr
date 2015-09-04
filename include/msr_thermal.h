@@ -146,6 +146,13 @@ struct pkg_therm_interrupt{			//Package(socket) scope
 extern "C" {
 #endif
 
+// These functions allow access of the raw MSR data
+int store_temp_target(struct msr_temp_target ** tt);
+int store_therm_stat(struct therm_stat ** ts);
+int store_therm_interrupt(struct therm_interrupt ** ti);
+int store_pkg_therm_stat(struct pkg_therm_stat ** ps);
+int store_pkg_therm_interrupt(struct pkg_therm_interrupt ** pi);
+
 void dump_msr_temp_target();
 void get_temp_target(struct msr_temp_target *s);
 
@@ -163,6 +170,8 @@ void set_therm_stat(struct therm_stat *s);
 void set_therm_interrupt(struct therm_interrupt *s);
 void set_pkg_therm_stat(struct pkg_therm_stat *s);
 void set_pkg_therm_interrupt(struct pkg_therm_interrupt *s);
+
+void dump_therm_reading(FILE *writeFile);
 
 void dump_thermal_terse_label(FILE *w);
 void dump_thermal_terse(FILE *w);
