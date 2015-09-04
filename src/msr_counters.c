@@ -209,7 +209,7 @@ static int init_pmc(struct pmc * p)
     return 0;
 }
 
-static int evt_sel_storage(struct evtsel ** e)
+int evt_sel_storage(struct evtsel ** e)
 {
     static struct evtsel evt;
     static int init = 1;
@@ -225,7 +225,7 @@ static int evt_sel_storage(struct evtsel ** e)
     return 0;
 }
 
-static int pmc_storage(struct pmc ** p)
+int pmc_storage(struct pmc ** p)
 {
     static struct pmc counters;
     static int init = 1;
@@ -404,7 +404,7 @@ int dump_pmc_readable(FILE * writefile)
     return 0;
 }
 
-static int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, struct ctr_data ** ctr2)
+int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, struct ctr_data ** ctr2)
 {
     static struct ctr_data c0, c1, c2;
     static int init = 1;
@@ -434,7 +434,7 @@ static int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, s
     return 0;
 }
 
-static int fixed_ctr_ctrl_storage(uint64_t *** perf_ctrl, uint64_t *** fixed_ctrl)
+int fixed_ctr_ctrl_storage(uint64_t *** perf_ctrl, uint64_t *** fixed_ctrl)
 {
     static uint64_t ** perf_global_ctrl = NULL, ** fixed_ctr_ctrl = NULL;
     static uint64_t totalThreads = 0;

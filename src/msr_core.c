@@ -247,11 +247,12 @@ static int do_batch_op(int batchnum, int type)
         int i;
         for (i = 0; i < batch->numops; i++)
         {
-            if (batch->ops[i].err)
-            {
-                fprintf(stderr, "CPU %d, RDMSR %x, ERR (%s)\n", batch->ops[i].cpu, batch->ops[i].msr,
-                        strerror(batch->ops[i].err));
-            }
+            // Temporarily removed because err has garbage in it
+            //if (batch->ops[i].err)
+            //{
+            //    fprintf(stderr, "CPU %d, RDMSR %x, ERR (%s)\n", batch->ops[i].cpu, batch->ops[i].msr,
+            //            strerror(batch->ops[i].err));
+            //}
         }
     }
 #ifdef BATCH_DEBUG
@@ -292,6 +293,7 @@ int create_batch_op(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnu
     batch->ops[batch->numops - 1].msr = msr;
     batch->ops[batch->numops - 1].cpu = (__u16) cpu;
     batch->ops[batch->numops - 1].isrdmsr = (__u8) 1;
+    batch->ops[batch->numops - 1].err = 0;
     *dest = (uint64_t *) &batch->ops[batch->numops - 1].msrdata;
 #ifdef BATCH_DEBUG
     fprintf(stderr, "BATCH: destination of msr %lx on core %lx (at %p) is %p\n", msr, cpu, 
