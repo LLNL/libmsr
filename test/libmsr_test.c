@@ -161,6 +161,9 @@ void counters_test()
 {
     dump_fixed_readable(stdout);
     fprintf(stdout, "\n");
+    set_all_pmc_ctrl(0x0, 0x67, 0x00, 0xC4, 1);
+    set_all_pmc_ctrl(0x0, 0x67, 0x00, 0xC4, 2);
+    enable_pmc();
     dump_pmc_readable(stdout);
     fprintf(stdout, "\n");
 }
