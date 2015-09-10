@@ -38,6 +38,9 @@
 extern "C" {
 #endif
 
+// This function allows access of the raw MSR data
+// There are plans to use a struct to make the indirection less crazy
+int turbo_storage(uint64_t *** val);
 void enable_turbo();
 void disable_turbo();
 void dump_turbo(FILE * writeFile);

@@ -44,7 +44,7 @@
 						// Must have it enabled and the same for all logical
 						// processors within the physical processor
 
-static int clocks_storage(uint64_t *** aperf_val, uint64_t *** mperf_val, uint64_t *** tsc_val)
+int clocks_storage(uint64_t *** aperf_val, uint64_t *** mperf_val, uint64_t *** tsc_val)
 {
     static int init = 1;
     static uint64_t ** aperf = NULL, ** mperf = NULL, ** tsc = NULL;

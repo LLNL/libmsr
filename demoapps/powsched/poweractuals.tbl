@@ -1,0 +1,7 @@
+CREATE PERSISTENTTABLE poweractuals (
+    node varchar(128) primary key,
+    socket0con   real,
+    socket1con   real,
+    socket0alloc real,
+    socket1alloc real
+)

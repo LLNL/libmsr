@@ -83,6 +83,13 @@ struct pmc
 extern "C" {
 #endif
 
+// These functions allow access to the raw MSR data
+int evt_sel_storage(struct evtsel ** e);
+int pmc_storage(struct pmc ** p);
+int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, struct ctr_data ** ctr2);
+// there are plans to change these to structs so the indirection is less crazy
+int fixed_ctr_ctrl_storage(uint64_t *** perf_ctrl, uint64_t *** fixed_ctrl);
+
 int print_available_counters();
 
 int enable_pmc();

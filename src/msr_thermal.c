@@ -143,7 +143,7 @@ static int init_pkg_therm_interrupt(struct pkg_therm_interrupt * pti)
     return 0;
 }
 
-static int store_temp_target(struct msr_temp_target ** tt)
+int store_temp_target(struct msr_temp_target ** tt)
 {
     static struct msr_temp_target t_target;
     static int init = 1;
@@ -159,7 +159,7 @@ static int store_temp_target(struct msr_temp_target ** tt)
     return 0;
 }
 
-static int store_therm_stat(struct therm_stat ** ts)
+int store_therm_stat(struct therm_stat ** ts)
 {
     static struct therm_stat t_stat;
     static int init = 1;
@@ -175,7 +175,7 @@ static int store_therm_stat(struct therm_stat ** ts)
     return 0;
 }
 
-static int store_therm_interrupt(struct therm_interrupt ** ti)
+int store_therm_interrupt(struct therm_interrupt ** ti)
 {
     static struct therm_interrupt t_interrupt;
     static int init = 1;
@@ -191,7 +191,7 @@ static int store_therm_interrupt(struct therm_interrupt ** ti)
     return 0;
 }
 
-static int store_pkg_therm_stat(struct pkg_therm_stat ** ps)
+int store_pkg_therm_stat(struct pkg_therm_stat ** ps)
 {
     static struct pkg_therm_stat pkg_status;
     static int init = 1;
@@ -207,7 +207,7 @@ static int store_pkg_therm_stat(struct pkg_therm_stat ** ps)
     return 0;
 }
 
-static int store_pkg_therm_interrupt(struct pkg_therm_interrupt ** pi)
+int store_pkg_therm_interrupt(struct pkg_therm_interrupt ** pi)
 {
     static struct pkg_therm_interrupt pkg_interrupt;
     static int init = 1;
