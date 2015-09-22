@@ -1,0 +1,10 @@
+v0.1.15 Batch
++ Added msrmod command line utility
+- Removed msr 0x63B from architecture 06_3C
++ updated msr_rapl to use the latest batch interface, details below
+	+ read_rapl_data no longer takes any arguments
+	+ read_rapl_data now uses the new batch interface
+	+ rapl_data struct has been changed, see msr_rapl.h for details
+	+ delta_rapl_data no longer takes arguments 
+	+ poll_rapl_data no longer takes arguments
+	+ dump_rapl_data arguments have changed, now only takes a FILE *

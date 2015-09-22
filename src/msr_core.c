@@ -589,14 +589,12 @@ read_msr_by_coord_batch(  unsigned socket, unsigned core, unsigned thread, off_t
 
 int read_batch(const int batchnum)
 {
-    do_batch_op(batchnum, BATCH_READ);
-    return 0;
+    return do_batch_op(batchnum, BATCH_READ);
 }
 
 int write_batch(const int batchnum)
 {
-    do_batch_op(batchnum, BATCH_WRITE);
-    return 0;
+    return do_batch_op(batchnum, BATCH_WRITE);
 }
 
 int
