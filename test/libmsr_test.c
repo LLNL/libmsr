@@ -211,20 +211,14 @@ const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-MPI/bin/mg.B.1";
 
 void rapl_r_test(struct rapl_data ** rd)
 {
-    struct rapl_data * r1 = NULL;
-    struct rapl_data * r2 = NULL;
 
     fprintf(stdout, "\nNEW\n\n");
     //r1 = &((*rd)[0]);
     //r2 = &((*rd)[1]);
-    poll_rapl_data(0, &r1);
-    poll_rapl_data(1, &r2);
+    poll_rapl_data();
     //poll_rapl_data(0, NULL);
     //poll_rapl_data(1, NULL);
-    printf("pkg 1\n");
-    dump_rapl_data(r1, stdout);
-    printf("pkg 2\n");
-    dump_rapl_data(r2, stdout);
+    dump_rapl_data(stdout);
 
 #ifdef MEMTEST
    unsigned nprocs = NPROCS;
@@ -258,12 +252,30 @@ void rapl_r_test(struct rapl_data ** rd)
 #endif
 
 
-    poll_rapl_data(0, &r1);
-    poll_rapl_data(1, &r2);
-    printf("pkg 1\n");
-    dump_rapl_data(r1, stdout);
-    printf("pkg 2\n");
-    dump_rapl_data(r2, stdout);
+    poll_rapl_data();
+    dump_rapl_data(stdout);
+}
+
+int repeated_poll_test()
+{
+    poll_rapl_data();
+    dump_rapl_data(stdout);
+    sleep(1);
+    poll_rapl_data();
+    dump_rapl_data(stdout);
+    sleep(1);
+    poll_rapl_data();
+    dump_rapl_data(stdout);
+    sleep(1);
+    poll_rapl_data();
+    dump_rapl_data(stdout);
+    sleep(1);
+    poll_rapl_data();
+    dump_rapl_data(stdout);
+    sleep(1);
+    poll_rapl_data();
+    dump_rapl_data(stdout);
+    return 0;
 }
 
 
@@ -325,6 +337,8 @@ int main(int argc, char** argv)
     turbo_test();
     printf("misc test\n");
     misc_test();
+
+    repeated_poll_test();
 
 	finalize_msr();
 	#ifdef MPI
