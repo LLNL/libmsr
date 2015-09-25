@@ -53,7 +53,7 @@
 #define LIBMSR_DEBUG_TAG "LIBMSR"
 #define FILENAME_SIZE 1024
 
-uint64_t devidx(int socket, int core, int thread)
+static uint64_t devidx(int socket, int core, int thread)
 {
     uint64_t sockets, cores, threads;
     core_config(&cores, &threads, &sockets, NULL);
