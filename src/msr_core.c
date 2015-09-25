@@ -57,7 +57,7 @@ uint64_t devidx(int socket, int core, int thread)
 {
     uint64_t sockets, cores, threads;
     core_config(&cores, &threads, &sockets, NULL);
-    return (thread * (sockets + 1) * cores) + (socket * cores) + core;
+    return (thread * (sockets) * cores) + (socket * cores) + core;
 }
 
 uint64_t num_cores()
