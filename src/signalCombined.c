@@ -76,7 +76,7 @@ void printData(int i)
     for (sock_idx = 0; sock_idx < sockets; sock_idx++)
     {
         poll_rapl_data(sock_idx, &rd);
-        fprintf(stdout, "Power Socket/PKG/DRAM: %d %8.4lf %8.4lf \n", sock_idx, rd->pkg_watts, rd->dram_watts);
+        fprintf(stdout, "Power Socket/PKG/DRAM: %d %8.4lf %8.4lf \n", sock_idx, *rd->pkg_watts, *rd->dram_watts);
     }
 
 	tout_val.it_interval.tv_sec = 0;
