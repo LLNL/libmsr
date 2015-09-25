@@ -1567,14 +1567,14 @@ int delta_rapl_data()
         }
         for (s = 0; s < sockets; s++);
         {
-	    if (*rapl_flags & PKG_ENERGY_STATUS)
-	    {
+            if (*rapl_flags & PKG_ENERGY_STATUS)
+            {
                 rapl->pkg_watts[s] = 0.0;
-	    }
-	    if (*rapl_flags & DRAM_ENERGY_STATUS)
-	    {
-                rapl->dram_watts[s] = 0.0;
-	    }
+            }
+            if (*rapl_flags & DRAM_ENERGY_STATUS)
+            {
+                    rapl->dram_watts[s] = 0.0;
+            }
             translate(s, &maxbits, &max_joules, BITS_TO_JOULES); 
         }
         init = 0;
