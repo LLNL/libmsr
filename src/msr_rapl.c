@@ -1497,7 +1497,7 @@ static uint64_t create_rapl_data_batch(uint64_t * rapl_flags, struct rapl_data *
         rapl->pp0_joules = (double *) libmsr_calloc(sockets, sizeof(double));
         rapl->old_pp0_joules = (double *) libmsr_calloc(sockets, sizeof(double));
         rapl->pp0_delta_joules = (double *) libmsr_calloc(sockets, sizeof(double));
-        rapl->dram_watts = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->pp0_watts = (double *) libmsr_calloc(sockets, sizeof(double));
         load_socket_batch(MSR_PP0_ENERGY_STATUS, rapl->pp0_bits, RAPL_DATA);
     }
     if (*rapl_flags & PP0_PERF_STATUS)
@@ -1553,7 +1553,7 @@ int delta_rapl_data()
     static uint64_t sockets = 0;
     static uint64_t * rapl_flags;
     static struct rapl_data * rapl;
-    int s;
+    int s = 0;
 
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d DEBUG: (delta_rapl_data)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
@@ -1567,8 +1567,14 @@ int delta_rapl_data()
         }
         for (s = 0; s < sockets; s++);
         {
-            rapl->pkg_watts[s] = 0.0;
-            rapl->dram_watts[s] = 0.0;
+	    if (*rapl_flags & PKG_ENERGY_STATUS)
+	    {
+                rapl->pkg_watts[s] = 0.0;
+	    }
+	    if (*rapl_flags & DRAM_ENERGY_STATUS)
+	    {
+                rapl->dram_watts[s] = 0.0;
+	    }
             translate(s, &maxbits, &max_joules, BITS_TO_JOULES); 
         }
         init = 0;
@@ -1761,7 +1767,7 @@ int read_rapl_data()
     read_batch(RAPL_DATA);
     for (s = 0; s < sockets; s++)
     {
-        if (*rapl_flags & MSR_PP0_ENERGY_STATUS)
+        if (*rapl_flags & PP0_ENERGY_STATUS)
         {
     #ifdef LIBMSR_DEBUG
         fprintf(stderr, "DEBUG: (read_rapl_data): translating pp0\n");
@@ -1769,7 +1775,7 @@ int read_rapl_data()
     // this register is usually locked or reserved
     //        translate(s, *rapl->pp0_bits, &rapl->pp0_joules, BITS_TO_JOULES);
         }
-        if (*rapl_flags & MSR_PP1_ENERGY_STATUS)
+        if (*rapl_flags & PP1_ENERGY_STATUS)
         {
     #ifdef LIBMSR_DEBUG
         fprintf(stderr, "DEBUG: (read_rapl_data): translating pp1\n");
@@ -1777,14 +1783,14 @@ int read_rapl_data()
             // this register is usually locked or reserved
             //translate(s, rapl->pp1_bits, &rapl->pp1_joules, BITS_TO_JOULES);
         }
-        if (*rapl_flags & MSR_DRAM_ENERGY_STATUS)
+        if (*rapl_flags & DRAM_ENERGY_STATUS)
         {
     #ifdef LIBMSR_DEBUG
         fprintf(stderr, "DEBUG: (read_rapl_data): translating dram\n");
     #endif
             translate(s, rapl->dram_bits[s], &rapl->dram_joules[s], BITS_TO_JOULES );
         }
-        if (*rapl_flags & MSR_PKG_ENERGY_STATUS)
+        if (*rapl_flags & PKG_ENERGY_STATUS)
         {
     #ifdef LIBMSR_DEBUG
         fprintf(stderr, "DEBUG: (read_rapl_data): translating pkg\n");

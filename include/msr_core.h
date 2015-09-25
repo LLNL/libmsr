@@ -39,7 +39,7 @@
 #define NUM_CORES_NEW (sockets * coresPerSocket)
 // this is the same as num_devs
 #define NUM_THREADS_NEW (sockets * coresPerSocket * threadsPerCore)
-#define COORD_INDEXING ((thread * 2 * coresPerSocket) + (socket * coresPerSocket) + core)
+#define COORD_INDEXING ((thread * (sockets + 1) * coresPerSocket) + (socket * coresPerSocket) + core)
 
 /* MASK_RANGE
  * Create a mask from bit m to n.

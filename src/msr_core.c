@@ -53,6 +53,13 @@
 #define LIBMSR_DEBUG_TAG "LIBMSR"
 #define FILENAME_SIZE 1024
 
+uint64_t devidx(int socket, int core, int thread)
+{
+    uint64_t sockets, cores, threads;
+    core_config(&cores, &threads, &sockets, NULL);
+    return (thread * (sockets + 1) * cores) + (socket * cores) + core;
+}
+
 uint64_t num_cores()
 {
     static uint64_t coresPerSocket = 0, sockets = 0;
@@ -541,9 +548,9 @@ write_msr_by_coord( unsigned socket, unsigned core, unsigned thread, off_t msr, 
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s %s::%d (write_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx) val=%lu\n", 
             getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr, val);
-    return write_msr_by_idx_and_verify( COORD_INDEXING, msr, val );
+    return write_msr_by_idx_and_verify( devidx(socket, core, thread), msr, val );
 #endif
-    return write_msr_by_idx( COORD_INDEXING, msr, val );
+    return write_msr_by_idx( devidx(socket, core, thread), msr, val );
 }
 
 int
@@ -561,7 +568,7 @@ read_msr_by_coord(  unsigned socket, unsigned core, unsigned thread, off_t msr, 
     {
         core_config(&coresPerSocket, &threadsPerCore, NULL, NULL);
     }
-	return read_msr_by_idx( COORD_INDEXING, msr, val );
+	return read_msr_by_idx( devidx(socket, core, thread), msr, val );
 }
 
 int
@@ -583,7 +590,7 @@ read_msr_by_coord_batch(  unsigned socket, unsigned core, unsigned thread, off_t
     fprintf(stderr, "DEBUG: passed operation on msr 0x%lx (socket %u, core %u, thread %u) to BATCH OPS with destination %p\n", 
             msr, socket, core, thread, val);
 #endif
-    create_batch_op(msr, COORD_INDEXING, val, batchnum);
+    create_batch_op(msr, devidx(socket, core, thread), val, batchnum);
     return 0;
 }
 
