@@ -214,6 +214,29 @@ int free_batch(int batchnum)
     return 0;
 }
 
+static int compatability_batch(int batchnum, int type)
+{
+    struct msr_batch_array * batch = NULL;
+    fprintf(stderr, "using compatability batch\n");
+    if (batch_storage(&batch, batchnum, NULL))
+    {
+        return -1;
+    }
+    int i;
+    for (i = 0; i < batch->numops; i++)
+    {
+        if (type == BATCH_READ)
+        {
+            read_msr_by_idx(batch->ops[i].cpu, batch->ops[i].msr, (uint64_t *) &batch->ops[i].msrdata);
+        }
+        else
+        {
+            write_msr_by_idx(batch->ops[i].cpu, batch->ops[i].msr, (uint64_t) batch->ops[i].msrdata);
+        }
+    }
+    return 0;
+}
+
 static int do_batch_op(int batchnum, int type)
 {
     static int batchfd = 0;
@@ -223,8 +246,12 @@ static int do_batch_op(int batchnum, int type)
         if ((batchfd = open(MSR_BATCH_DIR, O_RDWR)) < 0)
         {
             perror(MSR_BATCH_DIR);
-            return -1;
+            batchfd = -1; 
         }
+    }
+    if (batchfd < 0)
+    {
+        return compatability_batch(batchnum, type);
     }
     if (batch_storage(&batch, batchnum, NULL))
     {
@@ -421,8 +448,7 @@ int stat_module(char * filename, int * kerneltype, int * dev_idx)
         *dev_idx = -1;
         return 0;
     }
-    if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR) || 
-       !(statbuf.st_mode & S_IRGRP) || !(statbuf.st_mode & S_IWGRP))
+    if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR)) 
     {
         fprintf(stderr, "%s %s::%d  ERROR: Read/write permissions denied for %s.\n", 
                 getenv("HOSTNAME"),__FILE__, __LINE__, filename);
@@ -680,6 +706,10 @@ read_msr_by_idx(  int dev_idx, off_t msr, uint64_t *val )
 	int rc;
     int * fileDescriptor = NULL;
     fileDescriptor = core_fd(dev_idx);
+    if (fileDescriptor == NULL)
+    {
+        return -1;
+    }
 #ifdef LIBMSR_DEBUG
 	fprintf(stderr, "%s %s %s::%d (read_msr_by_idx) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
@@ -699,6 +729,10 @@ write_msr_by_idx( int dev_idx, off_t msr, uint64_t  val ){
 	int rc;
     int * fileDescriptor = NULL;
     fileDescriptor = core_fd(dev_idx);
+    if (fileDescriptor == NULL)
+    {
+        return -1;
+    }
 #ifdef LIBMSR_DEBUG
 	fprintf(stderr, "%s %s %s::%d (write_msr_by_idx) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
@@ -720,6 +754,10 @@ write_msr_by_idx_and_verify( int dev_idx, off_t msr, uint64_t  val ){
     uint64_t test = 0;
     int * fileDescriptor = NULL;
     fileDescriptor = core_fd(dev_idx);
+    if (fileDescriptor == NULL)
+    {
+        return -1;
+    }
 #ifdef LIBMSR_DEBUG
 	fprintf(stderr, "%s %s %s::%d (write_msr_by_idx) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
