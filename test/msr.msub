@@ -1,0 +1,17 @@
+#!/bin/bash
+#MSUB -A asccasc
+#MSUB -q pdebug
+#MSUB -m abe
+#MSUB -M walker91@llnl.gov
+#MSUB -l partition=cab
+#MSUB -l nodes=1
+#MSUB -V
+#MSUB -l walltime=00:04:00
+
+#srun -n 1 -N 1 -l --ntasks-per-node=1 ls -l /dev/cpu/*/msr
+#srun -n 1 -N 1 -l --ntasks-per-node=1 lsmod
+#srun --wait=0 --nodes=64 --ntasks-per-node=1 sh edac.sh
+#cd /g/g24/rountree/local/research/libmsr/test
+ls -l /dev/cpu/*/*
+./libmsr_test
+# srun --nodes=1 --ntasks-per-node=1 ./libmsr_test

@@ -134,7 +134,7 @@
 #define MF_06_2D (0x7FF)
 #define MF_06_3A (0xFE17)
 #define MF_06_3E (0x7F7)
-#define MF_06_3C (0x1CFE17)
+#define MF_06_3C (0x1CEE17) // disabled pp0_perf_status, not on this architecture
 #define MF_06_45 (0x1CFE17)
 #define MF_06_46 (0x1CFE17)
 #define MF_06_3F (0x1C01FF) // disabled PP registers, not on this architecture
@@ -373,14 +373,14 @@ int rapl_storage(struct rapl_data ** data, uint64_t ** flags)
         sockets = num_sockets();
         rapl = (struct rapl_data *) libmsr_malloc(sockets * sizeof(struct rapl_data));
         rapl_flags = (uint64_t *) libmsr_malloc(sizeof(uint64_t));
-        int i;
-        for (i = 0; i < sockets; i++)
-        {
-            rapl[i].pkg_bits = (uint64_t **) libmsr_malloc(1 * sizeof(uint64_t *));
-            rapl[i].dram_bits = (uint64_t **) libmsr_malloc(1 * sizeof(uint64_t *));
-            rapl[i].pp0_bits = (uint64_t **) libmsr_malloc(1 * sizeof(uint64_t *));
-            rapl[i].pp1_bits = (uint64_t **) libmsr_malloc(1 * sizeof(uint64_t *));
-        }
+        //int i;
+        //for (i = 0; i < sockets; i++)
+        //{
+        //    rapl[i].pkg_bits = (uint64_t **) libmsr_malloc(1 * sizeof(uint64_t *));
+        //    rapl[i].dram_bits = (uint64_t **) libmsr_malloc(1 * sizeof(uint64_t *));
+        //    rapl[i].pp0_bits = (uint64_t **) libmsr_malloc(1 * sizeof(uint64_t *));
+        //    rapl[i].pp1_bits = (uint64_t **) libmsr_malloc(1 * sizeof(uint64_t *));
+        //}
         if (setflags(rapl_flags))
         {
             return -1;
@@ -1274,84 +1274,84 @@ dump_rapl_terse( FILE * writeFile){
         // check to see which registers are available
         if (*rapl_flags & PKG_POWER_LIMIT)
         {
-            fprintf(writeFile, "%8.4lf ", rapl[socket].pkg_watts);
+            fprintf(writeFile, "%8.4lf ", rapl->pkg_watts[0]);
         }
         if (*rapl_flags & DRAM_POWER_LIMIT)
         {
-            fprintf(writeFile, "%8.4lf ", rapl[socket].dram_watts);
+            fprintf(writeFile, "%8.4lf ", rapl->dram_watts[0]);
         }
         if (*rapl_flags & PP0_POWER_LIMIT)
         {
-            fprintf(writeFile, "%8.4lf ", rapl[socket].pp0_watts);
+            fprintf(writeFile, "%8.4lf ", rapl->pp0_watts[0]);
         }
         if (*rapl_flags & PP1_POWER_LIMIT)
         {
-            fprintf(writeFile, "%8.4lf ", rapl[socket].pp1_watts);
+            fprintf(writeFile, "%8.4lf ", rapl->pp1_watts[0]);
         }
-	}
+    }
     return 0;
 }
 
 // print out a given rapl data item
-int 
-dump_rapl_data( struct rapl_data *r, FILE *writeFile ){
+int dump_rapl_data(FILE *writeFile )
+{
 	static int initialized=0;
     static uint64_t * rapl_flags = NULL;
-    static struct rapl_data * rapl = NULL;
+    static struct rapl_data * r = NULL;
 	static struct timeval start;
+    static uint64_t sockets = 0;
 	struct timeval now;
 
-    if (r == NULL)
+	if(!initialized)
     {
-        return -1;
-    }
-
-    if (rapl == NULL || rapl_flags == NULL)
-    {
-        if (rapl_storage(&rapl, &rapl_flags))
+        sockets = num_sockets();
+		initialized=1;
+		gettimeofday( &start, NULL );
+        if (rapl_storage(&r, &rapl_flags))
         {
             return -1;
         }
-    }
-	if(!initialized){
-		initialized=1;
-		gettimeofday( &start, NULL );
 	}
 #ifdef LIBMSR_DEBUG
     //fprintf(writeFile, "pkg_bits = %8.4lx   pkg_joules= %8.4lf\n", *r->pkg_bits, r->pkg_joules);
 #endif
 	gettimeofday( &now, NULL );
-    if (*rapl_flags & PKG_POWER_LIMIT)
+    int s;
+    for (s = 0; s < sockets; s++)
     {
-        fprintf(writeFile, "pkg_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
-                r->pkg_watts,
-                r->elapsed,
-                now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
-                );
-    }
-    if (*rapl_flags & DRAM_POWER_LIMIT)
-    {
-        fprintf(writeFile, "dram_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
-                r->dram_watts,
-                r->elapsed,
-                now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
-                );
-    }
-    if (*rapl_flags & PP0_POWER_LIMIT)
-    {
-        fprintf(writeFile, "pp0_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
-                r->pp0_watts,
-                r->elapsed,
-                now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
-                );
-    }
-    if (*rapl_flags & PP1_POWER_LIMIT)
-    {
-        fprintf(writeFile, "pp1_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
-                r->pp1_watts,
-                r->elapsed,
-                now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
-                );
+        fprintf(writeFile, "Socket %d\n", s);
+        if (*rapl_flags & PKG_POWER_LIMIT)
+        {
+            fprintf(writeFile, "pkg_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
+                    r->pkg_watts[s],
+                    r->elapsed,
+                    now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
+                    );
+        }
+        if (*rapl_flags & DRAM_POWER_LIMIT)
+        {
+            fprintf(writeFile, "dram_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
+                    r->dram_watts[s],
+                    r->elapsed,
+                    now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
+                    );
+        }
+        if (*rapl_flags & PP0_POWER_LIMIT)
+        {
+            fprintf(writeFile, "pp0_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
+                    r->pp0_watts[s],
+                    r->elapsed,
+                    now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
+                    );
+        }
+        if (*rapl_flags & PP1_POWER_LIMIT)
+        {
+            fprintf(writeFile, "pp1_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
+                    r->pp1_watts[s],
+                    r->elapsed,
+                    now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
+                    );
+        }
     }
     return 0;
 }
@@ -1401,14 +1401,12 @@ dump_rapl_power_info( FILE *writeFile){
 // This checks the current rapl data and calculates the deltas from the previous call of this function
 // If this function has not been called before the data will be initialized to zeros.
 // NOTE: this is now what you use instead of read_rapl_data
-int poll_rapl_data(const unsigned socket, struct rapl_data ** result)
+int poll_rapl_data()
 {
-    struct rapl_data * p;
     static struct rapl_data * rapl = NULL;
-    sockets_assert(&socket, __LINE__, __FILE__);
 
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (poll_rapl_data) socket=%d\n", getenv("HOSTNAME"), __FILE__, __LINE__, socket);
+    fprintf(stderr, "%s %s::%d DEBUG: (poll_rapl_data) socket=%lu\n", getenv("HOSTNAME"), __FILE__, __LINE__, num_sockets());
 #endif
     
     if (rapl == NULL)
@@ -1426,132 +1424,8 @@ int poll_rapl_data(const unsigned socket, struct rapl_data ** result)
         return -1;
     }
 
-    p = &(rapl[socket]);
-    read_rapl_data(socket); //, p);
-    delta_rapl_data(socket, p, result);
-    return 0;
-}
-
-// This checks how much the rapl data has changed over time to get values such as power
-int delta_rapl_data(const unsigned socket, struct rapl_data * p, struct rapl_data ** result)
-{
-    // The energy status register holds 32 bits, this is max unsigned int
-	uint64_t  maxbits=4294967296;
-	static double max_joules=0.0;
-    static int first = 1;
-    static uint64_t  initFlags = 0x0;
-    static uint64_t * rapl_flags = NULL;
-    sockets_assert(&socket, __LINE__, __FILE__);
-
-    if (rapl_flags == NULL)
-    {
-        if (rapl_storage(NULL, &rapl_flags))
-        {
-            return -1;
-        }
-    }
-#ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (delta_rapl_data)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-#endif
-    if (first)
-    {
-        p->elapsed = 0;
-        p->pkg_watts = 0.0;
-        // TODO: make sure everything gets initialized here
-        p->dram_watts = 0.0;
-        first = 0;
-        translate(socket, &maxbits, &max_joules, BITS_TO_JOULES); 
-    }
-    if (initFlags & (0x1 << socket))
-    {
-        p->elapsed = (p->now.tv_sec - p->old_now.tv_sec) 
-                 +
-                 (p->now.tv_usec - p->old_now.tv_usec)/1000000.0;
-    }
-    else
-    {
-        initFlags |= (0x1 << socket);
-        p->elapsed = 0;
-        if (result)
-        {
-            *result = p;
-        }
-
-        return 0;
-    }
-    // Get delta joules.
-    // Now handles wraparound.
-    // Check to see if pkg energy status register exists
-    if (*rapl_flags & PKG_ENERGY_STATUS)
-    {
-        // check to see if there was wraparound and use corresponding translation
-        if(p->pkg_joules - p->old_pkg_joules < 0)
-        {
-            p->pkg_delta_joules = ( p->pkg_joules + max_joules) - p->old_pkg_joules;
-        } else {
-            p->pkg_delta_joules  = p->pkg_joules  - p->old_pkg_joules;		
-        }
-    }
-    // check to see if dram energy status register exists
-    if (*rapl_flags & DRAM_ENERGY_STATUS)
-    {
-        // check to see if there was wraparound and use corresponding translation
-        if(p->dram_joules - p->old_dram_joules < 0)
-        {
-            p->dram_delta_joules = (p->dram_joules + max_joules) - p->old_dram_joules;
-        } else {
-            p->dram_delta_joules = p->dram_joules - p->old_dram_joules;	
-        }	
-    }
-    // check to see if pp0 energy status register exits
-    if (*rapl_flags & PP0_ENERGY_STATUS)
-    {
-        // check to see if there was wraparound and use corresponding translation
-        if (p->pp0_joules - p->old_pp0_joules < 0)
-        {
-            p->pp0_delta_joules = (p->pp0_joules + max_joules) - p->old_pp0_joules;
-        }
-        else
-        {
-            p->pp0_delta_joules = p->pp0_joules - p->old_pp0_joules;
-        }
-    }
-    // check to see if pp1 energy status register exists
-    if (*rapl_flags & PP1_ENERGY_STATUS)
-    {
-        // check to see if there was wraparound and use corresponding translation
-        if (p->pp1_joules - p->old_pp1_joules)
-        {
-            p->pp1_delta_joules = (p->pp1_joules + max_joules) - p->old_pp1_joules;
-        }
-        else
-        {
-            p->pp1_delta_joules = p->pp1_joules - p->old_pp1_joules;
-        }
-    }
-    // Get watts.
-    if(p->elapsed > 0.0){
-        // check to see if pkg power limit register exists
-        if (*rapl_flags & PKG_POWER_LIMIT)
-        {
-            p->pkg_watts  = p->pkg_delta_joules  / p->elapsed;
-        }
-        if (*rapl_flags & DRAM_POWER_LIMIT)
-        {
-            p->dram_watts = p->dram_delta_joules / p->elapsed;
-        }
-    }else{
-        p->pkg_watts = 0;
-        // check to see if dram power limit register exists
-        if (*rapl_flags & DRAM_POWER_LIMIT)
-        {
-            p->dram_watts = 0;
-        }
-    }
-    if (result)
-    {
-        *result = p;
-    }
+    read_rapl_data();
+    delta_rapl_data();
     return 0;
 }
 
@@ -1570,235 +1444,368 @@ static uint64_t rapl_data_batch_size(uint64_t * rapl_flags)
     {
         size++;
     }
-    if (*rapl_flags & MSR_PP1_ENERGY_STATUS)
+    if (*rapl_flags & PP0_POLICY)
     {
         size++;
     }
-    if (*rapl_flags & MSR_DRAM_ENERGY_STATUS)
+    if (*rapl_flags & PP0_PERF_STATUS)
     {
         size++;
     }
-    if (*rapl_flags & MSR_PKG_ENERGY_STATUS)
+    if (*rapl_flags & PP1_ENERGY_STATUS)
+    {
+        size++;
+    }
+    if (*rapl_flags & PP1_POLICY)
+    {
+        size++;
+    }
+    if (*rapl_flags & DRAM_ENERGY_STATUS)
+    {
+        size++;
+    }
+    if (*rapl_flags & PKG_ENERGY_STATUS)
     {
         size++;
     }
     return size;
 }
 
-// read all available rapl data for a given socket
-int read_rapl_data(const unsigned socket)
+static uint64_t create_rapl_data_batch(uint64_t * rapl_flags, struct rapl_data * rapl)
 {
-    struct rapl_data * p;
-    static struct rapl_data * rapl = NULL;
-    static uint64_t * rapl_flags = NULL;
-    static uint64_t batch_init = 0;
-    static uint64_t sockets = 0;
-    if (sockets == 0)
+    uint64_t sockets = num_sockets();
+    allocate_batch(RAPL_DATA, rapl_data_batch_size(rapl_flags) * sockets);
+    if (*rapl_flags & PKG_ENERGY_STATUS)
     {
-        int i;
-        sockets = num_sockets();
-        for (i = 0; i < sockets; i++)
-        {
-            batch_init |= (0x1 << i);
-        }
+        rapl->pkg_bits = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        rapl->pkg_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->old_pkg_bits = (uint64_t *) libmsr_calloc(sockets, sizeof(uint64_t));
+        rapl->old_pkg_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->pkg_delta_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->pkg_watts = (double *) libmsr_calloc(sockets, sizeof(double));
+        load_socket_batch(MSR_PKG_ENERGY_STATUS, rapl->pkg_bits, RAPL_DATA);
     }
-    sockets_assert(&socket, __LINE__, __FILE__);
-
-    if (rapl == NULL || rapl_flags == NULL)
+    if (*rapl_flags & PKG_PERF_STATUS)
     {
+        rapl->pkg_perf_count = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t));
+        load_socket_batch(MSR_PKG_PERF_STATUS, rapl->pkg_perf_count, RAPL_DATA);
+    }
+    if (*rapl_flags & PP0_ENERGY_STATUS)
+    {
+        rapl->pp0_bits = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        rapl->old_pp0_bits = (uint64_t *) libmsr_calloc(sockets, sizeof(uint64_t));
+        rapl->pp0_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->old_pp0_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->pp0_delta_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->pp0_watts = (double *) libmsr_calloc(sockets, sizeof(double));
+        load_socket_batch(MSR_PP0_ENERGY_STATUS, rapl->pp0_bits, RAPL_DATA);
+    }
+    if (*rapl_flags & PP0_PERF_STATUS)
+    {
+        rapl->pp0_perf_count = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        load_socket_batch(MSR_PP0_PERF_STATUS, rapl->pp0_perf_count, RAPL_DATA);
+    }
+    if (*rapl_flags & PP0_POLICY)
+    {
+        rapl->pp0_policy = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t));
+        load_socket_batch(MSR_PP0_POLICY, rapl->pp0_policy, RAPL_DATA);
+    }
+    if (*rapl_flags & PP1_ENERGY_STATUS)
+    {
+        rapl->pp1_bits = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        rapl->old_pp1_bits = (uint64_t *) libmsr_calloc(sockets, sizeof(uint64_t));
+        rapl->pp1_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->old_pp1_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->pp1_delta_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->pp1_watts = (double *) libmsr_calloc(sockets, sizeof(double));
+        load_socket_batch(MSR_PP1_ENERGY_STATUS, rapl->pp1_bits, RAPL_DATA);
+    }
+    if (*rapl_flags & PP1_POLICY)
+    {
+        rapl->pp1_policy = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t));
+        load_socket_batch(MSR_PP1_POLICY, rapl->pp1_policy, RAPL_DATA);
+    }
+    if (*rapl_flags & DRAM_ENERGY_STATUS)
+    {
+        rapl->dram_bits = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        rapl->old_dram_bits = (uint64_t *) libmsr_calloc(sockets, sizeof(uint64_t));
+        rapl->dram_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->old_dram_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->dram_delta_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->dram_watts = (double *) libmsr_calloc(sockets, sizeof(double));
+        load_socket_batch(MSR_DRAM_ENERGY_STATUS, rapl->dram_bits, RAPL_DATA);
+    }
+    if (*rapl_flags & DRAM_PERF_STATUS)
+    {
+        rapl->dram_perf_count = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t));
+        load_socket_batch(MSR_DRAM_PERF_STATUS, rapl->dram_perf_count, RAPL_DATA);
+    }
+    return 0;
+}
+
+// This checks how much the rapl data has changed over time to get values such as power
+int delta_rapl_data()
+{
+    // The energy status register holds 32 bits, this is max unsigned int
+	uint64_t  maxbits=4294967296;
+	static double max_joules=0.0;
+    static int init = 1;
+    static uint64_t sockets = 0;
+    static uint64_t * rapl_flags;
+    static struct rapl_data * rapl;
+    int s = 0;
+
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "%s %s::%d DEBUG: (delta_rapl_data)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+#endif
+    if (init)
+    {
+        sockets = num_sockets();
         if (rapl_storage(&rapl, &rapl_flags))
         {
             return -1;
         }
-        allocate_batch(RAPL_DATA, rapl_data_batch_size(rapl_flags) * num_sockets());
+        for (s = 0; s < sockets; s++);
+        {
+	    if (*rapl_flags & PKG_ENERGY_STATUS)
+	    {
+                rapl->pkg_watts[s] = 0.0;
+	    }
+	    if (*rapl_flags & DRAM_ENERGY_STATUS)
+	    {
+                rapl->dram_watts[s] = 0.0;
+	    }
+            translate(s, &maxbits, &max_joules, BITS_TO_JOULES); 
+        }
+        init = 0;
+        rapl->elapsed = 0;
+        return 0;
     }
-    p = &rapl[socket];
+    /*
+    if (!init)
+    {
+        rapl->elapsed = (rapl->now.tv_sec - rapl->old_now.tv_sec) 
+                 +
+                 (rapl->now.tv_usec - rapl->old_now.tv_usec)/1000000.0;
+    }
+    else
+    {
+        rapl->elapsed = 0;
+        return 0;
+    }
+    */
+    // Get delta joules.
+    // Now handles wraparound.
+    // Check to see if pkg energy status register exists
+    for (s = 0; s < sockets; s++)
+    {
+        if (*rapl_flags & PKG_ENERGY_STATUS)
+        {
+            // check to see if there was wraparound and use corresponding translation
+            if(rapl->pkg_joules[s] - rapl->old_pkg_joules[s] < 0)
+            {
+                rapl->pkg_delta_joules[s] = ( rapl->pkg_joules[s] + max_joules) - rapl->old_pkg_joules[s];
+            } else {
+                rapl->pkg_delta_joules[s]  = rapl->pkg_joules[s]  - rapl->old_pkg_joules[s];
+            }
+        }
+        // check to see if dram energy status register exists
+        if (*rapl_flags & DRAM_ENERGY_STATUS)
+        {
+            // check to see if there was wraparound and use corresponding translation
+            if(rapl->dram_joules[s] - rapl->old_dram_joules[s] < 0)
+            {
+                rapl->dram_delta_joules[s] = (rapl->dram_joules[s] + max_joules) - rapl->old_dram_joules[s];
+            } else {
+                rapl->dram_delta_joules[s] = rapl->dram_joules[s] - rapl->old_dram_joules[s];
+            }	
+        }
+        // check to see if pp0 energy status register exits
+        if (*rapl_flags & PP0_ENERGY_STATUS)
+        {
+            // check to see if there was wraparound and use corresponding translation
+            if (rapl->pp0_joules[s] - rapl->old_pp0_joules[s] < 0)
+            {
+                rapl->pp0_delta_joules[s] = (rapl->pp0_joules[s] + max_joules) - rapl->old_pp0_joules[s];
+            }
+            else
+            {
+                rapl->pp0_delta_joules[s] = rapl->pp0_joules[s] - rapl->old_pp0_joules[s];
+            }
+        }
+        // check to see if pp1 energy status register exists
+        if (*rapl_flags & PP1_ENERGY_STATUS)
+        {
+            // check to see if there was wraparound and use corresponding translation
+            if (rapl->pp1_joules[s] - rapl->old_pp1_joules[s])
+            {
+                rapl->pp1_delta_joules[s] = (rapl->pp1_joules[s] + max_joules) - rapl->old_pp1_joules[s];
+            }
+            else
+            {
+                rapl->pp1_delta_joules[s] = rapl->pp1_joules[s] - rapl->old_pp1_joules[s];
+            }
+        }
+        // Get watts.
+        if(rapl->elapsed > 0.0){
+            // check to see if pkg power limit register exists
+            if (*rapl_flags & PKG_POWER_LIMIT)
+            {
+                rapl->pkg_watts[s]  = rapl->pkg_delta_joules[s]  / rapl->elapsed;
+            }
+            if (*rapl_flags & DRAM_POWER_LIMIT)
+            {
+                rapl->dram_watts[s] = rapl->dram_delta_joules[s] / rapl->elapsed;
+            }
+        }else{
+            rapl->pkg_watts = 0;
+            // check to see if dram power limit register exists
+            if (*rapl_flags & DRAM_POWER_LIMIT)
+            {
+                rapl->dram_watts[s] = 0;
+            }
+        }
+    }
+    return 0;
+}
 
+// read all available rapl data for a given socket
+int read_rapl_data()
+{
+    static struct rapl_data * rapl = NULL;
+    static uint64_t * rapl_flags = NULL;
+    static short init = 1;
+    static uint64_t sockets = 0;
+    int s;
+
+    if (init)
+    {
+        sockets = num_sockets();
+        if (rapl_storage(&rapl, &rapl_flags))
+        {
+            return -1;
+        }
+        create_rapl_data_batch(rapl_flags, rapl);
+        rapl->now.tv_sec = 0;
+        rapl->now.tv_usec = 0;
+        rapl->old_now.tv_sec = 0;
+        rapl->old_now.tv_usec = 0;
+        rapl->elapsed = 0;
+    }
+//    p = &rapl[socket];
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s::%d DEBUG: (read_rapl_data): socket=%d at address %p\n", getenv("HOSTNAME"), __FILE__, __LINE__, socket, p);
+    fprintf(stderr, "%s %s::%d DEBUG: (read_rapl_data): socket=%lu at address %p\n", getenv("HOSTNAME"), __FILE__, __LINE__, num_sockets(), rapl);
 #endif
-
     // Move current variables to "old" variables.
-    p->old_now.tv_sec 	= p->now.tv_sec;
-    p->old_now.tv_usec	= p->now.tv_usec;
-
+    rapl->old_now.tv_sec = rapl->now.tv_sec;
+    rapl->old_now.tv_usec = rapl->now.tv_usec;
     // grab a timestamp
-	gettimeofday( &(p->now), NULL );
-
-    // make sure pkg energy status register exists
-    if (*rapl_flags & PKG_ENERGY_STATUS)
+	gettimeofday( &(rapl->now), NULL );
+    if (!init)
     {
-        // Get raw joules
-        if (batch_init & (0x1 << socket))
+        rapl->elapsed = (rapl->now.tv_sec - rapl->old_now.tv_sec) +
+                 (rapl->now.tv_usec - rapl->old_now.tv_usec)/1000000.0;
+        for (s = 0; s < sockets; s++)
         {
-#ifdef LIBMSR_DEBUG
-                fprintf(stderr, "DEBUG: socket %d msr 0x611 has destination %p\n", socket, p->pkg_bits);
-#endif
-                if(read_msr_by_coord_batch( socket, 0, 0, MSR_PKG_ENERGY_STATUS,  p->pkg_bits  , RAPL_DATA))
-                {
-                    return -1;
-                }
-        }
-        else
-        {
-            p->old_pkg_bits = **p->pkg_bits;
-            p->old_pkg_joules = p->pkg_joules;
-        }
-   //     translate( socket, &(p->pkg_bits), &(p->pkg_joules), BITS_TO_JOULES );
-    }
-#ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: (read_rapl_data): made it to 1st mark\n");
-#endif
-    // make sure pkg perf status register exits
-    if (*rapl_flags & PKG_PERF_STATUS)
-    {
-        if (batch_init & (0x1 << socket))
-        {
-            if (read_msr_by_coord_batch(socket, 0, 0, MSR_PKG_PERF_STATUS, &p->pkg_perf_count, RAPL_DATA))
+            // make sure pkg energy status register exists
+            if (*rapl_flags & PKG_ENERGY_STATUS)
             {
-                // currently there is a problem preventing this register from being read on certain systems
-                //return -1;
+        #ifdef LIBMSR_DEBUG
+                        fprintf(stderr, "DEBUG: socket %lu msr 0x611 has destination %p\n", sockets, rapl->pkg_bits);
+        #endif
+                    rapl->old_pkg_bits[s] = *rapl->pkg_bits[s];
+                    rapl->old_pkg_joules[s] = rapl->pkg_joules[s];
+            }
+        #ifdef LIBMSR_DEBUG
+            fprintf(stderr, "DEBUG: (read_rapl_data): made it to 1st mark\n");
+        #endif
+            // make sure pkg perf status register exits
+            if (*rapl_flags & PKG_PERF_STATUS)
+            {
+                // not yet implemented
+            }
+            // make sure pp0 energy status register exits
+            if (*rapl_flags & PP0_ENERGY_STATUS)
+            {
+                    rapl->old_pp0_bits[s] = *rapl->pp0_bits[s];
+                    rapl->old_pp0_joules[s] = rapl->pp0_joules[s];
+            }
+            // make sure pp0 perf status register exists
+            if (*rapl_flags & PP0_PERF_STATUS) 
+            {
+                // not yet implemented
+            }
+            // make sure pp0 policy register exists
+            if (*rapl_flags & PP0_POLICY)
+            {
+                // not yet implemented
+            }
+            // make sure pp1 energy status register exists
+            if (*rapl_flags & PP1_ENERGY_STATUS)
+            {
+                    rapl->old_pp1_bits[s] = *rapl->pp1_bits[s];
+                    rapl->old_pp1_joules[s] = rapl->pp1_joules[s];
+            }
+            // make sure pp1 policy register exists
+            if (*rapl_flags & PP1_POLICY)
+            {
+                // not yet implemented
+            }
+            // make sure dram energy status register exists
+            if (*rapl_flags & DRAM_ENERGY_STATUS)
+            {
+                    rapl->old_dram_bits[s]	= *rapl->dram_bits[s];
+                    rapl->old_dram_joules[s] = rapl->dram_joules[s];
+            }
+            // make sure dram perf status register exists
+            if (*rapl_flags & DRAM_PERF_STATUS)
+            {
+                // not yet implemented
             }
         }
     }
-
-    // make sure pp0 energy status register exits
-    if (*rapl_flags & PP0_ENERGY_STATUS)
-    {
-        if (batch_init & (0x1 << socket))
-        {
-            if(read_msr_by_coord_batch(socket, 0, 0, MSR_PP0_ENERGY_STATUS, p->pp0_bits, RAPL_DATA))
-            {
-                return -1;
-            }
-        }
-        else
-        {
-            p->old_pp0_joules = p->pp0_joules;
-            p->old_pp0_bits   = **p->pp0_bits;
-        }
-    //    translate(socket, &(p->pp0_bits), &(p->pp0_joules), BITS_TO_JOULES);
-    }
-    // make sure pp0 perf status register exists
-    if (*rapl_flags & PP0_PERF_STATUS) 
-    {
-        if (batch_init & (0x1 << socket))
-        {
-            if (read_msr_by_coord_batch(socket, 0, 0, MSR_PP0_PERF_STATUS, &p->pp0_perf_count, RAPL_DATA))
-            {
-                return -1;
-            }
-        }
-    }
-    // make sure pp0 policy register exists
-    if (*rapl_flags & PP0_POLICY)
-    {
-        if (batch_init & (0x1 << socket))
-        {
-            if (read_msr_by_coord_batch(socket, 0, 0, MSR_PP0_POLICY, &p->pp0_policy, RAPL_DATA))
-            {
-                return -1;
-            }
-        }
-    }
-    // make sure pp1 energy status register exists
-    if (*rapl_flags & PP1_ENERGY_STATUS)
-    {
-        if (batch_init & (0x1 << socket))
-        {
-            if(read_msr_by_coord_batch(socket, 0, 0, MSR_PP1_ENERGY_STATUS, p->pp0_bits, RAPL_DATA))
-            {
-                return -1;
-            }
-        }
-        else
-        {
-            p->old_pp1_bits   = **p->pp1_bits;
-            p->old_pp1_joules = p->pp1_joules;
-        }
-    //    translate(socket, &(p->pp1_bits), &(p->pp1_joules), BITS_TO_JOULES);
-    }
-    // make sure pp1 policy register exists
-    if (*rapl_flags & PP1_POLICY)
-    {
-        if (batch_init & (0x1 << socket))
-        {
-            if(read_msr_by_coord_batch(socket, 0, 0, MSR_PP1_POLICY, &p->pp1_policy, RAPL_DATA))
-            {
-                return -1;
-            }
-        }
-    }
-    // make sure dram energy status register exists
-    if (*rapl_flags & DRAM_ENERGY_STATUS)
-    {
-        if (batch_init & (0x1 << socket))
-        {
-            if(read_msr_by_coord_batch( socket, 0, 0, MSR_DRAM_ENERGY_STATUS, p->dram_bits, RAPL_DATA))
-            {
-                return -1;
-            }
-        }
-        else
-        {
-            p->old_dram_bits	= **p->dram_bits;
-            p->old_dram_joules	= p->dram_joules;
-        }
-    //    translate( socket, &(p->dram_bits), &(p->dram_joules), BITS_TO_JOULES );
-    }
-    // make sure dram perf status register exists
-    if (*rapl_flags & DRAM_PERF_STATUS)
-    {
-        if (batch_init & (0x1 << socket))
-        {
-            if (read_msr_by_coord_batch( socket, 0, 0, MSR_DRAM_PERF_STATUS, &p->dram_perf_count, RAPL_DATA))
-            {
-                return -1;
-            }
-        }
-    }
-#ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: (read_rapl_data): made it to 2nd mark\n");
-#endif
     read_batch(RAPL_DATA);
-    if (*rapl_flags & MSR_PP0_ENERGY_STATUS)
+    for (s = 0; s < sockets; s++)
     {
+        if (*rapl_flags & PP0_ENERGY_STATUS)
+        {
+    #ifdef LIBMSR_DEBUG
+        fprintf(stderr, "DEBUG: (read_rapl_data): translating pp0\n");
+    #endif
+    // this register is usually locked or reserved
+    //        translate(s, *rapl->pp0_bits, &rapl->pp0_joules, BITS_TO_JOULES);
+        }
+        if (*rapl_flags & PP1_ENERGY_STATUS)
+        {
+    #ifdef LIBMSR_DEBUG
+        fprintf(stderr, "DEBUG: (read_rapl_data): translating pp1\n");
+    #endif
+            // this register is usually locked or reserved
+            //translate(s, rapl->pp1_bits, &rapl->pp1_joules, BITS_TO_JOULES);
+        }
+        if (*rapl_flags & DRAM_ENERGY_STATUS)
+        {
+    #ifdef LIBMSR_DEBUG
+        fprintf(stderr, "DEBUG: (read_rapl_data): translating dram\n");
+    #endif
+            translate(s, rapl->dram_bits[s], &rapl->dram_joules[s], BITS_TO_JOULES );
+        }
+        if (*rapl_flags & PKG_ENERGY_STATUS)
+        {
+    #ifdef LIBMSR_DEBUG
+        fprintf(stderr, "DEBUG: (read_rapl_data): translating pkg\n");
+    #endif
+            translate(s, rapl->pkg_bits[s], &rapl->pkg_joules[s], BITS_TO_JOULES );
+        }
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: (read_rapl_data): translating pp0\n");
+    fprintf(stderr, "DEBUG: socket %d\n", s);
+    fprintf(stderr, "DEBUG: elapsed %f\n", rapl->elapsed);
+    fprintf(stderr, "DEBUG: pkg_bits %lx\n", *rapl->pkg_bits[s]);
+    fprintf(stderr, "DEBUG: pkg_joules %lf\n", rapl->pkg_joules[s]);
+    fprintf(stderr, "DEBUG: pkg_watts %lf\n", rapl->pkg_watts[s]);
+    fprintf(stderr, "DEBUG: delta_joules %lf\n", rapl->pkg_delta_joules[s]);
 #endif
-//        translate(socket, *p->pp0_bits, &p->pp0_joules, BITS_TO_JOULES);
     }
-    if (*rapl_flags & MSR_PP1_ENERGY_STATUS)
-    {
-#ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: (read_rapl_data): translating pp1\n");
-#endif
-        //translate(socket, p->pp1_bits, &p->pp1_joules, BITS_TO_JOULES);
-    }
-    if (*rapl_flags & MSR_DRAM_ENERGY_STATUS)
-    {
-#ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: (read_rapl_data): translating dram\n");
-#endif
-        translate( socket, *p->dram_bits, &p->dram_joules, BITS_TO_JOULES );
-    }
-    if (*rapl_flags & MSR_PKG_ENERGY_STATUS)
-    {
-#ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: (read_rapl_data): translating pkg\n");
-#endif
-        translate( socket, *p->pkg_bits, &p->pkg_joules, BITS_TO_JOULES );
-    }
-#ifdef LIBMSR_DEBUG
-    fprintf(stderr, "DEBUG: (read_rapl_data): made it to 3rd mark\n");
-#endif
-/*
-#ifdef LIBMSR_DEBUG
-        fprintf(stderr, "DEBUG: pkg_bits %lx\n", *p->pkg_bits);
-        fprintf(stderr, "DEBUG: pkg_joules %lf\n", p->pkg_joules);
-        fprintf(stderr, "DEBUG: pkg_watts %lf\n", p->pkg_watts);
-#endif
-*/
-    batch_init &= ~(0x1 << socket);
+    init = 0;
     return 0;
 }

@@ -1,0 +1,11 @@
+test/libmsr_test
+.*.swp
+*.o
+app
+*.so
+cab*
+pebs
+*.core
+*.btr
+*.out
+*~
