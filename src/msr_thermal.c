@@ -759,7 +759,7 @@ void dump_therm_reading(FILE *writeFile)
         for (j = 0; j < cores; j++)
         {
             
-            fprintf(writeFile, "%12d", t_stat->readout[j]);
+            fprintf(writeFile, "%4d%8d", j, t_stat->readout[j]);
 			actTemp=(t_target->temp_target[i]-t_stat->readout[j]);
 			fprintf(writeFile, "%7d", actTemp);
 			fprintf(writeFile, "%6d\n", t_stat->readout_valid[j]);

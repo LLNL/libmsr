@@ -1573,7 +1573,7 @@ int delta_rapl_data()
             }
             if (*rapl_flags & DRAM_ENERGY_STATUS)
             {
-                    rapl->dram_watts[s] = 0.0;
+                rapl->dram_watts[s] = 0.0;
             }
             translate(s, &maxbits, &max_joules, BITS_TO_JOULES); 
         }
