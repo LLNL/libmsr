@@ -258,6 +258,7 @@ void rapl_r_test(struct rapl_data ** rd)
 
 int repeated_poll_test()
 {
+    usleep(1000);
     poll_rapl_data();
     dump_rapl_data(stdout);
     sleep(1);
