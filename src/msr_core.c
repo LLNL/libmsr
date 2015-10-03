@@ -214,10 +214,10 @@ int free_batch(int batchnum)
     return 0;
 }
 
-static int compatability_batch(int batchnum, int type)
+static int compatibility_batch(int batchnum, int type)
 {
     struct msr_batch_array * batch = NULL;
-    fprintf(stderr, "using compatability batch\n");
+    fprintf(stderr, "using compatibility batch\n");
     if (batch_storage(&batch, batchnum, NULL))
     {
         return -1;
@@ -251,7 +251,7 @@ static int do_batch_op(int batchnum, int type)
     }
     if (batchfd < 0)
     {
-        return compatability_batch(batchnum, type);
+        return compatibility_batch(batchnum, type);
     }
     if (batch_storage(&batch, batchnum, NULL))
     {
