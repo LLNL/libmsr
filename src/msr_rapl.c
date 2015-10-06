@@ -42,6 +42,8 @@
 #include "msr_rapl.h"
 //#define LIBMSR_DEBUG 1
 #define RAPL_USE_DRAM 1
+#define FLT_MAX     3.402823466E+38F // taken from limits.h
+#define UINT_MAX    4294967295U // taken from limits.h
 
 /* UNIT_SCALE 
  * Calculates x/(2^y).  
@@ -1547,8 +1549,7 @@ static uint64_t create_rapl_data_batch(uint64_t * rapl_flags, struct rapl_data *
 int delta_rapl_data()
 {
     // The energy status register holds 32 bits, this is max unsigned int
-	uint64_t  maxbits=4294967296;
-	static double max_joules=0.0;
+	static double max_joules=UINT_MAX / 65536; // this fixed wraparound problem
     static int init = 1;
     static uint64_t sockets = 0;
     static uint64_t * rapl_flags;
@@ -1567,33 +1568,19 @@ int delta_rapl_data()
         }
         for (s = 0; s < sockets; s++);
         {
-	    if (*rapl_flags & PKG_ENERGY_STATUS)
-	    {
+            if (*rapl_flags & PKG_ENERGY_STATUS)
+            {
                 rapl->pkg_watts[s] = 0.0;
-	    }
-	    if (*rapl_flags & DRAM_ENERGY_STATUS)
-	    {
+            }
+            if (*rapl_flags & DRAM_ENERGY_STATUS)
+            {
                 rapl->dram_watts[s] = 0.0;
-	    }
-            translate(s, &maxbits, &max_joules, BITS_TO_JOULES); 
+            }
         }
         init = 0;
         rapl->elapsed = 0;
         return 0;
     }
-    /*
-    if (!init)
-    {
-        rapl->elapsed = (rapl->now.tv_sec - rapl->old_now.tv_sec) 
-                 +
-                 (rapl->now.tv_usec - rapl->old_now.tv_usec)/1000000.0;
-    }
-    else
-    {
-        rapl->elapsed = 0;
-        return 0;
-    }
-    */
     // Get delta joules.
     // Now handles wraparound.
     // Check to see if pkg energy status register exists
@@ -1604,8 +1591,13 @@ int delta_rapl_data()
             // check to see if there was wraparound and use corresponding translation
             if(rapl->pkg_joules[s] - rapl->old_pkg_joules[s] < 0)
             {
+                //fprintf(stderr, "DEBUG: pkg wrap\n");
+                //fprintf(stderr, "DEBUG: pkg_joules[%d] %lf, old_pkg_joules[%d] %lf, max_joules %lf\n", s, rapl->pkg_joules[s],
+                //        s, rapl->old_pkg_joules[s], max_joules);
                 rapl->pkg_delta_joules[s] = ( rapl->pkg_joules[s] + max_joules) - rapl->old_pkg_joules[s];
             } else {
+                //fprintf(stderr, "DEBUG: pkg_joules[%d] %lf, old_pkg_joules[%d] %lf\n", s, rapl->pkg_joules[s],
+                //        s, rapl->old_pkg_joules[s]);
                 rapl->pkg_delta_joules[s]  = rapl->pkg_joules[s]  - rapl->old_pkg_joules[s];
             }
         }
@@ -1647,22 +1639,24 @@ int delta_rapl_data()
             }
         }
         // Get watts.
-        if(rapl->elapsed > 0.0){
+        if(rapl->elapsed > 0.0L){
             // check to see if pkg power limit register exists
             if (*rapl_flags & PKG_POWER_LIMIT)
             {
                 rapl->pkg_watts[s]  = rapl->pkg_delta_joules[s]  / rapl->elapsed;
+                //fprintf(stderr, "DEBUG: pkg_watts[%d] %lf\n", s, rapl->pkg_watts[s]);
+                //fprintf(stderr, "DEBUG: pkg_delta_joules[%d] %lf, elapsed %lf\n", s, rapl->pkg_delta_joules[s], rapl->elapsed);
             }
             if (*rapl_flags & DRAM_POWER_LIMIT)
             {
                 rapl->dram_watts[s] = rapl->dram_delta_joules[s] / rapl->elapsed;
             }
         }else{
-            rapl->pkg_watts = 0;
+            rapl->pkg_watts[s] = 0.0;
             // check to see if dram power limit register exists
             if (*rapl_flags & DRAM_POWER_LIMIT)
             {
-                rapl->dram_watts[s] = 0;
+                rapl->dram_watts[s] = 0.0;
             }
         }
     }
@@ -1691,6 +1685,11 @@ int read_rapl_data()
         rapl->old_now.tv_sec = 0;
         rapl->old_now.tv_usec = 0;
         rapl->elapsed = 0;
+        for (s = 0; s < sockets; s++)
+        {
+            rapl->pkg_joules[s] = 0;
+            rapl->old_pkg_joules[s] = 0;
+        }
     }
 //    p = &rapl[socket];
 #ifdef LIBMSR_DEBUG
