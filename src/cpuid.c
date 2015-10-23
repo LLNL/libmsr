@@ -37,7 +37,7 @@
 #define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
 #define MASK_VAL(x,m,n) (((uint64_t)(x)&MASK_RANGE((m),(n)))>>(n))
 
-//#define CPUID_DEBUG
+#define CPUID_DEBUG
 
 void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t *rdx)
 {
@@ -54,6 +54,19 @@ void cpuid_detect_core_conf(uint64_t * coresPerSocket, uint64_t * hyperThreads, 
 {
     // use rcx = 0 to see if hyper threading is supported. If > 1 then there is HT
     // use rcx = 1 to see how many cores are avaiable per socket (including HT if supported)
+    FILE * thread;
+    thread = fopen("/sys/devices/system/cpu/cpu0/topology/thread_siblings_list", "r");
+    unsigned first = 0, second = 0;
+    int ret = fscanf(thread, "%u,%u", &first, &second);
+    if (ret < 2 || ret == EOF)
+    {
+        // hyper threading is disabled
+        *HTenabled = 0;
+    }
+    else
+    {
+        *HTenabled = 1;
+    }
     uint64_t rax = 0xb, rbx = 0, rcx = 0x0, rdx = 0;
     asm volatile("cpuid"
                     : "=a" (rax),
@@ -78,21 +91,19 @@ void cpuid_detect_core_conf(uint64_t * coresPerSocket, uint64_t * hyperThreads, 
     // get_nprocs_conf returns max num logical processors (including hyper threading)
     // get_nprocs returs num logical processors depending on whether hyper threading is enabled or not
     allcores = get_nprocs_conf();
-    *sockets = allcores / *coresPerSocket / *hyperThreads;
-    availcores = get_nprocs();
-    if (availcores != allcores)
+    if (allcores == *coresPerSocket * (*HTenabled + 1))
     {
-        *HTenabled = 0;
+        *sockets = 1;
     }
     else
     {
-        *HTenabled = 1;
+        *sockets = 2;
     }
 #ifdef CPUID_DEBUG
-    fprintf(stderr, "%s::%d DEBUG: allcores is %d, availcores is %d, and register has %lx\n", __FILE__, __LINE__, 
+    fprintf(stderr, "%s::%d DEBUG: allcores is %d, availcores is %d, and register has 0x%lx\n", __FILE__, __LINE__, 
             allcores, availcores, rbx);
-    fprintf(stderr, "%s::%d DEBUG: hyper threads is %ld, cores per socket is %ld, sockets is %ld\n",
-            __FILE__, __LINE__, *hyperThreads, *coresPerSocket, *sockets);
+    fprintf(stderr, "%s::%d DEBUG: hyper threads is %ld, cores per socket is %ld, sockets is %ld, HT is %d\n",
+            __FILE__, __LINE__, *hyperThreads, *coresPerSocket, *sockets, *HTenabled);
 #endif
 }
 

@@ -52,7 +52,8 @@
 
 static int init_temp_target(struct msr_temp_target * tt)
 {
-    uint64_t sockets = num_sockets();
+    static uint64_t sockets = 0;
+    sockets = num_sockets();
     tt->raw = (uint64_t **) libmsr_malloc(sockets * sizeof(uint64_t *));
     tt->temp_target = (uint64_t *) libmsr_malloc(sockets * sizeof(uint64_t));
     allocate_batch(TEMP_TARGET, num_sockets());
@@ -62,7 +63,7 @@ static int init_temp_target(struct msr_temp_target * tt)
 
 static int init_therm_stat(struct therm_stat * ts)
 {
-    uint64_t cores = num_cores();
+    uint64_t cores =  num_cores();
     ts->raw = (uint64_t **) libmsr_malloc(cores * sizeof(uint64_t *));
     ts->status = (int *) libmsr_malloc(cores * sizeof(int));
     ts->status_log = (int *) libmsr_malloc(cores * sizeof(int));
@@ -86,7 +87,7 @@ static int init_therm_stat(struct therm_stat * ts)
 
 static int init_therm_interrupt(struct therm_interrupt * ti)
 {
-    uint64_t cores = num_cores();
+    uint64_t cores =  num_cores();
     ti->raw = (uint64_t **) libmsr_malloc(cores * sizeof(uint64_t *));
     ti->high_temp_enable = (int *) libmsr_malloc(cores * sizeof(int));
     ti->low_temp_enable = (int *) libmsr_malloc(cores * sizeof(int));
