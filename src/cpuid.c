@@ -37,7 +37,7 @@
 #define MASK_RANGE(m,n) ((((uint64_t)1<<((m)-(n)+1))-1)<<(n))
 #define MASK_VAL(x,m,n) (((uint64_t)(x)&MASK_RANGE((m),(n)))>>(n))
 
-#define CPUID_DEBUG
+//#define CPUID_DEBUG
 
 void cpuid(uint64_t leaf, uint64_t *rax, uint64_t *rbx, uint64_t *rcx, uint64_t *rdx)
 {
@@ -56,6 +56,10 @@ void cpuid_detect_core_conf(uint64_t * coresPerSocket, uint64_t * hyperThreads, 
     // use rcx = 1 to see how many cores are avaiable per socket (including HT if supported)
     FILE * thread;
     thread = fopen("/sys/devices/system/cpu/cpu0/topology/thread_siblings_list", "r");
+    if (thread == NULL)
+    {
+        fprintf(stderr, "ERROR: unable to open /sys/devices/system/cpu/cpu0/topology/thread_siblings_list\n");
+    }
     unsigned first = 0, second = 0;
     int ret = fscanf(thread, "%u,%u", &first, &second);
     if (ret < 2 || ret == EOF)
@@ -87,7 +91,7 @@ void cpuid_detect_core_conf(uint64_t * coresPerSocket, uint64_t * hyperThreads, 
                     : "0" (rax), "2"(rcx));
     *coresPerSocket = ((rbx) & 0xFFFF) / *hyperThreads;
     //*coresPerSocket = ((rbx) & 0xFFFF);
-    int allcores = 0, availcores = 0;
+    int allcores = 0;
     // get_nprocs_conf returns max num logical processors (including hyper threading)
     // get_nprocs returs num logical processors depending on whether hyper threading is enabled or not
     allcores = get_nprocs_conf();

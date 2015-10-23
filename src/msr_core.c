@@ -139,7 +139,7 @@ static int * core_fd(const int dev_idx)
     return NULL;
 }
 
-#define BATCH_DEBUG 1
+//#define BATCH_DEBUG 1
 
 static int batch_storage(struct msr_batch_array ** batchsel, const int batchnum, unsigned ** opssize)
 {
@@ -190,7 +190,9 @@ int allocate_batch(int batchnum, size_t bsize)
 {
     unsigned * size = NULL;
     struct msr_batch_array * batch = NULL;
+#ifdef BATCH_DEBUG
     fprintf(stderr, "BATCH: allocating batch %d\n", batchnum);
+#endif
     if (batch_storage(&batch, batchnum, &size))
     {
         return -1;
@@ -249,7 +251,7 @@ static int compatibility_batch(int batchnum, int type)
     return 0;
 }
 
-#define USE_NO_BATCH 1
+//#define USE_NO_BATCH 1
 
 static int do_batch_op(int batchnum, int type)
 {
@@ -507,15 +509,20 @@ int stat_module(char * filename, int * kerneltype, int * dev_idx)
 static int find_cpu_top()
 {
     FILE * cpu0top, * cpu1top;
-    cpu0top = fopen("/sys/devices/system/cpu/cpu0/topology/core_siblings_list", "r");
-    cpu1top = fopen("/sys/devices/system/cpu/cpu1/topology/core_siblings_list", "r");
+    char filename[FILENAME_SIZE];
+    snprintf(filename, FILENAME_SIZE, "/sys/devices/system/cpu/cpu0/topology/core_siblings_list");
+    cpu0top = fopen(filename, "r");
     if (cpu0top == NULL)
     {
-        fprintf(stdout, "ERROR could not open\n");
+        fprintf(stdout, "%s %s::%d ERROR: could not open %s\n", getenv("HOSTNAME"), __FILE__, __LINE__, filename);
+        return -1;
     }
+    snprintf(filename, FILENAME_SIZE, "/sys/devices/system/cpu/cpu1/topology/core_siblings_list");
+    cpu1top = fopen(filename, "r");
     if (cpu1top == NULL)
     {
-        fprintf(stdout, "ERROR could not open\n");
+        fprintf(stdout, "%s %s::%d ERROR: could not open %s\n", getenv("HOSTNAME"), __FILE__, __LINE__, filename);
+        return -1;
     }
     int siblings0 = 0, siblings1 = 0;
     fscanf(cpu0top, "%d", &siblings0);
@@ -539,11 +546,16 @@ static int find_cpu_top()
 int init_msr()
 {
 	int dev_idx;
+    int ret;
     int * fileDescriptor = NULL;
 	char filename[FILENAME_SIZE];
 	static int initialized = 0;
     int kerneltype = 3; // 0 is msr_safe, 1 is msr
-    find_cpu_top();
+    ret = find_cpu_top();
+    if (ret < 0)
+    {
+        return ret;
+    }
     uint64_t numDevs = num_devs();
     
 #ifdef LIBMSR_DEBUG
