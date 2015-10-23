@@ -259,7 +259,7 @@ static int do_batch_op(int batchnum, int type)
     struct msr_batch_array * batch = NULL;
     if (batchfd == 0)
     {
-        if ((batchfd = open(MSR_BATCH_DIR, O_RDWR)) < 0)
+        if ((batchfd = fopen(MSR_BATCH_DIR, O_RDWR)) < 0)
         {
             perror(MSR_BATCH_DIR);
             batchfd = -1; 
