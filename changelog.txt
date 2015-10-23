@@ -8,3 +8,12 @@ v0.1.15 Batch
 	+ delta_rapl_data no longer takes arguments 
 	+ poll_rapl_data no longer takes arguments
 	+ dump_rapl_data arguments have changed, now only takes a FILE *
+
+v0.1.16
+- Removed deprecated variable from cpuid.c
++ cpuid.c get_core_conf function has been reworked to be more portable
+- Removed extraneous code in msr_rapl.c
++ msr_core devidx function now works with even-odd cpu ordering schemes
++ msr_init now stats msr_whitelist
++ libmsr_test now has an message saying if libmsr is working (WIP)
++ libmsr_test now explicitly resets power values to defaults
