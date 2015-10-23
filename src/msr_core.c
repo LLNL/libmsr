@@ -53,11 +53,22 @@
 #define LIBMSR_DEBUG_TAG "LIBMSR"
 #define FILENAME_SIZE 1024
 
+
+static int CPU_DEV_VER = 1;
+
 static uint64_t devidx(int socket, int core, int thread)
 {
     uint64_t sockets, cores, threads;
     core_config(&cores, &threads, &sockets, NULL);
-    return (thread * (sockets) * cores) + (socket * cores) + core;
+    if (CPU_DEV_VER)
+    {
+        return (thread * sockets * cores) + (socket * cores) + core;
+    }
+    else
+    {
+        return (core * sockets + socket + (cores * thread));
+    }
+    return -1;
 }
 
 uint64_t num_cores()
@@ -179,6 +190,9 @@ int allocate_batch(int batchnum, size_t bsize)
 {
     unsigned * size = NULL;
     struct msr_batch_array * batch = NULL;
+#ifdef BATCH_DEBUG
+    fprintf(stderr, "BATCH: allocating batch %d\n", batchnum);
+#endif
     if (batch_storage(&batch, batchnum, &size))
     {
         return -1;
@@ -237,6 +251,8 @@ static int compatibility_batch(int batchnum, int type)
     return 0;
 }
 
+//#define USE_NO_BATCH 1
+
 static int do_batch_op(int batchnum, int type)
 {
     static int batchfd = 0;
@@ -249,6 +265,9 @@ static int do_batch_op(int batchnum, int type)
             batchfd = -1; 
         }
     }
+#ifdef USE_NO_BATCH
+    return compatibility_batch(batchnum, type);
+#endif
     if (batchfd < 0)
     {
         return compatibility_batch(batchnum, type);
@@ -260,6 +279,11 @@ static int do_batch_op(int batchnum, int type)
 #ifdef BATCH_DEBUG
     fprintf(stderr, "BATCH %d: %s MSRs, numops %u\n", batchnum, (type == BATCH_READ ? "reading" : "writing"), batch->numops);
 #endif
+    if (batch->numops <= 0)
+    {
+        fprintf(stderr, "ERROR: attempted to use empty batch.\n");
+        return -1;
+    }
 
     // if current flag is the opposite type switch the flags
     if ((type == BATCH_WRITE && batch->ops[0].isrdmsr) ||
@@ -429,6 +453,23 @@ int cores_assert(const unsigned * core, const int location, const char * file)
 int stat_module(char * filename, int * kerneltype, int * dev_idx)
 {
 	struct stat statbuf;
+    if (*kerneltype == 3)
+    {
+        if(stat(filename, &statbuf))
+        {
+            fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s\n", getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
+            *kerneltype = 1;
+            return -1;
+        }
+        if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR))
+        {
+            fprintf(stderr, "%s %s::%d ERROR: msr_whitelist has incorrect permissions\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+            *kerneltype = 1;
+            return -1;
+        }
+        *kerneltype = 0;
+        return 0;
+    }
     if (stat(filename, &statbuf))
     {
         if (*kerneltype)
@@ -465,14 +506,56 @@ int stat_module(char * filename, int * kerneltype, int * dev_idx)
     return 0;
 }
 
+static int find_cpu_top()
+{
+    FILE * cpu0top, * cpu1top;
+    char filename[FILENAME_SIZE];
+    snprintf(filename, FILENAME_SIZE, "/sys/devices/system/cpu/cpu0/topology/core_siblings_list");
+    cpu0top = fopen(filename, "r");
+    if (cpu0top == NULL)
+    {
+        fprintf(stdout, "%s %s::%d ERROR: could not open %s\n", getenv("HOSTNAME"), __FILE__, __LINE__, filename);
+        return -1;
+    }
+    snprintf(filename, FILENAME_SIZE, "/sys/devices/system/cpu/cpu1/topology/core_siblings_list");
+    cpu1top = fopen(filename, "r");
+    if (cpu1top == NULL)
+    {
+        fprintf(stdout, "%s %s::%d ERROR: could not open %s\n", getenv("HOSTNAME"), __FILE__, __LINE__, filename);
+        return -1;
+    }
+    int siblings0 = 0, siblings1 = 0;
+    fscanf(cpu0top, "%d", &siblings0);
+    //fprintf(stdout, "q1%d\n", siblings0);
+    fscanf(cpu1top, "%d", &siblings1);
+    //fprintf(stdout, "q1%d\n", siblings1);
+    if (siblings0 == siblings1)
+    {
+        // uses default cpu ordering scheme
+        CPU_DEV_VER = 1;
+    }
+    else
+    {
+        // uses even-odd cpu ordering scheme
+        CPU_DEV_VER = 0;
+    }
+    return 0;
+}
+
 // Initialize the MSR module file descriptors
 int init_msr()
 {
 	int dev_idx;
+    int ret;
     int * fileDescriptor = NULL;
 	char filename[FILENAME_SIZE];
 	static int initialized = 0;
-    int kerneltype = 0; // 0 is msr_safe, 1 is msr
+    int kerneltype = 3; // 0 is msr_safe, 1 is msr
+    ret = find_cpu_top();
+    if (ret < 0)
+    {
+        return ret;
+    }
     uint64_t numDevs = num_devs();
     
 #ifdef LIBMSR_DEBUG
@@ -481,6 +564,8 @@ int init_msr()
 	if( initialized ){
 		return 0;
 	}
+    snprintf(filename, FILENAME_SIZE, "/dev/cpu/msr_whitelist");
+    stat_module(filename, &kerneltype, 0);
     // open the file descriptor for each device's msr interface
 	for (dev_idx=0; dev_idx < (numDevs); dev_idx++)
     {
