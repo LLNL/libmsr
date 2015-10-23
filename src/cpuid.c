@@ -104,8 +104,8 @@ void cpuid_detect_core_conf(uint64_t * coresPerSocket, uint64_t * hyperThreads, 
         *sockets = 2;
     }
 #ifdef CPUID_DEBUG
-    fprintf(stderr, "%s::%d DEBUG: allcores is %d, availcores is %d, and register has 0x%lx\n", __FILE__, __LINE__, 
-            allcores, availcores, rbx);
+    fprintf(stderr, "%s::%d DEBUG: allcores is %d, and register has 0x%lx\n", __FILE__, __LINE__, 
+            allcores, rbx);
     fprintf(stderr, "%s::%d DEBUG: hyper threads is %ld, cores per socket is %ld, sockets is %ld, HT is %d\n",
             __FILE__, __LINE__, *hyperThreads, *coresPerSocket, *sockets, *HTenabled);
 #endif

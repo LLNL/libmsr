@@ -525,7 +525,7 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 	static int initialized=0;
     double logremainder = 0.0;
     static uint64_t sockets = 0;
-    static uint64_t model = 0;
+    //static uint64_t model = 0;
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "DEBUG: (translate) bits are at %p\n", bits);
 #endif
@@ -533,10 +533,10 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
     {
         sockets = num_sockets();
     }
-    if (model == 0)
-    {
-        cpuid_get_model(&model);
-    }
+    //if (model == 0)
+    //{
+    //    cpuid_get_model(&model);
+    //}
     static struct rapl_units * ru = NULL;
     static uint64_t ** val = NULL;
 	int i;
@@ -643,12 +643,10 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 int get_rapl_power_info( const unsigned socket, struct rapl_power_info *info){
 	uint64_t val = 0;
     static uint64_t * rapl_flags = NULL;
-    static uint64_t model = 0;
     sockets_assert(&socket, __LINE__, __FILE__);
 
-    if (rapl_flags == NULL || model == 0)
+    if (rapl_flags == NULL)
     {
-        cpuid_get_model(&model);
         if (rapl_storage(NULL, &rapl_flags))
         {
             return -1;
@@ -699,12 +697,7 @@ int get_rapl_power_info( const unsigned socket, struct rapl_power_info *info){
 static int calc_rapl_from_bits(const unsigned socket, struct rapl_limit * limit, const unsigned offset)
 {
 	uint64_t watts_bits=0, seconds_bits=0;
-    uint64_t model = 0;
     sockets_assert(&socket, __LINE__, __FILE__);
-    if (model == 0)
-    {
-        cpuid_get_model(&model);    
-    }
 
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s::%d DEBUG: (calc_rapl_from_bits)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
@@ -732,11 +725,6 @@ static int calc_rapl_from_bits(const unsigned socket, struct rapl_limit * limit,
 static int calc_rapl_bits(const unsigned socket, struct rapl_limit * limit, const unsigned offset)
 {
 	uint64_t watts_bits=0, seconds_bits=0;
-    static uint64_t model = 0;
-    if (model == 0)
-    {
-        cpuid_get_model(&model);
-    }
     sockets_assert(&socket, __LINE__, __FILE__);
 
     watts_bits   = MASK_VAL( limit->bits, 14 + offset,  0 + offset);
