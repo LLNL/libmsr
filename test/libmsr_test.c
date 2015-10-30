@@ -331,7 +331,7 @@ int main(int argc, char** argv)
     }
     printf("msr init done\n");
     int ri_stat = 0;
-    ri_stat = rapl_init(&rd, &rapl_flags)
+    ri_stat = rapl_init(&rd, &rapl_flags);
     if (ri_stat < 0)
     {
         fprintf(stderr, "ERROR: Unable to initialize rapl\n");
@@ -382,7 +382,7 @@ int main(int argc, char** argv)
     fprintf(stdout, "Test Finished Successfully\n");
     if (ri_stat)
     {
-        fprintf(stdout, "There were %d locked rapl registers\n", ri_stat);
+        fprintf(stdout, "Found %d locked rapl register(s)\n", ri_stat);
     }
 
 	return 0;
