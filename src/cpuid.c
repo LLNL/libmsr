@@ -54,22 +54,31 @@ void cpuid_detect_core_conf(uint64_t * coresPerSocket, uint64_t * hyperThreads, 
 {
     // use rcx = 0 to see if hyper threading is supported. If > 1 then there is HT
     // use rcx = 1 to see how many cores are avaiable per socket (including HT if supported)
-    FILE * thread;
-    thread = fopen("/sys/devices/system/cpu/cpu0/topology/thread_siblings_list", "r");
-    if (thread == NULL)
+    static int init = 1;
+    if (init)
     {
-        fprintf(stderr, "ERROR: unable to open /sys/devices/system/cpu/cpu0/topology/thread_siblings_list\n");
-    }
-    unsigned first = 0, second = 0;
-    int ret = fscanf(thread, "%u,%u", &first, &second);
-    if (ret < 2 || ret == EOF)
-    {
-        // hyper threading is disabled
-        *HTenabled = 0;
-    }
-    else
-    {
-        *HTenabled = 1;
+        FILE * thread;
+        thread = fopen("/sys/devices/system/cpu/cpu0/topology/thread_siblings_list", "r");
+        if (thread == NULL)
+        {
+            fprintf(stderr, "ERROR: unable to open /sys/devices/system/cpu/cpu0/topology/thread_siblings_list\n");
+        }
+        unsigned first = 0, second = 0;
+        int ret = fscanf(thread, "%u,%u", &first, &second);
+        if (ret < 2 || ret == EOF)
+        {
+            // hyper threading is disabled
+            *HTenabled = 0;
+        }
+        else
+        {
+            *HTenabled = 1;
+        }
+        if (thread)
+        {
+            fclose(thread);
+        }
+        init = 0;
     }
     uint64_t rax = 0xb, rbx = 0, rcx = 0x0, rdx = 0;
     asm volatile("cpuid"

@@ -421,6 +421,7 @@ static int check_for_locks()
     static struct rapl_data * rapl = NULL;
     struct rapl_limit rl1, rl2;
     static uint64_t sockets = 0;
+    int numlocked = 0;
     unsigned i;
     const uint64_t lock = 0x80000000;
 
@@ -437,6 +438,7 @@ static int check_for_locks()
         }
     }
 
+    // TODO: should flip bits for pkg_limit?
     for (i = 0; i < sockets; i++)
     {
         if (*rapl_flags & PKG_POWER_LIMIT)
@@ -444,13 +446,15 @@ static int check_for_locks()
             get_pkg_rapl_limit(i, &rl1, &rl2);
             if (rl1.bits & lock)
             {
-                fprintf(stderr, "%s %s::%d ERROR: package power limit (0x610) [0:31] on socket %u is locked\n",
+                numlocked++;
+                fprintf(stderr, "%s %s::%d WARNING: package power limit (0x610) [0:31] on socket %u is locked\n",
                         getenv("HOSTNAME"), __FILE__, __LINE__, i);
             }
         }
         if (rl2.bits & lock)
         {
-            fprintf(stderr, "%s %s::%d ERROR: package power limit (0x610) [32:63] on socket %u is locked\n",
+            numlocked++;
+            fprintf(stderr, "%s %s::%d WARNING: package power limit (0x610) [32:63] on socket %u is locked\n",
                     getenv("HOSTNAME"), __FILE__, __LINE__, i);
         }
         if (rl1.bits & lock && rl2.bits & lock)
@@ -462,7 +466,8 @@ static int check_for_locks()
             get_dram_rapl_limit(i, &rl1);
             if (rl1.bits & lock)
             {
-                fprintf(stderr, "%s %s::%d ERROR: dram power limit (0x618) [0:31] on socket %u is locked\n",
+                numlocked++;
+                fprintf(stderr, "%s %s::%d WARNING: dram power limit (0x618) [0:31] on socket %u is locked\n",
                         getenv("HOSTNAME"), __FILE__, __LINE__, i);
                 *rapl_flags &= ~DRAM_POWER_LIMIT;
             }
@@ -472,7 +477,8 @@ static int check_for_locks()
             get_pp_rapl_limit(i, &rl1, NULL);
             if (rl1.bits & lock)
             {
-                fprintf(stderr, "%s %s::%d ERROR: pp0 power limit (0x638) [0:31] on socket %u is locked\n",
+                numlocked++;
+                fprintf(stderr, "%s %s::%d WARNING: pp0 power limit (0x638) [0:31] on socket %u is locked\n",
                         getenv("HOSTNAME"), __FILE__, __LINE__, i);
                 *rapl_flags &= ~PP0_POWER_LIMIT;
             }
@@ -482,25 +488,28 @@ static int check_for_locks()
             get_pp_rapl_limit(i, NULL, &rl2);
             if (rl2.bits & lock)
             {
-                fprintf(stderr, "%s %s::%d ERROR: pp1 power limit (0x640) [0:31] on socket %u is locked\n",
+                numlocked++;
+                fprintf(stderr, "%s %s::%d WARNING: pp1 power limit (0x640) [0:31] on socket %u is locked\n",
                         getenv("HOSTNAME"), __FILE__, __LINE__, i);
                 *rapl_flags &= ~PP1_POWER_LIMIT;
             }
         }
     }
-    return 0;
+    return numlocked;
 }
 
 // This initalizes the rapl data items. Be sure to put this function before any other rapl functions.
 int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
 {
     static int initialize = 1;
+    int ret;
     if (initialize)
     {
         initialize = 0;
         if (rapl_storage(rapl, rapl_flags))
         {
-            return -1;
+            ret = -1;
+            return ret;
         }
 #ifdef LIBMSR_DEBUG
         fprintf(stderr, "DEBUG: (init) rapl initialized at %p, flags are %lx at %p\n", *rapl, **rapl_flags, *rapl_flags);
@@ -511,12 +520,8 @@ int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
         fprintf(stderr, "%s %s::%d ERROR: rapl has already been initialized\n", getenv("HOSTNAME"),
                 __FILE__, __LINE__);
     }
-    if (check_for_locks())
-    {
-        return -1;
-    }
-
-    return 0;
+    ret = check_for_locks();
+    return ret;
 }
 
 // This translates any human supplied units to the format expected in the registers and vice-versa
