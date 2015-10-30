@@ -330,7 +330,9 @@ int main(int argc, char** argv)
         return -1;
     }
     printf("msr init done\n");
-    if (rapl_init(&rd, &rapl_flags))
+    int ri_stat = 0;
+    ri_stat = rapl_init(&rd, &rapl_flags);
+    if (ri_stat < 0)
     {
         fprintf(stderr, "ERROR: Unable to initialize rapl\n");
         return -1;
@@ -378,6 +380,10 @@ int main(int argc, char** argv)
 	MPI_Finalize();
 	#endif
     fprintf(stdout, "Test Finished Successfully\n");
+    if (ri_stat)
+    {
+        fprintf(stdout, "Found %d locked rapl register(s)\n", ri_stat);
+    }
 
 	return 0;
 }
