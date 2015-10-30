@@ -68,6 +68,15 @@
 #define IA32_PERFEVTSEL6 (0x18C)
 #define IA32_PERFEVTSEL7 (0x18D)
 
+#define MSR_PCU_PMON_EVNTSEL0   (0xC30)
+#define MSR_PCU_PMON_EVNTSEL1   (0xC31)
+#define MSR_PCU_PMON_EVNTSEL2   (0xC32)
+#define MSR_PCU_PMON_EVNTSEL3   (0xC33)
+#define MSR_PCU_PMON_CTR0   (0xC36)
+#define MSR_PCU_PMON_CTR1   (0xC37)
+#define MSR_PCU_PMON_CTR2   (0xC38)
+#define MSR_PCU_PMON_CTR3   (0xC39)
+
 int print_available_counters()
 {
     fprintf(stdout, "IA32_FIXED_CTR_CTRL, 38Dh\nIA32_PERF_GLOBAL_CTRL, 38Fh\nIA32_PERF_GLOBAL_STATUS, 38Eh\n");
@@ -108,6 +117,8 @@ int print_available_counters()
     }
     return 0;
 }
+
+//-------------------- Programmable Performance Counters ----------
 
 static int init_evtsel(struct evtsel * evt)
 {
@@ -320,11 +331,11 @@ int enable_pmc()
     }
     //test_pmc_ctrl();
     write_batch(COUNTERS_CTRL);
-    clear_pmc();
+    clear_all_pmc();
     return 0;
 }
 
-int clear_pmc()
+int clear_all_pmc()
 {
     static struct pmc * p = NULL;
     static uint64_t numDevs = 0;
@@ -361,6 +372,47 @@ int clear_pmc()
     write_batch(COUNTERS_DATA);
     return 0;
 }
+
+// TODO: doesnt do anything, need to use by_idx
+int clear_pmc(int idx)
+{
+    static struct pmc * p = NULL;
+    static int avail = 0;
+    if (p == NULL)
+    {
+         avail = cpuid_PMC_num();
+         pmc_storage(&p);
+    }
+    if (idx < avail)
+    {
+        switch (idx)
+        {
+            case 8:
+                *p->pmc7[idx] = 0;
+            case 7:
+                *p->pmc6[idx] = 0;
+            case 6:
+                *p->pmc5[idx] = 0;
+            case 5:
+                *p->pmc4[idx] = 0;
+            case 4:
+                *p->pmc3[idx] = 0;
+            case 3:
+                *p->pmc2[idx] = 0;
+            case 2:
+                *p->pmc1[idx] = 0;
+            case 1:
+                *p->pmc0[idx] = 0;
+        }
+    }
+    else
+    {
+        return -1;
+    }
+//    write_batch(COUNTERS_DATA);
+    return 0;
+}
+
 
 //#define COUNTERS_DEBUG
 
@@ -403,6 +455,205 @@ int dump_pmc_readable(FILE * writefile)
     }
     return 0;
 }
+
+//-------------------- End Programmable Counters ---------- 
+
+//-------------- Uncore PCU performance monitoring ------------------
+static int init_uncore_evtsel(struct uncore_evtsel * uevt)
+{
+    static int init = 1;
+    if (init)
+    {
+        int sockets = num_sockets();
+        uevt->c0 = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        uevt->c1 = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        uevt->c2 = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        uevt->c3 = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        allocate_batch(UNCORE_EVTSEL, 4 * sockets);
+        load_socket_batch(MSR_PCU_PMON_EVNTSEL0, uevt->c0, UNCORE_EVTSEL);
+        load_socket_batch(MSR_PCU_PMON_EVNTSEL1, uevt->c1, UNCORE_EVTSEL);
+        load_socket_batch(MSR_PCU_PMON_EVNTSEL2, uevt->c2, UNCORE_EVTSEL);
+        load_socket_batch(MSR_PCU_PMON_EVNTSEL3, uevt->c3, UNCORE_EVTSEL);
+        init = 0;
+    }
+    return 0;
+}
+
+static int init_uncore_counters(struct uncore_counters * uc)
+{
+    static int init = 1;
+    if (init)
+    {
+        int sockets = num_sockets();
+        uc->c0 = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        uc->c1 = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        uc->c2 = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        uc->c3 = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+        allocate_batch(UNCORE_COUNT, 4 * sockets);
+        load_socket_batch(MSR_PCU_PMON_CTR0, uc->c0, UNCORE_COUNT);
+        load_socket_batch(MSR_PCU_PMON_CTR1, uc->c1, UNCORE_COUNT);
+        load_socket_batch(MSR_PCU_PMON_CTR2, uc->c2, UNCORE_COUNT);
+        load_socket_batch(MSR_PCU_PMON_CTR3, uc->c3, UNCORE_COUNT);
+        init = 0;
+    }
+    return 0;
+}
+
+int uncore_evtsel_storage(struct uncore_evtsel ** uevt)
+{
+    static struct uncore_evtsel uevt_data;
+    static int init = 1;
+    if (init)
+    {
+        init = 0;
+        init_uncore_evtsel(&uevt_data);
+    }
+    if (uevt)
+    {
+        *uevt = &uevt_data;
+    }
+    return 0;
+}
+
+int uncore_counters_storage(struct uncore_counters ** uc)
+{
+    static struct uncore_counters uc_data;
+    static int init = 1;
+    if (init)
+    {
+        init = 0;
+        init_uncore_counters(&uc_data);
+    }
+    if (uc)
+    {
+        *uc = &uc_data;
+    }
+    return 0;
+}
+
+int set_pcu_ctrl_flags(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pcunum, unsigned socket)
+{
+    static struct uncore_evtsel * uevt = NULL;
+    if (uevt == NULL)
+    {
+        uncore_evtsel_storage(&uevt);
+    }
+    switch(pcunum)
+    {
+        case 4:
+            *uevt->c3[socket] = 0UL | (cmask << 24) | (flags << 16) | (umask << 8) | eventsel;
+            break;
+        case 3:
+            *uevt->c2[socket] = 0UL | (cmask << 24) | (flags << 16) | (umask << 8) | eventsel;
+            break;
+        case 2:
+            *uevt->c1[socket] = 0UL | (cmask << 24) | (flags << 16) | (umask << 8) | eventsel;
+            break;
+        case 1:
+            *uevt->c0[socket] = 0UL | (cmask << 24) | (flags << 16) | (umask << 8) | eventsel;
+            break;
+    }
+    return 0;
+}
+
+int set_all_pcu_ctrl(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pcunum)
+{
+    uint64_t sockets = num_sockets();
+    int i;
+    for (i = 0; i < sockets; i++)
+    {
+        set_pmc_ctrl_flags(cmask, flags, umask, eventsel, pcunum, i);
+    }
+    return 0;
+}
+
+/*
+static int test_pcu_ctrl()
+{
+    uint64_t cmask = 0x0;
+    uint64_t flags = 0x0;
+    uint64_t umask = 0x10;
+    uint64_t eventsel = 0x22;
+    set_all_pcu_ctrl(cmask, flags, umask, eventsel, 1);
+    return 0;
+}
+*/
+
+int enable_pcu()
+{
+    static struct uncore_evtsel * uevt = NULL;
+    static int sockets = 0;
+    if (uevt == NULL)
+    {
+        sockets = num_sockets();
+        uncore_evtsel_storage(&uevt);        
+    }
+ //   test_pcu_ctrl();
+    write_batch(UNCORE_EVTSEL);
+    clear_all_pcu();
+    return 0;
+}
+
+int clear_all_pcu()
+{
+    static struct uncore_counters * uc = NULL;
+    static int sockets = 0;
+    if (uc == NULL)
+    {
+         sockets = num_sockets();
+         uncore_counters_storage(&uc);
+    }
+    int i;
+    for (i = 0; i < sockets; i++)
+    {
+        *uc->c0[i] = 0;
+    }
+    write_batch(UNCORE_COUNT);
+    return 0;
+}
+
+// TODO: doesnt do anything, need to use by_idx
+int clear_pcu(int idx)
+{
+    static struct uncore_counters * uc = NULL;
+    static int sockets = 0;
+    if (uc == NULL)
+    {
+         sockets = num_sockets();
+         uncore_counters_storage(&uc);
+    }
+    if (idx < sockets)
+    {
+        uc->c0[idx] = 0;
+    }
+    else
+    {
+        return -1;
+    }
+//    write_batch(UNCORE_COUNT);
+    return 0;
+}
+
+int dump_uncore_counters_label(FILE * writedest)
+{
+    fprintf(writedest, "uncore counters\ncore c0\tc1\tc2\tc3\n");
+    return 0;
+}
+
+int dump_uncore_counters(FILE * writedest)
+{
+    struct uncore_counters * uc;
+    uncore_counters_storage(&uc);
+    int i;
+    for (i = 0; i < num_sockets(); i++)
+    {
+        fprintf(writedest, "%d %lx\t%lx\t%lx\t%lx\n", i, *uc->c0[i], *uc->c1[i], *uc->c2[i], *uc->c3[i]);
+    }
+    return 0;
+}
+
+//-------------- end Uncore PCU performance monitoring
+//-------------- Fixed Counters performance monitoring -------------------
 
 int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, struct ctr_data ** ctr2)
 {
@@ -659,3 +910,4 @@ void dump_fixed_readable(FILE * writeFile)
 	}
 
 }
+// ------------------ End Fixed Counters ---------------
