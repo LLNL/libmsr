@@ -79,6 +79,22 @@ struct pmc
     uint64_t ** pmc7;
 };
 
+struct uncore_evtsel
+{
+    uint64_t ** c0;
+    uint64_t ** c1;
+    uint64_t ** c2;
+    uint64_t ** c3;
+};
+
+struct uncore_counters
+{
+    uint64_t ** c0;
+    uint64_t ** c1;
+    uint64_t ** c2;
+    uint64_t ** c3;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -90,10 +106,22 @@ int fixed_ctr_storage(struct ctr_data ** ctr0, struct ctr_data ** ctr1, struct c
 // there are plans to change these to structs so the indirection is less crazy
 int fixed_ctr_ctrl_storage(uint64_t *** perf_ctrl, uint64_t *** fixed_ctrl);
 
+int uncore_evtsel_storage(struct uncore_evtsel ** uevt);
+int uncore_counters_storage(struct uncore_counters ** uc);
+int set_pcu_ctrl_flags(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pcunum, unsigned socket);
+// can probably consolidate event select into 1 function
+int set_all_pcu_ctrl(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pcunum);
+int enable_pcu();
+int clear_all_pcu();
+//int clear_pcu();
+int dump_uncore_counters_label(FILE * writedest);
+int dump_uncore_counters(FILE * writedest);
+
 int print_available_counters();
 
 int enable_pmc();
-int clear_pmc();
+int clear_all_pmc();
+//int clear_pmc();
 int dump_pmc_readable(FILE * writefile);
 int set_pmc_ctrl_flags(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pmcnum, unsigned thread);
 int set_all_pmc_ctrl(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pmcnum);

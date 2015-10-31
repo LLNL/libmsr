@@ -80,6 +80,10 @@ enum{
     PKG_THERM_INTERR,
     TEMP_TARGET,
     PERF_CTL,
+    PKG_CRES,
+    CORE_CRES,
+    UNCORE_EVTSEL,
+    UNCORE_COUNT,
     USR_BATCH0,// Set aside for user defined use
     USR_BATCH1, // Set aside for user defined use
     USR_BATCH2, // Set aside for user defined use

@@ -35,10 +35,18 @@
 #include <stddef.h>
 #include "msr_core.h"
 #include "msr_misc.h"
+#include "memhdlr.h"
 
 // Section 35.7 Table 35-11
 // Or Section 35.1 Table 35.2
 #define IA32_MISC_ENABLE		(0x1A0) 
+#define MSR_PKG_C3_RESIDENCY    (0x3F8)
+#define MSR_PKG_C6_RESIDENCY    (0x3F9)
+#define MSR_PKG_C7_RESIDENCY    (0x3FA)
+#define MSR_CORE_C3_RESIDENCY   (0x3FC)
+#define MSR_CORE_C6_RESIDENCY   (0x3FD)
+#define MSR_CORE_C7_RESIDENCY   (0x3FE)
+#define PKG_C2_RESIDENCY    (0x60D)
 
 //----------------------Misc_Enable functions-------------------------------------------------------------------
 /*
@@ -196,3 +204,109 @@ void set_misc_enable(unsigned socket, struct misc_enable *s)
 
 //---------------------END Misc_Enable functions----------------------------------------------------------------
 
+// C-State Residency Functions
+
+static int init_pkg_cres(struct pkg_cres * pcr)
+{
+    int sockets = num_sockets();
+    pcr->pkg_c2 = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+    pcr->pkg_c3 = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+    pcr->pkg_c6 = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+    pcr->pkg_c7 = (uint64_t **) libmsr_calloc(sockets, sizeof(uint64_t *));
+    allocate_batch(PKG_CRES, 4 * sockets);
+    load_socket_batch(PKG_C2_RESIDENCY, pcr->pkg_c2, PKG_CRES);
+    load_socket_batch(MSR_PKG_C3_RESIDENCY, pcr->pkg_c3, PKG_CRES);
+    load_socket_batch(MSR_PKG_C6_RESIDENCY, pcr->pkg_c6, PKG_CRES);
+    load_socket_batch(MSR_PKG_C7_RESIDENCY, pcr->pkg_c7, PKG_CRES);
+    return 0;
+}
+
+static int init_core_cres(struct core_cres * ccr)
+{
+    int cores = num_cores();
+    ccr->core_c3 = (uint64_t **) libmsr_calloc(cores, sizeof(uint64_t *));
+    ccr->core_c6 = (uint64_t **) libmsr_calloc(cores, sizeof(uint64_t *));
+    ccr->core_c7 = (uint64_t **) libmsr_calloc(cores, sizeof(uint64_t *));
+    allocate_batch(CORE_CRES, 3 * cores);
+    load_core_batch(MSR_CORE_C3_RESIDENCY, ccr->core_c3, CORE_CRES);
+    load_core_batch(MSR_CORE_C6_RESIDENCY, ccr->core_c6, CORE_CRES);
+    load_core_batch(MSR_CORE_C7_RESIDENCY, ccr->core_c7, CORE_CRES);
+    return 0;
+}
+
+int pkg_cres_storage(struct pkg_cres ** pcr)
+{
+    static struct pkg_cres pkg_cres_data;
+    static int init = 1;
+    if (init)
+    {
+        init = 0;
+        init_pkg_cres(&pkg_cres_data);
+    }
+    if (pcr)
+    {
+        *pcr = &pkg_cres_data;
+    }
+    return 0;
+}
+
+int core_cres_storage(struct core_cres ** ccr)
+{
+    static struct core_cres core_cres_data;
+    static int init = 1;
+    if (init)
+    {
+        init = 0;
+        init_core_cres(&core_cres_data);
+    }
+    if (ccr)
+    {
+        *ccr = &core_cres_data;
+    }
+    return 0;
+}
+
+int dump_pkg_cres_label(FILE * writedest)
+{
+    fprintf(writedest, "PKG:c2\tc3\tc6\tc7\n");
+    return 0;
+}
+
+int dump_pkg_cres(FILE * writedest)
+{
+    struct pkg_cres * pcr;
+    pkg_cres_storage(&pcr);
+    read_batch(PKG_CRES);
+    int i;
+    for (i = 0; i < num_sockets(); i++)
+    {
+        fprintf(writedest, "%lx\t", *pcr->pkg_c2[i]);
+        fprintf(writedest, "%lx\t", *pcr->pkg_c3[i]);
+        fprintf(writedest, "%lx\t", *pcr->pkg_c6[i]);
+        fprintf(writedest, "%lx\t", *pcr->pkg_c7[i]);
+        fprintf(writedest, "\n");
+    }
+    return 0;
+}
+
+int dump_core_cres_label(FILE * writedest)
+{
+    fprintf(writedest, "CORE:c3\tc6\tc7\n");
+    return 0;
+}
+
+int dump_core_cres(FILE * writedest)
+{
+    struct core_cres * ccr;
+    core_cres_storage(&ccr);
+    read_batch(CORE_CRES);
+    int i = 0;
+    for (i = 0; i < num_cores(); i++)
+    {
+        fprintf(writedest, "%lx\t", *ccr->core_c3[i]);
+        fprintf(writedest, "%lx\t", *ccr->core_c6[i]);
+        fprintf(writedest, "%lx\t", *ccr->core_c7[i]);
+        fprintf(writedest, "\n");
+    }
+    return 0;
+}
