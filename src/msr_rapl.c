@@ -1283,7 +1283,7 @@ dump_rapl_terse( FILE * writeFile){
         {
             fprintf(writeFile, "%8.4lf ", rapl->pp1_watts[0]);
         }
-	}
+    }
     return 0;
 }
 
