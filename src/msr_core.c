@@ -738,11 +738,21 @@ load_socket_batch(  off_t msr, uint64_t **val , int batchnum)
             __FILE__, __LINE__, msr, msr);
     fprintf(stderr, "sockets %lu, cores %lu, threads %lu\n", sockets, coresPerSocket, threadsPerCore);
 #endif
-	for(dev_idx=0, val_idx=0; dev_idx< NUM_DEVS_NEW;
-        dev_idx += coresPerSocket * threadsPerCore, val_idx++ )
+    if (CPU_DEV_VER == 1)
     {
-        create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
-	}
+        for(dev_idx=0, val_idx=0; dev_idx< NUM_DEVS_NEW;
+            dev_idx += coresPerSocket * threadsPerCore, val_idx++ )
+        {
+            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
+        }
+    }
+    else
+    {
+        for (dev_idx = 0, val_idx = 0; dev_idx < NUM_DEVS_NEW; dev_idx += coresPerSocket * threadsPerCore, val_idx++)
+        {
+            create_batch_op(msr, val_idx, &val[val_idx], batchnum);
+        }
+    }
     return 0;
 }
 
@@ -763,10 +773,28 @@ load_core_batch( off_t msr, uint64_t **val , int batchnum)
 	fprintf(stderr, "%s %s %s::%d (read_all_cores) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
-	for(dev_idx=0, val_idx=0; dev_idx< coretotal; dev_idx += threadsPerCore, val_idx++ )
+    if (CPU_DEV_VER == 1)
     {
-        create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
-	}
+        // TODO: dev_idx++?
+        for(dev_idx=0, val_idx=0; dev_idx< coretotal; dev_idx++, val_idx++ )
+        {
+            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
+        }
+    }
+    else
+    {
+        // load socket 0
+        for(dev_idx = 0, val_idx = 0; dev_idx < coretotal; dev_idx += sockets, val_idx++)
+        {
+            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
+        }
+        // load socket 1
+        for(dev_idx = 1; dev_idx < coretotal; dev_idx += sockets)
+        {
+            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
+            val_idx++;
+        }
+    }
     return 0;
 }
 
@@ -785,10 +813,27 @@ load_thread_batch( off_t msr, uint64_t **val , int batchnum)
 	fprintf(stderr, "%s %s %s::%d (read_all_threads) msr=%lu (0x%lx)\n", getenv("HOSTNAME"),LIBMSR_DEBUG_TAG, 
             __FILE__, __LINE__, msr, msr);
 #endif
-	for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx++, val_idx++ )
+    if (CPU_DEV_VER == 1)
     {
-        create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
-	}
+        for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx++, val_idx++ )
+        {
+            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
+        }
+    }
+    else
+    {
+        // load socket 0
+        for(dev_idx=0, val_idx=0; dev_idx<(NUM_DEVS_NEW); dev_idx += sockets, val_idx++ )
+        {
+            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
+        }
+        // load socket 1
+        for (dev_idx = 1; dev_idx < NUM_DEVS_NEW; dev_idx += sockets)
+        {
+            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
+            val_idx++;
+        }
+    }
     return 0;
 }
 

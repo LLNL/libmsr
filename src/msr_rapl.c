@@ -44,6 +44,7 @@
 #define RAPL_USE_DRAM 1
 #define FLT_MAX     3.402823466E+38F // taken from limits.h
 #define UINT_MAX    4294967295U // taken from limits.h
+#define STD_ENERGY_UNIT 65536.0
 
 /* UNIT_SCALE 
  * Calculates x/(2^y).  
@@ -179,7 +180,8 @@ enum{
     BITS_TO_SECONDS_STD,
     SECONDS_TO_BITS_STD,
     BITS_TO_SECONDS_HASWELL,
-    SECONDS_TO_BITS_HASWELL
+    SECONDS_TO_BITS_HASWELL,
+    BITS_TO_JOULES_DRAM
 };
 
 struct rapl_units{
@@ -530,7 +532,7 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 	static int initialized=0;
     double logremainder = 0.0;
     static uint64_t sockets = 0;
-    //static uint64_t model = 0;
+    static uint64_t model = 0;
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "DEBUG: (translate) bits are at %p\n", bits);
 #endif
@@ -538,10 +540,10 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
     {
         sockets = num_sockets();
     }
-    //if (model == 0)
-    //{
-    //    cpuid_get_model(&model);
-    //}
+    if (model == 0)
+    {
+        cpuid_get_model(&model);
+    }
     static struct rapl_units * ru = NULL;
     static uint64_t ** val = NULL;
 	int i;
@@ -571,6 +573,9 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 			ru[i].seconds = (double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit, 19, 16 )));
 			// default is 10000b or 15.3 microjoules
             ru[i].joules = (double) (1 << (MASK_VAL(ru[i].msr_rapl_power_unit, 12, 8)));
+#ifdef LIBMSR_DEBUG
+            fprintf(stderr, "DEBUG: joules unit is %f register has %lx\n", ru[i].joules, ru[i].msr_rapl_power_unit);
+#endif
 			// default is 0011b or 1/8 Watts
 			ru[i].watts   = ((1.0)/((double)( 1<<(MASK_VAL( ru[i].msr_rapl_power_unit,  3,  0 )))));
 		}	
@@ -579,6 +584,13 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
 		case BITS_TO_WATTS: 	
             *units = (double)(*bits)  * ru[socket].watts; 			
             break;
+        case BITS_TO_JOULES_DRAM:
+            if (model == 0x3FLL)
+            {
+                *units = (double) (*bits) / STD_ENERGY_UNIT;
+                return 0;
+            }
+            // no break, if not haswell do standard stuff
 		case BITS_TO_JOULES:	
             //*units = (double)(*bits)  * ru[socket].joules; 		
             *units = (double)(*bits)  / ru[socket].joules; 		
@@ -587,6 +599,7 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
             *bits  = (uint64_t)(  (*units) / ru[socket].watts    ); 	
             break;
 		case JOULES_TO_BITS:	
+            // TODO: currently not used, but if it ever is we need a fix for haswell
             //*bits  = (uint64_t)(  (*units) / ru[socket].joules   ); 	
             *bits  = (uint64_t)(  (*units) * ru[socket].joules   ); 	
             break;
@@ -1323,7 +1336,7 @@ int dump_rapl_data(FILE *writeFile )
                     now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
                     );
         }
-        if (*rapl_flags & DRAM_POWER_LIMIT)
+        if (*rapl_flags & DRAM_ENERGY_STATUS)
         {
             fprintf(writeFile, "dram_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
                     r->dram_watts[s],
@@ -1780,7 +1793,7 @@ int read_rapl_data()
     #ifdef LIBMSR_DEBUG
         fprintf(stderr, "DEBUG: (read_rapl_data): translating dram\n");
     #endif
-            translate(s, rapl->dram_bits[s], &rapl->dram_joules[s], BITS_TO_JOULES );
+            translate(s, rapl->dram_bits[s], &rapl->dram_joules[s], BITS_TO_JOULES_DRAM );
         }
         if (*rapl_flags & PKG_ENERGY_STATUS)
         {
