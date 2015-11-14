@@ -585,9 +585,12 @@ translate( const unsigned socket, uint64_t* bits, double* units, int type){
             *units = (double)(*bits)  * ru[socket].watts; 			
             break;
         case BITS_TO_JOULES_DRAM:
-            if (model == 0x3FLL)
+            if (model == 0x3F)
             {
                 *units = (double) (*bits) / STD_ENERGY_UNIT;
+#ifdef LIBMSR_DEBUG
+                fprintf(stderr, "DEBUG: (translate_dram) %f is %f joules\n", (double) *bits, *units);
+#endif
                 return 0;
             }
             // no break, if not haswell do standard stuff
@@ -1234,19 +1237,19 @@ dump_rapl_terse_label( FILE *writeFile ){
 	for(socket=0; socket<sockets; socket++)
     {
         // check to see what registers are available 
-        if (*rapl_flags & PKG_POWER_LIMIT)
+        if (*rapl_flags & PKG_ENERGY_STATUS)
         {
             fprintf(writeFile, "pkgW%0d ", socket);
         }
-        if (*rapl_flags & DRAM_POWER_LIMIT)
+        if (*rapl_flags & DRAM_ENERGY_STATUS)
         {
             fprintf(writeFile, "dramW%0d ", socket);
         }
-        if (*rapl_flags & PP0_POWER_LIMIT)
+        if (*rapl_flags & PP0_ENERGY_STATUS)
         {
             fprintf(writeFile, "pp0W%0d ", socket);
         }
-        if (*rapl_flags & PP1_POWER_LIMIT)
+        if (*rapl_flags & PP1_ENERGY_STATUS)
         {
             fprintf(writeFile, "pp1W%0d ", socket);
         }
@@ -1280,19 +1283,19 @@ dump_rapl_terse( FILE * writeFile){
     for (socket = 0; socket < sockets; socket++)
     {
         // check to see which registers are available
-        if (*rapl_flags & PKG_POWER_LIMIT)
+        if (*rapl_flags & PKG_ENERGY_STATUS)
         {
             fprintf(writeFile, "%8.4lf ", rapl->pkg_watts[0]);
         }
-        if (*rapl_flags & DRAM_POWER_LIMIT)
+        if (*rapl_flags & DRAM_ENERGY_STATUS)
         {
             fprintf(writeFile, "%8.4lf ", rapl->dram_watts[0]);
         }
-        if (*rapl_flags & PP0_POWER_LIMIT)
+        if (*rapl_flags & PP0_ENERGY_STATUS)
         {
             fprintf(writeFile, "%8.4lf ", rapl->pp0_watts[0]);
         }
-        if (*rapl_flags & PP1_POWER_LIMIT)
+        if (*rapl_flags & PP1_ENERGY_STATUS)
         {
             fprintf(writeFile, "%8.4lf ", rapl->pp1_watts[0]);
         }
@@ -1328,7 +1331,7 @@ int dump_rapl_data(FILE *writeFile )
     for (s = 0; s < sockets; s++)
     {
         fprintf(writeFile, "Socket %d\n", s);
-        if (*rapl_flags & PKG_POWER_LIMIT)
+        if (*rapl_flags & PKG_ENERGY_STATUS)
         {
             fprintf(writeFile, "pkg_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
                     r->pkg_watts[s],
@@ -1344,7 +1347,7 @@ int dump_rapl_data(FILE *writeFile )
                     now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
                     );
         }
-        if (*rapl_flags & PP0_POWER_LIMIT)
+        if (*rapl_flags & PP0_ENERGY_STATUS)
         {
             fprintf(writeFile, "pp0_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
                     r->pp0_watts[s],
@@ -1352,7 +1355,7 @@ int dump_rapl_data(FILE *writeFile )
                     now.tv_sec - start.tv_sec + (now.tv_usec - start.tv_usec)/1000000.0
                     );
         }
-        if (*rapl_flags & PP1_POWER_LIMIT)
+        if (*rapl_flags & PP1_ENERGY_STATUS)
         {
             fprintf(writeFile, "pp1_watts= %8.4lf   elapsed= %8.5lf   timestamp= %9.6lf\n", 
                     r->pp1_watts[s],
@@ -1647,20 +1650,20 @@ int delta_rapl_data()
         // Get watts.
         if(rapl->elapsed > 0.0L){
             // check to see if pkg power limit register exists
-            if (*rapl_flags & PKG_POWER_LIMIT)
+            if (*rapl_flags & PKG_ENERGY_STATUS)
             {
                 rapl->pkg_watts[s]  = rapl->pkg_delta_joules[s]  / rapl->elapsed;
                 //fprintf(stderr, "DEBUG: pkg_watts[%d] %lf\n", s, rapl->pkg_watts[s]);
                 //fprintf(stderr, "DEBUG: pkg_delta_joules[%d] %lf, elapsed %lf\n", s, rapl->pkg_delta_joules[s], rapl->elapsed);
             }
-            if (*rapl_flags & DRAM_POWER_LIMIT)
+            if (*rapl_flags & DRAM_ENERGY_STATUS)
             {
                 rapl->dram_watts[s] = rapl->dram_delta_joules[s] / rapl->elapsed;
             }
         }else{
             rapl->pkg_watts[s] = 0.0;
             // check to see if dram power limit register exists
-            if (*rapl_flags & DRAM_POWER_LIMIT)
+            if (*rapl_flags & DRAM_ENERGY_STATUS)
             {
                 rapl->dram_watts[s] = 0.0;
             }
