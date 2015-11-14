@@ -197,7 +197,7 @@ void turbo_test()
 
 // NOTE: to use this, compile a NAS parallel benchmark of your choice and modify the path below
 //       you will have to compile with the -D_GNU_SOURCE flag for setaffinity 
-#define MEMTEST 1
+//#define MEMTEST 1
 
 #ifdef MEMTEST
 char * args[] = {"mg.B.1"};
@@ -250,7 +250,7 @@ void rapl_r_test(struct rapl_data ** rd)
     }
 #endif
 #ifndef MEMTEST
-    sleep(1);
+    sleep(10);
 #endif
 
 

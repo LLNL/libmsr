@@ -12,21 +12,19 @@ set(LIBMSR_SOURCES
   memhdlr.c
   signalCombined.c)
 
+
 #
 # Add dynamic library
 #
 add_library(msr SHARED ${LIBMSR_SOURCES})
+target_link_libraries(msr m)
 
 #
 # Add static library with same base name as the dynamic lib.
 #
 add_library(msr-static STATIC ${LIBMSR_SOURCES})
+target_link_libraries(msr-static m)
 set_target_properties(msr-static PROPERTIES OUTPUT_NAME "msr")
-
-#
-# Add math library for rapl
-#
-set (CMAKE_SHARED_LINKER_FLAGS "-lm")
 
 #
 # Install target should install the two library targets above.

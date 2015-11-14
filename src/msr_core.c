@@ -748,9 +748,9 @@ load_socket_batch(  off_t msr, uint64_t **val , int batchnum)
     }
     else
     {
-        for (dev_idx = 0, val_idx = 0; dev_idx < NUM_DEVS_NEW; dev_idx += coresPerSocket * threadsPerCore, val_idx++)
+        for (dev_idx = 0, val_idx = 0; dev_idx < sockets; dev_idx++, val_idx++)
         {
-            create_batch_op(msr, val_idx, &val[val_idx], batchnum);
+            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
         }
     }
     return 0;
