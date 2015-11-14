@@ -11,7 +11,7 @@ set_target_properties(msr-cmd PROPERTIES OUTPUT_NAME "msr")
 # according to its args.
 #
 add_executable(msr-turbo msr-turbo.c)
-target_link_libraries(msr-turbo msr)
+target_link_libraries(msr-turbo msr m)
 
 #
 # All the commands get installed in bin.

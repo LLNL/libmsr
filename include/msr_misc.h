@@ -51,6 +51,21 @@ struct misc_enable{
 	__u8 turbo_mode_disable;				// Read/Write (package scope)
 };
 
+struct pkg_cres
+{
+    uint64_t ** pkg_c2;
+    uint64_t ** pkg_c3;
+    uint64_t ** pkg_c6;
+    uint64_t ** pkg_c7;
+};
+
+struct core_cres
+{
+    uint64_t ** core_c3;
+    uint64_t ** core_c6;
+    uint64_t ** core_c7;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,7 +73,12 @@ extern "C" {
 void dump_misc_enable(struct misc_enable *s);
 void get_misc_enable(unsigned socket, struct misc_enable *s);
 void set_misc_enable(unsigned socket, struct misc_enable *s);
-
+int pkg_cres_storage(struct pkg_cres ** pcr);
+int core_cres_storage(struct core_cres ** ccr);
+int dump_pkg_cres_label(FILE * writedest);
+int dump_pkg_cres(FILE * writedest);
+int dump_core_cres_label(FILE * writedest);
+int dump_core_cres(FILE * writedest);
 
 #ifdef __cplusplus
 }
