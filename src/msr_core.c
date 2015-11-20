@@ -456,15 +456,15 @@ int stat_module(char * filename, int * kerneltype, int * dev_idx)
     {
         if(stat(filename, &statbuf))
         {
-            fprintf(stderr, "%s %s::%d ERROR: could not stat %s: %s\n", getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
-            *kerneltype = 1;
-            return -1;
+            fprintf(stderr, "%s %s::%d WARNING: could not stat %s: %s\n", getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
+            //*kerneltype = 1;
+            //return -1;
         }
         if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR))
         {
-            fprintf(stderr, "%s %s::%d ERROR: msr_whitelist has incorrect permissions\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-            *kerneltype = 1;
-            return -1;
+            fprintf(stderr, "%s %s::%d WARNING: msr_whitelist has incorrect permissions\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+            //*kerneltype = 1;
+            //return -1;
         }
         *kerneltype = 0;
         return 0;
