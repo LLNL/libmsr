@@ -250,7 +250,7 @@ void rapl_r_test(struct rapl_data ** rd)
     }
 #endif
 #ifndef MEMTEST
-    sleep(1);
+    sleep(10);
 #endif
 
 

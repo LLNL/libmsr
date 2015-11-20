@@ -34,7 +34,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <linux/types.h>
-//#define LIBMSR_DEBUG 1
+#define LIBMSR_DEBUG 1
 #define NUM_DEVS_NEW (sockets * coresPerSocket * threadsPerCore)
 #define NUM_CORES_NEW (sockets * coresPerSocket)
 // this is the same as num_devs
