@@ -1745,9 +1745,6 @@ int read_rapl_data()
             }
             // make sure pp0 policy register exists
             if (*rapl_flags & PP0_POLICY)
-            {
-                // not yet implemented
-            }
             // make sure pp1 energy status register exists
             if (*rapl_flags & PP1_ENERGY_STATUS)
             {

@@ -4,7 +4,7 @@ libmsr
 Welcome to libmsr, a friendly (well, friendlier) interface to several
 of the model-specific registers in Intel processors.
 
-version 0.1.16
+version 0.1.17
 
 
 Installation

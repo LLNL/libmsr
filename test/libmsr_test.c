@@ -258,24 +258,26 @@ void rapl_r_test(struct rapl_data ** rd)
     dump_rapl_data(stdout);
 }
 
+#define PT_INC 800
+
 int repeated_poll_test()
 {
     usleep(1000);
     poll_rapl_data();
     dump_rapl_data(stdout);
-    sleep(1);
+    usleep(PT_INC);
     poll_rapl_data();
     dump_rapl_data(stdout);
-    sleep(1);
+    usleep(PT_INC);
     poll_rapl_data();
     dump_rapl_data(stdout);
-    sleep(1);
+    usleep(PT_INC);
     poll_rapl_data();
     dump_rapl_data(stdout);
-    sleep(1);
+    usleep(PT_INC);
     poll_rapl_data();
     dump_rapl_data(stdout);
-    sleep(1);
+    usleep(PT_INC);
     poll_rapl_data();
     dump_rapl_data(stdout);
     return 0;

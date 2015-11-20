@@ -531,9 +531,10 @@ int uncore_counters_storage(struct uncore_counters ** uc)
     return 0;
 }
 
-int set_pcu_ctrl_flags(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pcunum, unsigned socket)
+int set_pcu_ctrl_flags(uint64_t flags, uint64_t reset, uint64_t occ, uint64_t eventsel, int pcunum, unsigned socket)
 {
     static struct uncore_evtsel * uevt = NULL;
+    flags &= 0xDF7FFFFFL; // must set bit 29 and 23 to 0
     if (uevt == NULL)
     {
         uncore_evtsel_storage(&uevt);
@@ -541,28 +542,28 @@ int set_pcu_ctrl_flags(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t 
     switch(pcunum)
     {
         case 4:
-            *uevt->c3[socket] = 0UL | (cmask << 24) | (flags << 16) | (umask << 8) | eventsel;
+            *uevt->c0[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
             break;
         case 3:
-            *uevt->c2[socket] = 0UL | (cmask << 24) | (flags << 16) | (umask << 8) | eventsel;
+            *uevt->c0[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
             break;
         case 2:
-            *uevt->c1[socket] = 0UL | (cmask << 24) | (flags << 16) | (umask << 8) | eventsel;
+            *uevt->c0[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
             break;
         case 1:
-            *uevt->c0[socket] = 0UL | (cmask << 24) | (flags << 16) | (umask << 8) | eventsel;
+            *uevt->c0[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
             break;
     }
     return 0;
 }
 
-int set_all_pcu_ctrl(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pcunum)
+int set_all_pcu_ctrl(uint64_t flags, uint64_t reset, uint64_t occ, uint64_t eventsel, int pcunum)
 {
     uint64_t sockets = num_sockets();
     int i;
     for (i = 0; i < sockets; i++)
     {
-        set_pmc_ctrl_flags(cmask, flags, umask, eventsel, pcunum, i);
+        set_pcu_ctrl_flags(flags, reset, occ, eventsel, pcunum, i);
     }
     return 0;
 }
@@ -570,11 +571,11 @@ int set_all_pcu_ctrl(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t ev
 /*
 static int test_pcu_ctrl()
 {
-    uint64_t cmask = 0x0;
     uint64_t flags = 0x0;
-    uint64_t umask = 0x10;
-    uint64_t eventsel = 0x22;
-    set_all_pcu_ctrl(cmask, flags, umask, eventsel, 1);
+    uint64_t reset = 0x0;
+    uint64_t occ = 0x0;
+    uint64_t eventsel = 0x0;
+    set_all_pcu_ctrl(flags, reset, occ, eventsel, 1);
     return 0;
 }
 */
