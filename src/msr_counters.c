@@ -321,7 +321,6 @@ static int test_pmc_ctrl()
 int enable_pmc()
 {
     static struct evtsel * evt = NULL;
-    static uint64_t numDevs = 0;
     static int avail = 0;
     if (evt == NULL)
     {

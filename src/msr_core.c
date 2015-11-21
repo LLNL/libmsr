@@ -177,10 +177,10 @@ static int batch_storage(struct msr_batch_array ** batchsel, const int batchnum,
             size[oldsize] = 8;
         }
     }
-    if (batchsel == NULL || *batchsel == NULL)
+    if (batchsel == NULL)
     {
-        fprintf(stderr, "%s %s::%d ERROR: attempted to load uninitialized batch\n", getenv("HOSTNAME"),
-                __FILE__, __LINE__);
+        fprintf(stderr, "%s %s::%d ERROR: attempted to load uninitialized batch %d\n", getenv("HOSTNAME"),
+                __FILE__, __LINE__, batchnum);
     }
     *batchsel = &batch[batchnum];
     if (opssize)
@@ -462,14 +462,14 @@ int stat_module(char * filename, int * kerneltype, int * dev_idx)
         if(stat(filename, &statbuf))
         {
             fprintf(stderr, "%s %s::%d WARNING: could not stat %s: %s\n", getenv("HOSTNAME"), __FILE__, __LINE__, filename, strerror(errno));
-            //*kerneltype = 1;
-            //return -1;
+            *kerneltype = 1;
+            return -1;
         }
         if(!(statbuf.st_mode & S_IRUSR) || !(statbuf.st_mode & S_IWUSR))
         {
             fprintf(stderr, "%s %s::%d WARNING: msr_whitelist has incorrect permissions\n", getenv("HOSTNAME"), __FILE__, __LINE__);
-            //*kerneltype = 1;
-            //return -1;
+            *kerneltype = 1;
+            return -1;
         }
         *kerneltype = 0;
         return 0;
@@ -739,7 +739,7 @@ load_socket_batch(  off_t msr, uint64_t **val , int batchnum)
     static uint64_t coresPerSocket = 0;
     static uint64_t threadsPerCore = 0;
     static uint64_t sockets = 0;
-    if (val == NULL || val[0] == NULL)
+    if (val == NULL)
     {
         fprintf(stderr, "%s %s::%d ERROR: load_socket_batch given ininitialized array\n",
                 getenv("HOSTNAME"), __FILE__, __LINE__);
@@ -781,7 +781,7 @@ load_core_batch( off_t msr, uint64_t **val , int batchnum)
     static uint64_t threadsPerCore = 0;
     static uint64_t sockets = 0;
     static uint64_t coretotal = 0; 
-    if (val == NULL || val[0] == NULL)
+    if (val == NULL)
     {
         fprintf(stderr, "%s %s::%d ERROR: load_core_batch given ininitialized array\n",
                 getenv("HOSTNAME"), __FILE__, __LINE__);
@@ -829,7 +829,7 @@ load_thread_batch( off_t msr, uint64_t **val , int batchnum)
     static uint64_t coresPerSocket = 0;
     static uint64_t threadsPerCore = 0;
     static uint64_t sockets = 0;
-    if (val == NULL || val[0] == NULL)
+    if (val == NULL)
     {
         fprintf(stderr, "%s %s::%d ERROR: load_thread_batch given ininitialized array\n",
                 getenv("HOSTNAME"), __FILE__, __LINE__);

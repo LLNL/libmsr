@@ -258,7 +258,7 @@ void rapl_r_test(struct rapl_data ** rd)
     dump_rapl_data(stdout);
 }
 
-#define PT_INC 1000
+#define PT_INC 1500
 
 int repeated_poll_test()
 {
