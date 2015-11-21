@@ -326,7 +326,10 @@ int enable_pmc()
     if (evt == NULL)
     {
         avail = cpuid_PMC_num();
-        numDevs = num_devs();
+        if (avail == 0)
+        {
+            return -1;
+        }
         evt_sel_storage(&evt);        
     }
     //test_pmc_ctrl();
@@ -542,13 +545,13 @@ int set_pcu_ctrl_flags(uint64_t flags, uint64_t reset, uint64_t occ, uint64_t ev
     switch(pcunum)
     {
         case 4:
-            *uevt->c0[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
+            *uevt->c3[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
             break;
         case 3:
-            *uevt->c0[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
+            *uevt->c2[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
             break;
         case 2:
-            *uevt->c0[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
+            *uevt->c1[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
             break;
         case 1:
             *uevt->c0[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
@@ -583,10 +586,8 @@ static int test_pcu_ctrl()
 int enable_pcu()
 {
     static struct uncore_evtsel * uevt = NULL;
-    static int sockets = 0;
     if (uevt == NULL)
     {
-        sockets = num_sockets();
         uncore_evtsel_storage(&uevt);        
     }
  //   test_pcu_ctrl();
@@ -608,13 +609,17 @@ int clear_all_pcu()
     for (i = 0; i < sockets; i++)
     {
         *uc->c0[i] = 0;
+        *uc->c1[i] = 0;
+        *uc->c2[i] = 0;
+        *uc->c3[i] = 0;
     }
     write_batch(UNCORE_COUNT);
     return 0;
 }
 
 // TODO: doesnt do anything, need to use by_idx
-int clear_pcu(int idx)
+// Deprecated, just use the reset bit
+int clear_pcu(int idx, int pcu)
 {
     static struct uncore_counters * uc = NULL;
     static int sockets = 0;

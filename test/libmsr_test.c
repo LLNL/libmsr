@@ -126,13 +126,13 @@ void test_all_limits()
         core_config(NULL, NULL, &sockets, NULL);
     }
     printf("\n Testing all sockets\n");
-    l1.watts = 80;
+    l1.watts = 50;
 	l1.seconds = 1;
 	l1.bits = 0;
 	l2.watts =  180;
 	l2.seconds =  3;
 	l2.bits = 0;
-    l3.watts = 50;
+    l3.watts = 40;
     l3.seconds = 1;
     l3.bits = 0;
     l4.watts = 110;
@@ -204,8 +204,8 @@ char * args[] = {"mg.B.1"};
 const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-MPI/bin/mg.B.1";
 #endif
 //#ifdef PROCTEST
-//char *args[] = {"ep.B.24"};
-//const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-MPI/bin/ep.B.24";
+//char *args[] = {"ep.B.1"};
+//const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-MPI/bin/ep.B.1";
 //#endif
 
 // We use 24 for Catalyst, (2 sockets * 12 cores)
@@ -258,7 +258,7 @@ void rapl_r_test(struct rapl_data ** rd)
     dump_rapl_data(stdout);
 }
 
-#define PT_INC 800
+#define PT_INC 1000
 
 int repeated_poll_test()
 {

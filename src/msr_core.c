@@ -177,6 +177,11 @@ static int batch_storage(struct msr_batch_array ** batchsel, const int batchnum,
             size[oldsize] = 8;
         }
     }
+    if (batchsel == NULL || *batchsel == NULL)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: attempted to load uninitialized batch\n", getenv("HOSTNAME"),
+                __FILE__, __LINE__);
+    }
     *batchsel = &batch[batchnum];
     if (opssize)
     {
@@ -230,7 +235,7 @@ int free_batch(int batchnum)
 static int compatibility_batch(int batchnum, int type)
 {
     struct msr_batch_array * batch = NULL;
-    fprintf(stderr, "using compatibility batch\n");
+    fprintf(stderr, "No /dev/cpu/msr_batch, using compatibility batch\n");
     if (batch_storage(&batch, batchnum, NULL))
     {
         return -1;
@@ -280,7 +285,7 @@ static int do_batch_op(int batchnum, int type)
 #endif
     if (batch->numops <= 0)
     {
-        fprintf(stderr, "ERROR: attempted to use empty batch.\n");
+        fprintf(stderr, "%s %s::%d ERROR: attempted to use empty batch.\n", getenv("HOSTNAME"), __FILE__, __LINE__);
         return -1;
     }
 
@@ -299,7 +304,7 @@ static int do_batch_op(int batchnum, int type)
     res = ioctl(batchfd, X86_IOC_MSR_BATCH, batch);
     if ( res < 0)
     {
-        perror("IOctl failed");
+        perror("IOctl failed, does /dev/cpu/msr_batch exist?");
         fprintf(stderr, "ioctl returned %d\n", res);
         int i;
         for (i = 0; i < batch->numops; i++)
@@ -680,6 +685,11 @@ read_msr_by_coord(  unsigned socket, unsigned core, unsigned thread, off_t msr, 
     sockets_assert(&socket, __LINE__, __FILE__);
     cores_assert(&core, __LINE__, __FILE__);
     threads_assert(&thread, __LINE__, __FILE__);
+    if (val == NULL)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: read_msr_by_coord received NULL pointer\n", getenv("HOSTNAME"),
+                __FILE__, __LINE__);
+    }
     static uint64_t coresPerSocket = 0;
     static uint64_t threadsPerCore = 0;
     if (coresPerSocket == 0 || threadsPerCore == 0)
@@ -729,6 +739,13 @@ load_socket_batch(  off_t msr, uint64_t **val , int batchnum)
     static uint64_t coresPerSocket = 0;
     static uint64_t threadsPerCore = 0;
     static uint64_t sockets = 0;
+    if (val == NULL || val[0] == NULL)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: load_socket_batch given ininitialized array\n",
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
+    }
+
     if (coresPerSocket == 0 || threadsPerCore == 0)
     {
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
@@ -764,6 +781,13 @@ load_core_batch( off_t msr, uint64_t **val , int batchnum)
     static uint64_t threadsPerCore = 0;
     static uint64_t sockets = 0;
     static uint64_t coretotal = 0; 
+    if (val == NULL || val[0] == NULL)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: load_core_batch given ininitialized array\n",
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
+    }
+
     if (coresPerSocket == 0 || threadsPerCore == 0)
     {
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
@@ -805,6 +829,12 @@ load_thread_batch( off_t msr, uint64_t **val , int batchnum)
     static uint64_t coresPerSocket = 0;
     static uint64_t threadsPerCore = 0;
     static uint64_t sockets = 0;
+    if (val == NULL || val[0] == NULL)
+    {
+        fprintf(stderr, "%s %s::%d ERROR: load_thread_batch given ininitialized array\n",
+                getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
+    }
     if (coresPerSocket == 0 || threadsPerCore == 0)
     {
         core_config(&coresPerSocket, &threadsPerCore, &sockets, NULL);
@@ -904,6 +934,7 @@ write_msr_by_idx_and_verify( int dev_idx, off_t msr, uint64_t  val ){
     {
         fprintf(stderr, "%s %s::%d ERROR: pwrite failed on core_fd[%d]=%d, msr=%ld (0x%lx): %s\n", getenv("HOSTNAME"), 
                 __FILE__, __LINE__, dev_idx, *fileDescriptor, msr, msr, strerror(errno));
+        return -1;
     }
     if(!pread(*fileDescriptor, (void *) &test, (size_t) sizeof(uint64_t), msr))
     {
