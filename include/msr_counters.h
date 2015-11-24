@@ -108,9 +108,9 @@ int fixed_ctr_ctrl_storage(uint64_t *** perf_ctrl, uint64_t *** fixed_ctrl);
 
 int uncore_evtsel_storage(struct uncore_evtsel ** uevt);
 int uncore_counters_storage(struct uncore_counters ** uc);
-int set_pcu_ctrl_flags(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pcunum, unsigned socket);
+int set_pcu_ctrl_flags(uint64_t flags, uint64_t reset, uint64_t occ, uint64_t eventsel, int pcunum, unsigned socket);
 // can probably consolidate event select into 1 function
-int set_all_pcu_ctrl(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pcunum);
+int set_all_pcu_ctrl(uint64_t flags, uint64_t reset, uint64_t occ, uint64_t eventsel, int pcunum);
 int enable_pcu();
 int clear_all_pcu();
 //int clear_pcu();

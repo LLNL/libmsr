@@ -321,12 +321,14 @@ static int test_pmc_ctrl()
 int enable_pmc()
 {
     static struct evtsel * evt = NULL;
-    static uint64_t numDevs = 0;
     static int avail = 0;
     if (evt == NULL)
     {
         avail = cpuid_PMC_num();
-        numDevs = num_devs();
+        if (avail == 0)
+        {
+            return -1;
+        }
         evt_sel_storage(&evt);        
     }
     //test_pmc_ctrl();
@@ -531,9 +533,10 @@ int uncore_counters_storage(struct uncore_counters ** uc)
     return 0;
 }
 
-int set_pcu_ctrl_flags(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pcunum, unsigned socket)
+int set_pcu_ctrl_flags(uint64_t flags, uint64_t reset, uint64_t occ, uint64_t eventsel, int pcunum, unsigned socket)
 {
     static struct uncore_evtsel * uevt = NULL;
+    flags &= 0xDF7FFFFFL; // must set bit 29 and 23 to 0
     if (uevt == NULL)
     {
         uncore_evtsel_storage(&uevt);
@@ -541,28 +544,28 @@ int set_pcu_ctrl_flags(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t 
     switch(pcunum)
     {
         case 4:
-            *uevt->c3[socket] = 0UL | (cmask << 24) | (flags << 16) | (umask << 8) | eventsel;
+            *uevt->c3[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
             break;
         case 3:
-            *uevt->c2[socket] = 0UL | (cmask << 24) | (flags << 16) | (umask << 8) | eventsel;
+            *uevt->c2[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
             break;
         case 2:
-            *uevt->c1[socket] = 0UL | (cmask << 24) | (flags << 16) | (umask << 8) | eventsel;
+            *uevt->c1[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
             break;
         case 1:
-            *uevt->c0[socket] = 0UL | (cmask << 24) | (flags << 16) | (umask << 8) | eventsel;
+            *uevt->c0[socket] = 0UL | (flags << 18) | (reset << 17) | (occ << 14) | eventsel;
             break;
     }
     return 0;
 }
 
-int set_all_pcu_ctrl(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pcunum)
+int set_all_pcu_ctrl(uint64_t flags, uint64_t reset, uint64_t occ, uint64_t eventsel, int pcunum)
 {
     uint64_t sockets = num_sockets();
     int i;
     for (i = 0; i < sockets; i++)
     {
-        set_pmc_ctrl_flags(cmask, flags, umask, eventsel, pcunum, i);
+        set_pcu_ctrl_flags(flags, reset, occ, eventsel, pcunum, i);
     }
     return 0;
 }
@@ -570,11 +573,11 @@ int set_all_pcu_ctrl(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t ev
 /*
 static int test_pcu_ctrl()
 {
-    uint64_t cmask = 0x0;
     uint64_t flags = 0x0;
-    uint64_t umask = 0x10;
-    uint64_t eventsel = 0x22;
-    set_all_pcu_ctrl(cmask, flags, umask, eventsel, 1);
+    uint64_t reset = 0x0;
+    uint64_t occ = 0x0;
+    uint64_t eventsel = 0x0;
+    set_all_pcu_ctrl(flags, reset, occ, eventsel, 1);
     return 0;
 }
 */
@@ -582,10 +585,8 @@ static int test_pcu_ctrl()
 int enable_pcu()
 {
     static struct uncore_evtsel * uevt = NULL;
-    static int sockets = 0;
     if (uevt == NULL)
     {
-        sockets = num_sockets();
         uncore_evtsel_storage(&uevt);        
     }
  //   test_pcu_ctrl();
@@ -607,13 +608,17 @@ int clear_all_pcu()
     for (i = 0; i < sockets; i++)
     {
         *uc->c0[i] = 0;
+        *uc->c1[i] = 0;
+        *uc->c2[i] = 0;
+        *uc->c3[i] = 0;
     }
     write_batch(UNCORE_COUNT);
     return 0;
 }
 
 // TODO: doesnt do anything, need to use by_idx
-int clear_pcu(int idx)
+// Deprecated, just use the reset bit
+int clear_pcu(int idx, int pcu)
 {
     static struct uncore_counters * uc = NULL;
     static int sockets = 0;

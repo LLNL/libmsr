@@ -152,6 +152,7 @@ int store_therm_stat(struct therm_stat ** ts);
 int store_therm_interrupt(struct therm_interrupt ** ti);
 int store_pkg_therm_stat(struct pkg_therm_stat ** ps);
 int store_pkg_therm_interrupt(struct pkg_therm_interrupt ** pi);
+int therm2_ctl_storage(uint64_t ** thermctlref);
 
 void dump_msr_temp_target();
 void get_temp_target(struct msr_temp_target *s);
@@ -165,6 +166,7 @@ void get_therm_stat(struct therm_stat *s);
 void get_therm_interrupt(struct therm_interrupt *s);
 void get_pkg_therm_stat(struct pkg_therm_stat *s);
 void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s);
+int get_pkg_therm2_ctl();
 
 void set_therm_stat(struct therm_stat *s);
 void set_therm_interrupt(struct therm_interrupt *s);
@@ -177,6 +179,7 @@ void dump_thermal_terse_label(FILE *w);
 void dump_thermal_terse(FILE *w);
 void dump_thermal_verbose_label(FILE *w);
 void dump_thermal_verbose(FILE *w);
+int dump_therm2_ctl(FILE * writedest);
 
 #ifdef __cplusplus
 }

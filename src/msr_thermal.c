@@ -40,6 +40,7 @@
 // Section 35.7 Table 35-11
 // Or Section 35.1 Table 35.2
 #define IA32_THERM_STATUS		(0x19C) //core scope
+#define MSR_THERM2_CTL         (0x19D) // unique scope
 #define IA32_THERM_INTERRUPT		(0x19B) //core scope
 #define IA32_PACKAGE_THERM_STATUS	(0x1B1) //package scope
 #define IA32_PACKAGE_THERM_INTERRUPT	(0x1B2) //package scope
@@ -492,6 +493,62 @@ void get_pkg_therm_interrupt(struct pkg_therm_interrupt *s)
 	
 		s->pwr_limit_notification_enable[i] = MASK_VAL(*s->raw[i], 24, 24);	// Enables generation of package power notification events
 	}
+}
+
+// probably not worth batching
+
+int therm2_ctl_storage(uint64_t ** thermctlref)
+{
+    static uint64_t sockets = 0;
+    static uint64_t * thermctl;
+    if (sockets == 0)
+    {
+        sockets = num_sockets();
+        thermctl = (uint64_t *) libmsr_malloc(sockets * sizeof(uint64_t));
+    }
+    if (thermctlref)
+    {
+        *thermctlref = thermctl;
+    }
+    return 0;
+}
+
+int get_pkg_therm2_ctl()
+{
+    uint64_t sockets = num_sockets();
+    uint64_t * thermctl;
+    therm2_ctl_storage(&thermctl);
+    int ret;
+    int i;
+    for (i = 0; i < sockets; i++)
+    {
+        ret = read_msr_by_coord(i, 0, 0, MSR_THERM2_CTL, &thermctl[i]);
+        if (ret)
+        {
+            return ret;
+        }
+    }
+    return 0;
+}
+
+int dump_therm2_ctl(FILE * writedest)
+{
+    int ret = 0;
+    ret = get_pkg_therm2_ctl();
+    uint64_t * thermctl;
+    ret += therm2_ctl_storage(&thermctl);
+    uint64_t sockets = num_sockets();
+    fprintf(writedest, "Therm2 CTL\nSocket\tValue\n");
+    int i;
+    for (i = 0; i < sockets; i++)
+    {
+        fprintf(writedest, "%d\t%lx\n", i, thermctl[i]);
+    }
+    if (ret < 0)
+    {
+        return ret;
+    }
+    return 0;
 }
 
 void set_therm_stat(struct therm_stat *s)

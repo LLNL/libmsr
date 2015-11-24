@@ -17,3 +17,16 @@ v0.1.16
 + msr_init now stats msr_whitelist
 + libmsr_test now has an message saying if libmsr is working (WIP)
 + libmsr_test now explicitly resets power values to defaults
+
+v0.1.17
++ will attempt to work even without whitelist (subject to change)
++ detects the kernel's core layout decisions at runtime
++ added MSRs
+	+ 0x3f8 - 0x3FE // in msr_misc.c
+	+ 0x60D // in msr_misc.c
+	+ 0xC30 - 0xC33 // in msr_counters.c
+	+ 0xC36 - 0xC39 // in msr_counters.c
+	+ 0x19D // in msr_thermal.c
++ will get energy readings if energy_status registers exist rather
+than power_limit 
++ power unit fixed for DRAM on Haswell
