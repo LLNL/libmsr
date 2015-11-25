@@ -508,22 +508,20 @@ int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
 {
     static int initialize = 1;
     int ret;
-    if (initialize)
+    if (!initialize)
     {
-        initialize = 0;
-        if (rapl_storage(rapl, rapl_flags))
-        {
-            ret = -1;
-            return ret;
-        }
+        fprintf(stderr, "%s %s::%d WARNING: reinitialized rapl\n", getenv("HOSTNAME"),
+                __FILE__, __LINE__);
+    }
+    // can now call init more than once
+    initialize = 0;
+    if (rapl_storage(rapl, rapl_flags))
+    {
+        return -1;
+    }
 #ifdef LIBMSR_DEBUG
         fprintf(stderr, "DEBUG: (init) rapl initialized at %p, flags are %lx at %p\n", *rapl, **rapl_flags, *rapl_flags);
 #endif
-    }
-    else
-    {
-        fprintf(stderr, "%s %s::%d ERROR: rapl has already been initialized\n", getenv("HOSTNAME"),
-                __FILE__, __LINE__);
     }
     ret = check_for_locks();
     return ret;
