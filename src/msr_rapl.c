@@ -507,7 +507,7 @@ static int check_for_locks()
 int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
 {
     static int initialize = 1;
-    int ret;
+    int ret = 0;
     if (!initialize)
     {
         fprintf(stderr, "%s %s::%d WARNING: reinitialized rapl\n", getenv("HOSTNAME"),
@@ -517,12 +517,12 @@ int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
     initialize = 0;
     if (rapl_storage(rapl, rapl_flags))
     {
-        return -1;
+        ret = -1;
+        return ret;
     }
 #ifdef LIBMSR_DEBUG
         fprintf(stderr, "DEBUG: (init) rapl initialized at %p, flags are %lx at %p\n", *rapl, **rapl_flags, *rapl_flags);
 #endif
-    }
     ret = check_for_locks();
     return ret;
 }
