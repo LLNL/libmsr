@@ -522,7 +522,6 @@ int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags)
 #ifdef LIBMSR_DEBUG
         fprintf(stderr, "DEBUG: (init) rapl initialized at %p, flags are %lx at %p\n", *rapl, **rapl_flags, *rapl_flags);
 #endif
-    }
     ret = check_for_locks();
     return ret;
 }
