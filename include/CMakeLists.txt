@@ -6,6 +6,7 @@ set(LIBMSR_HEADERS
   msr_turbo.h
   signalCombined.h
   cpuid.h
+  csr_core.h
   msr_core.h
   msr_misc.h
   msr_thermal.h

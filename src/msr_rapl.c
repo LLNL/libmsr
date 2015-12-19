@@ -351,7 +351,7 @@ static int setflags(uint64_t * rapl_flags)
 #endif
 
     // Every rapl enabled CPU so far has this register
-    if (!(*rapl_flags && POWER_UNIT))
+    if (!(*rapl_flags & POWER_UNIT))
     {
         fprintf(stderr, "%s %s::%d ERROR: no rapl power unit register, rapl is probably not supported on this architecture\n",
                 getenv("HOSTNAME"), __FILE__, __LINE__);
