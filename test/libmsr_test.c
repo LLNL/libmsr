@@ -12,6 +12,7 @@
 #include "../include/profile.h"
 #include "../include/msr_misc.h"
 #include "../include/msr_turbo.h"
+#include "../include/csr_core.h"
 #ifdef MPI
 #include <mpi.h>
 #endif
@@ -377,6 +378,17 @@ int main(int argc, char** argv)
     repeated_poll_test();
     set_to_defaults();
 
+// this code requires root (for now)
+/*    char * b0d5f0;
+    b0d5f0 = pcieMap(0, 5, 0);
+    uint32_t value;
+    pcieRead32(b0d5f0, 0x0, &value);
+    fprintf(stdout, "1st pcie value is %x\n", value);
+    pcieRead32(b0d5f0, 0x1, &value);
+    fprintf(stdout, "2nd pcie value is %x\n", value);
+    csr_finalize();
+
+*/
 	finalize_msr();
 	#ifdef MPI
 	MPI_Finalize();
