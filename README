@@ -113,3 +113,12 @@ Stephanie Labasan, Developer, <labasan1@llnl.gov>
 
 Please feel free to contact the developers with any questions or feature
 requests.
+
+
+Release
+-------
+
+libmsr is released under the GPLv3 license. For more details, see the 
+[LICENSE](https://github.com/LLNL/libmsr/blob/master/LICENSE) file.
+
+    LLNL-CODE-645430
