@@ -127,7 +127,7 @@ static int * core_fd(const int dev_idx)
     {
         init = 0;
         uint64_t numDevs = num_devs();;
-        devices = numDevs;;
+        devices = numDevs;
         file_descriptors = (int *) libmsr_malloc(devices * sizeof(int));
     }
     if (dev_idx < devices)

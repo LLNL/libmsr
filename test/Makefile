@@ -1,6 +1,9 @@
 libmsr_test: libmsr_test.c 
 	gcc -g -Wall -o libmsr_test libmsr_test.c -L../install/lib -lmsr -D_GNU_SOURCE
 
+csr_test: csr_test.c 
+	gcc -g -Wall -o csr_test csr_test.c -L../install/lib -lmsr -D_GNU_SOURCE
+
 libmsr_powercap_test: libmsr_powercap_test.c
 	gcc -Wall -o libmsr_powercap_test libmsr_powercap_test.c -L ../lib -lmsr
 
