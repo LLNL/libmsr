@@ -48,28 +48,7 @@
 #define CSRDEBUG
 #define FILENAME_SIZE 128
 #define MODULE "/dev/cpu/csr_safe"
-#define NUMMEMCTRS 8
-#define NUMPMONCTRS 8
-
-// These UMASKS are known to work with Ivy Bridge only
-#define UMASK_CAS_RD_REG 0x1
-#define UMASK_CAS_RD_UNDERFILL 0x2
-#define UMASK_CAS_RD 0x3
-#define UMASK_CAS_WR_WMM 0x4
-#define UMASK_CAS_WR_RMM 0x8
-#define UMASK_CAS_WR 0xC
-#define UMASK_CAS_ALL 0xF
-#define UMASK_CAS_RD_WMM 0x16
-#define UMASK_CAS_RD_RMM 0x32
-
-#define UMASK_ACT_COUNT_RD 0x1
-#define UMASK_ACT_COUNT_WR 0x2
-#define UMASK_ACT_COUNT_BYP 0x4
-
-#define UMASK_BYP_CMDS_ACT 0x1
-#define UMASK_BYP_CMDS_CAS 0x2
-#define UMASK_BYP_CMDS_PRE 0x4
-// ... there are lots more of these...
+#define NUMCTRS 8
 
 static int load_imc_batch_for_each(const size_t offt, uint64_t **loc, 
 	const int isread, const size_t size, const unsigned batchno)
@@ -109,7 +88,7 @@ struct pmonctrs_data *pmon_ctr_storage()
 	static struct pmonctrs_data pcd;
 	static int init = 1;
 	if (init) {
-		int allocated = NUMPMONCTRS * num_sockets();
+		int allocated = NUMCTRS * num_sockets();
 		pcd.ctr0 = (uint64_t **) libmsr_calloc(allocated, sizeof(uint64_t *));
 		pcd.ctr1 = (uint64_t **) libmsr_calloc(allocated, sizeof(uint64_t *));
 		pcd.ctr2 = (uint64_t **) libmsr_calloc(allocated, sizeof(uint64_t *));
@@ -126,6 +105,19 @@ struct pmonctrs_data *pmon_ctr_storage()
 	return &pcd;
 }
 
+struct pmonctr_global *pmonctr_global_storage()
+{
+	static struct pmonctr_global pgd;
+	static int init = 1;
+	if (init) {
+		int allocated = NUMCTRS * num_sockets();
+		pgd.unitctrl = (uint64_t **) libmsr_calloc(allocated, sizeof(uint64_t *));
+		pgd.unitstatus = (uint64_t **) libmsr_calloc(allocated, sizeof(uint64_t *));
+		init = 0;
+	}
+	return &pgd;
+};
+
 int init_pmon_ctrs()
 {
 	static int init = 1;
@@ -133,8 +125,7 @@ int init_pmon_ctrs()
 	static struct pmonctrs_data *pmonctrs;
 	if (init) {
 		init = 0;
-		int sockets = num_sockets();
-		allocated = NUMPMONCTRS * sockets;
+		allocated = NUMCTRS * num_sockets();
 		pmonctrs = pmon_ctr_storage();
 		allocate_csr_batch(CSR_IMC_PMON0, allocated);
 		allocate_csr_batch(CSR_IMC_PMON1, allocated);
@@ -165,6 +156,26 @@ int init_pmon_ctrs()
 	return -1;
 }
 
+int init_pmonctr_global()
+{
+	static int init = 1;
+	static int allocated = 0;
+	static struct pmonctr_global *pgd;
+	if (init) {
+		init = 0;
+		allocated = NUMCTRS * num_sockets();
+		pgd = pmonctr_global_storage();
+		allocate_csr_batch(CSR_IMC_PMONUNITCTRL, allocated);
+		allocate_csr_batch(CSR_IMC_PMONUNITSTAT, allocated);
+
+		load_imc_batch_for_each(0xF4, pgd->unitctrl, 0, 3, CSR_IMC_PMONUNITCTRL);
+		load_imc_batch_for_each(0xF8, pgd->unitstatus, 0, 1, CSR_IMC_PMONUNITSTAT);
+
+		return 2 * allocated;
+	}
+	return -1;
+}
+
 static int set_pmon_config(const uint32_t setting, uint64_t **cfg)
 {
 	if (!cfg) {
@@ -173,7 +184,7 @@ static int set_pmon_config(const uint32_t setting, uint64_t **cfg)
 		return -1;
 	}
 	int i;
-	for (i = 0; i < NUMPMONCTRS * num_sockets(); i++) {
+	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
 		*cfg[i] = setting;
 	}
 	return 0;
@@ -224,6 +235,19 @@ int pmon_config(uint32_t threshold, uint32_t invert, uint32_t ovf_en, uint32_t e
 	return ret0 | ret1;
 }
 
+int set_pmon_unit_ctrl(uint32_t ovf_en, uint16_t freeze_en, uint16_t freeze, uint16_t reset,
+	uint8_t reset_cfg)
+{
+	struct pmonctr_global *pgd = pmonctr_global_storage();
+	uint32_t setting = 0x0 | (ovf_en << 17) | (freeze_en << 16) | (freeze << 8) |
+					(reset << 1) | reset_cfg;
+	int i;
+	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
+		*pgd->unitctrl[i] = setting;
+	}
+	return do_csr_batch_op(CSR_IMC_PMONUNITCTRL);
+}
+
 int mem_bw_on_ctr(const unsigned counter, const int type)
 {
 	if (counter > 4) {
@@ -240,7 +264,7 @@ int mem_bw_on_ctr(const unsigned counter, const int type)
 			res = pmon_config(0x0, 0x0, 0x0, 0x0, UMASK_CAS_WR, EVT_CAS_COUNT, counter);
 			break;
 		case 2:
-			res = pmon_config(0x0, 0x0, 0x0, 0x0, UMASK_CAS_RD | UMASK_CAS_WR, EVT_CAS_COUNT, counter);
+			res = pmon_config(0x0, 0x0, 0x0, 0x0, UMASK_CAS_ALL, EVT_CAS_COUNT, counter);
 			break;
 		default:
 			fprintf(stderr, "%s %s::%d ERROR: invalid bandwidth measurement specifier\n",
@@ -304,7 +328,7 @@ int print_mem_bw_from_ctr(const unsigned counter)
 	const uint8_t devnums[2] = {16, 30};
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
-	for (i = 0; i < NUMPMONCTRS * num_sockets(); i++) {
+	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
 		if (i > 0 && i % 4 == 0) {
 			devctr++;
 		}
@@ -338,7 +362,7 @@ int print_pmon_ctrs()
 	const uint8_t devnums[2] = {16, 30};
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
-	for (i = 0; i < num_sockets() * NUMMEMCTRS; i++) {
+	for (i = 0; i < num_sockets() * NUMCTRS; i++) {
 		if (i > 0 && i % 4 == 0) {
 			devctr++;
 		}

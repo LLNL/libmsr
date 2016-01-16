@@ -119,6 +119,19 @@ struct pmonctrs_data
 	uint64_t **ctrcfg4;
 };
 
+struct fixed_perfmon_data
+{
+	uint64_t **fctr;
+	// config
+	uint64_t **fctrcfg;
+};
+
+struct pmonctr_global
+{
+	uint64_t **unitctrl;
+	uint64_t **unitstatus;
+};
+
  struct pmonctrs_data *pmon_ctr_storage();
  int init_pmon_ctrs();
  int pmon_config(uint32_t threshold, uint32_t invert, uint32_t ovf_en, uint32_t edge_det,
