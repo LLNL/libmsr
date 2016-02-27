@@ -102,7 +102,7 @@ int memory_handler(void * address, void * oldaddr, int type)
 {
     static void ** arrays = NULL;
     static unsigned last = 0;
-    static unsigned size = 3;
+    static unsigned size = 16;
     int i;
     switch (type)
     {

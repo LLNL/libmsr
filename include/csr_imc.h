@@ -98,10 +98,21 @@
 #define UMASK_BYP_CMDS_PRE 0x4
 // ... there are lots more of these...
 
+#define UMASK_PRE_PAGE_MISS 0x1
+#define UMASK_PRE_PAGE_CLOSE 0x2
+#define UMASK_PRE_RD 0x4
+#define UMASK_PRE_WR 0x8
+#define UMASK_PRE_BYP 0x16
+
 enum{
 	READ_BW,
 	WRITE_BW,
 	ALL_BW
+};
+
+enum{
+	READ_PCT,
+	WRITE_PCT
 };
 
 struct pmonctrs_data
@@ -134,9 +145,17 @@ struct pmonctr_global
 
  struct pmonctrs_data *pmon_ctr_storage();
  int init_pmon_ctrs();
- int pmon_config(uint32_t threshold, uint32_t invert, uint32_t ovf_en, uint32_t edge_det,
+ int pmon_config(uint32_t threshold, uint32_t ovf_en, uint32_t edge_det,
  	uint32_t umask, uint8_t event, const unsigned counter);
  int mem_bw_on_ctr(const unsigned counter, const int type);
  int get_mem_bw_from_ctr(const unsigned counter);
  int print_mem_bw_from_ctr(const unsigned counter);
+ int mem_pct_rw_on_ctr(const unsigned rcounter, const unsigned wcounter);
+ int mem_page_empty_on_ctr(const unsigned act_count, const unsigned pre_count, const unsigned cas_count);
+ int mem_page_miss_on_ctr(const unsigned pre_count, const unsigned cas_count);
+ int read_imc_counter_batch(const unsigned counter);
+ int print_mem_bw_from_ctr(const unsigned counter, FILE * dest);
+ int print_mem_pct_rw_from_ctr(const unsigned rcounter, const unsigned wcounter, int type, FILE *dest);
+ int print_mem_page_empty_from_ctr(const unsigned act, const unsigned pre, const unsigned cas, FILE * dest);
+ int print_mem_page_miss_from_ctr(const unsigned pre, const unsigned cas, FILE * dest);
  int print_pmon_ctrs();

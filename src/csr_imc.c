@@ -45,7 +45,7 @@
 #include "msr_core.h"
 #include "csr_imc.h"
 
-#define CSRDEBUG
+//#define CSRDEBUG
 #define FILENAME_SIZE 128
 #define MODULE "/dev/cpu/csr_safe"
 #define NUMCTRS 8
@@ -118,6 +118,7 @@ struct pmonctr_global *pmonctr_global_storage()
 	return &pgd;
 };
 
+// TODO: combine into 1 counter batch and 1 event batch
 int init_pmon_ctrs()
 {
 	static int init = 1;
@@ -127,29 +128,19 @@ int init_pmon_ctrs()
 		init = 0;
 		allocated = NUMCTRS * num_sockets();
 		pmonctrs = pmon_ctr_storage();
-		allocate_csr_batch(CSR_IMC_PMON0, allocated);
-		allocate_csr_batch(CSR_IMC_PMON1, allocated);
-		allocate_csr_batch(CSR_IMC_PMON2, allocated);
-		allocate_csr_batch(CSR_IMC_PMON3, allocated);
-		allocate_csr_batch(CSR_IMC_PMON4, allocated);
 
-		allocate_csr_batch(CSR_IMC_PMONCFG0, allocated);
-		allocate_csr_batch(CSR_IMC_PMONCFG1, allocated);
-		allocate_csr_batch(CSR_IMC_PMONCFG2, allocated);
-		allocate_csr_batch(CSR_IMC_PMONCFG3, allocated);
-		allocate_csr_batch(CSR_IMC_PMONCFG4, allocated);
+		allocate_csr_batch(CSR_IMC_CTRS, allocated * 4);
+		allocate_csr_batch(CSR_IMC_EVTS, allocated * 4);
 
-		load_imc_batch_for_each(0xA0, pmonctrs->ctr0, 1, 6, CSR_IMC_PMON0);
-		load_imc_batch_for_each(0xA8, pmonctrs->ctr1, 1, 6, CSR_IMC_PMON1);
-		load_imc_batch_for_each(0xB0, pmonctrs->ctr2, 1, 6, CSR_IMC_PMON2);
-		load_imc_batch_for_each(0xB8, pmonctrs->ctr3, 1, 6, CSR_IMC_PMON3);
-		load_imc_batch_for_each(0xC0, pmonctrs->ctr4, 1, 6, CSR_IMC_PMON4);
+		load_imc_batch_for_each(0xA0, pmonctrs->ctr0, 1, 8, CSR_IMC_CTRS);
+		load_imc_batch_for_each(0xA8, pmonctrs->ctr1, 1, 8, CSR_IMC_CTRS);
+		load_imc_batch_for_each(0xB0, pmonctrs->ctr2, 1, 8, CSR_IMC_CTRS);
+		load_imc_batch_for_each(0xB8, pmonctrs->ctr3, 1, 8, CSR_IMC_CTRS);
 
-		load_imc_batch_for_each(0xD8, pmonctrs->ctrcfg0, 0, 4, CSR_IMC_PMONCFG0);
-		load_imc_batch_for_each(0xDC, pmonctrs->ctrcfg1, 0, 4, CSR_IMC_PMONCFG1);
-		load_imc_batch_for_each(0xE0, pmonctrs->ctrcfg2, 0, 4, CSR_IMC_PMONCFG2);
-		load_imc_batch_for_each(0xE4, pmonctrs->ctrcfg3, 0, 4, CSR_IMC_PMONCFG3);
-		load_imc_batch_for_each(0xE8, pmonctrs->ctrcfg4, 0, 4, CSR_IMC_PMONCFG4);
+		load_imc_batch_for_each(0xD8, pmonctrs->ctrcfg0, 0, 4, CSR_IMC_EVTS);
+		load_imc_batch_for_each(0xDC, pmonctrs->ctrcfg1, 0, 4, CSR_IMC_EVTS);
+		load_imc_batch_for_each(0xE0, pmonctrs->ctrcfg2, 0, 4, CSR_IMC_EVTS);
+		load_imc_batch_for_each(0xE4, pmonctrs->ctrcfg3, 0, 4, CSR_IMC_EVTS);
 
 		return 10 * allocated;
 	}
@@ -178,7 +169,7 @@ int init_pmonctr_global()
 
 static int set_pmon_config(const uint32_t setting, uint64_t **cfg)
 {
-	if (!cfg) {
+	if (!*cfg) {
 		fprintf(stderr, "%s %s::%d ERROR: imc pmon cfg is not initialized\n",
 				getenv("HOSTNAME"), __FILE__, __LINE__);
 		return -1;
@@ -190,16 +181,15 @@ static int set_pmon_config(const uint32_t setting, uint64_t **cfg)
 	return 0;
 }
 
-int pmon_config(uint32_t threshold, uint32_t invert, uint32_t ovf_en, uint32_t edge_det,
+int pmon_config(uint32_t threshold, uint32_t ovf_en, uint32_t edge_det,
 	uint32_t umask, uint8_t event, const unsigned counter)
 {
 	struct pmonctrs_data *pcd = pmon_ctr_storage();
 	int ret0 = 0;
 	int ret1 = 0;
-	invert &= 0x1;
 	ovf_en &= 0x1;
 	edge_det &= 0x1;
-	uint32_t setting = 0x0 | (threshold << 24) | (invert << 23) | (0x1 << 22) | 
+	uint32_t setting = 0x0 | (threshold << 24) | (0x1 << 22) | 
 			  (ovf_en << 20) | (edge_det << 18) | (0x1 << 17) | (0x1 << 16) |
 			  (umask << 8) | event;
 #ifdef CSRDEBUG
@@ -209,23 +199,23 @@ int pmon_config(uint32_t threshold, uint32_t invert, uint32_t ovf_en, uint32_t e
 	{
 		case 0:
 			ret0 = set_pmon_config(setting, pcd->ctrcfg0);
-			ret1 = do_csr_batch_op(CSR_IMC_PMONCFG0);
+			ret1 = do_csr_batch_op(CSR_IMC_EVTS);
 			break;
 		case 1:
 			ret0 = set_pmon_config(setting, pcd->ctrcfg1);
-			ret1 = do_csr_batch_op(CSR_IMC_PMONCFG1);
+			ret1 = do_csr_batch_op(CSR_IMC_EVTS);
 			break;
 		case 2:
 			ret0 = set_pmon_config(setting, pcd->ctrcfg2);
-			ret1 = do_csr_batch_op(CSR_IMC_PMONCFG2);
+			ret1 = do_csr_batch_op(CSR_IMC_EVTS);
 			break;
 		case 3:
 			ret0 = set_pmon_config(setting, pcd->ctrcfg3);
-			ret1 = do_csr_batch_op(CSR_IMC_PMONCFG3);
+			ret1 = do_csr_batch_op(CSR_IMC_EVTS);
 			break;
 		case 4:
 			ret0 = set_pmon_config(setting, pcd->ctrcfg4);
-			ret1 = do_csr_batch_op(CSR_IMC_PMONCFG4);
+			ret1 = do_csr_batch_op(CSR_IMC_EVTS);
 			break;
 		default:
 			fprintf(stderr, "%s %s::%d ERROR: imc perfmon counter %u does not exist\n",
@@ -258,40 +248,92 @@ int mem_bw_on_ctr(const unsigned counter, const int type)
 	int res = 0; 
 	switch (type) {
 		case 0:
-			res = pmon_config(0x0, 0x0, 0x0, 0x0, UMASK_CAS_RD, EVT_CAS_COUNT, counter);
+			res = pmon_config(0x0, 0x0, 0x0, UMASK_CAS_RD, EVT_CAS_COUNT, counter);
 			break;
 		case 1:
-			res = pmon_config(0x0, 0x0, 0x0, 0x0, UMASK_CAS_WR, EVT_CAS_COUNT, counter);
+			res = pmon_config(0x0, 0x0, 0x0, UMASK_CAS_WR, EVT_CAS_COUNT, counter);
 			break;
 		case 2:
-			res = pmon_config(0x0, 0x0, 0x0, 0x0, UMASK_CAS_ALL, EVT_CAS_COUNT, counter);
+			res = pmon_config(0x0, 0x0, 0x0, UMASK_CAS_ALL, EVT_CAS_COUNT, counter);
 			break;
 		default:
 			fprintf(stderr, "%s %s::%d ERROR: invalid bandwidth measurement specifier\n",
 					getenv("HOSTNAME"), __FILE__, __LINE__);
 			return -1;
 	}
-	return 0;
+	return res;
 }
 
-int get_mem_bw_from_ctr(const unsigned counter)
+int mem_pct_rw_on_ctr(const unsigned rcounter, const unsigned wcounter)
+{
+	if (rcounter > 4 || wcounter > 4) {
+		fprintf(stderr, "%s %s::%d ERROR: imc pmon counter %d does not exist\n",
+				getenv("HOSTNAME"), __FILE__, __LINE__, (wcounter > rcounter ? wcounter : rcounter));
+		return -1;
+	}
+	if (rcounter == wcounter) {
+		fprintf(stderr, "%s %s::%d ERROR: you can't count different events on the same register (%d)\n",
+				getenv("HOSTNAME"), __FILE__, __LINE__, wcounter);
+	}
+	int res = 0; 
+	res |= pmon_config(0x0, 0x0, 0x0, 0x0, EVT_RPQ_INSERTS, rcounter);
+	res |= pmon_config(0x0, 0x0, 0x0, 0x0, EVT_WPQ_INSERTS, wcounter);
+	return res;
+}
+
+int mem_page_empty_on_ctr(const unsigned act_count, const unsigned pre_count, const unsigned cas_count)
+{
+	if (act_count > 4 || pre_count > 4 || cas_count > 4) {
+		fprintf(stderr, "%s %s::%d ERROR: there are only 4 IMC performance counters. Had (%d, %d, %d)\n",
+				getenv("HOSTNAME"), __FILE__, __LINE__, act_count, pre_count, cas_count);
+		return -1;
+	}
+	if (act_count == pre_count || cas_count == pre_count || cas_count == act_count) {
+		fprintf(stderr, "%s %s::%d ERROR: you can't count different events on the same register. Had (%d, %d, %d)\n",
+				getenv("HOSTNAME"), __FILE__, __LINE__, act_count, pre_count, cas_count);
+	}
+	int res = 0;
+	res |= pmon_config(0x0, 0x0, 0x0, UMASK_CAS_ALL, EVT_CAS_COUNT, cas_count);
+	res |= pmon_config(0x0, 0x0, 0x0, 0xFF, EVT_ACT_COUNT, act_count);
+	res |= pmon_config(0x0, 0x0, 0x0, UMASK_PRE_PAGE_MISS, EVT_PRE_COUNT, pre_count);
+	return res;
+}
+
+int mem_page_miss_on_ctr(const unsigned pre_count, const unsigned cas_count)
+{
+	if (pre_count > 4 || pre_count > 4) {
+		fprintf(stderr, "%s %s::%d ERROR: imc pmon counter %d does not exist\n",
+				getenv("HOSTNAME"), __FILE__, __LINE__, (pre_count > cas_count ? pre_count : cas_count));
+		return -1;
+	}
+	if (pre_count == cas_count) {
+		fprintf(stderr, "%s %s::%d ERROR: you can't count different events on the same register (%d).\n",
+				getenv("HOSTNAME"), __FILE__, __LINE__, pre_count);
+	}
+	int res = 0;
+	res |= pmon_config(0x0, 0x0, 0x0, UMASK_PRE_PAGE_MISS, EVT_PRE_COUNT, pre_count);
+	res |= pmon_config(0x0, 0x0, 0x0, UMASK_CAS_ALL, EVT_CAS_COUNT, cas_count);
+	return res;
+}
+
+int read_imc_counter_batch(const unsigned counter)
 {
 	int res = 0;
 	switch (counter) {
 		case 0:
-			res = do_csr_batch_op(CSR_IMC_PMON0);
+			res = do_csr_batch_op(CSR_IMC_CTRS);
 			break;
 		case 1:
-			res = do_csr_batch_op(CSR_IMC_PMON1);
+			res = do_csr_batch_op(CSR_IMC_CTRS);
 			break;
 		case 2:
-			res = do_csr_batch_op(CSR_IMC_PMON2);
+			res = do_csr_batch_op(CSR_IMC_CTRS);
 			break;
 		case 3:
-			res = do_csr_batch_op(CSR_IMC_PMON3);
+			res = do_csr_batch_op(CSR_IMC_CTRS);
 			break;
 		case 4:
-			res = do_csr_batch_op(CSR_IMC_PMON4);
+			res = do_csr_batch_op(CSR_IMC_CTRS);
 			break;
 		default:
 			fprintf(stderr, "%s %s::%d ERROR: imc pmon counter %d does not exist\n",
@@ -302,11 +344,11 @@ int get_mem_bw_from_ctr(const unsigned counter)
 	return res;
 }
 
-int print_mem_bw_from_ctr(const unsigned counter)
+int print_mem_bw_from_ctr(const unsigned counter, FILE * dest)
 {
 	struct pmonctrs_data *pcd = pmon_ctr_storage();
-	uint64_t **ctr;
-	get_mem_bw_from_ctr(counter);
+	uint64_t **ctr = NULL;
+	read_imc_counter_batch(counter);
 	switch (counter) {
 		case 0:
 			ctr = pcd->ctr0;
@@ -328,6 +370,7 @@ int print_mem_bw_from_ctr(const unsigned counter)
 	const uint8_t devnums[2] = {16, 30};
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
+	fprintf(dest, "Memory Bandwidth\n");
 	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
 		if (i > 0 && i % 4 == 0) {
 			devctr++;
@@ -337,8 +380,213 @@ int print_mem_bw_from_ctr(const unsigned counter)
 		if (i > 0 && i % 8 == 0) {
 			sockctr++;
 		}
-		fprintf(stdout, "dev %d func %d sock %d\n", devnums[devctr], funcnums[func], sockctr);
-		fprintf(stdout, "BW CTR%d %lld bytes\n", counter, *pcd->ctr0[i] * 64LL);
+		fprintf(dest, "dev %d func %d sock %d: ", devnums[devctr], funcnums[func], sockctr);
+		fprintf(dest, "%lu bytes\n", *ctr[i] * 64LU);
+		func++;
+	}
+	return 0;
+}
+
+int print_mem_pct_rw_from_ctr(const unsigned rcounter, const unsigned wcounter, int type, FILE * dest)
+{
+	struct pmonctrs_data *pcd = pmon_ctr_storage();
+	uint64_t **rctr = NULL, **wctr = NULL;
+	read_imc_counter_batch(rcounter);
+	read_imc_counter_batch(wcounter);
+	switch (rcounter) {
+		case 0:
+			rctr = pcd->ctr0;
+			break;
+		case 1:
+			rctr = pcd->ctr1;
+			break;
+		case 2:
+			rctr = pcd->ctr2;
+			break;
+		case 3:
+			rctr = pcd->ctr3;
+			break;
+		case 4:
+			rctr = pcd->ctr4;
+			break;
+	}
+	switch (wcounter) {
+		case 0:
+			wctr = pcd->ctr0;
+			break;
+		case 1:
+			wctr = pcd->ctr1;
+			break;
+		case 2:
+			wctr = pcd->ctr2;
+			break;
+		case 3:
+			wctr = pcd->ctr3;
+			break;
+		case 4:
+			wctr = pcd->ctr4;
+			break;
+	}
+	const uint8_t funcnums[4] = {0, 1, 4, 5};
+	const uint8_t devnums[2] = {16, 30};
+	uint8_t devctr = 0, func = 0, sockctr = 0;
+	int i;
+	fprintf(dest, "Percent %s Requests\n", (type ? "read\0" : "write\0"));
+	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
+		if (i > 0 && i % 4 == 0) {
+			devctr++;
+		}
+		devctr %= 2;
+		func %= 4;
+		if (i > 0 && i % 8 == 0) {
+			sockctr++;
+		}
+		fprintf(dest, "dev %d func %d sock %d: ", devnums[devctr], funcnums[func], sockctr);
+		if (type) {
+			fprintf(dest, "%lf\n", (double) *rctr[i] / ((*rctr[i] + *wctr[i]) ? (*rctr[i] + *wctr[i]) : 1));
+		} else {
+			fprintf(dest, "%lf\n", (double) *wctr[i] / ((*rctr[i] + *wctr[i]) ? (*rctr[i] + *wctr[i]) : 1));
+		}
+		func++;
+	}
+	return 0;
+}
+
+int print_mem_page_empty_from_ctr(const unsigned act, const unsigned pre, const unsigned cas, FILE * dest)
+{
+	struct pmonctrs_data *pcd = pmon_ctr_storage();
+	uint64_t **actr = NULL, **pctr = NULL, **cctr = NULL;
+	read_imc_counter_batch(act);
+	read_imc_counter_batch(pre);
+	read_imc_counter_batch(cas);
+	switch (act) {
+		case 0:
+			actr = pcd->ctr0;
+			break;
+		case 1:
+			actr = pcd->ctr1;
+			break;
+		case 2:
+			actr = pcd->ctr2;
+			break;
+		case 3:
+			actr = pcd->ctr3;
+			break;
+		case 4:
+			actr = pcd->ctr4;
+			break;
+	}
+	switch (pre) {
+		case 0:
+			pctr = pcd->ctr0;
+			break;
+		case 1:
+			pctr = pcd->ctr1;
+			break;
+		case 2:
+			pctr = pcd->ctr2;
+			break;
+		case 3:
+			pctr = pcd->ctr3;
+			break;
+		case 4:
+			pctr = pcd->ctr4;
+			break;
+	}
+	switch (cas) {
+		case 0:
+			cctr = pcd->ctr0;
+			break;
+		case 1:
+			cctr = pcd->ctr1;
+			break;
+		case 2:
+			cctr = pcd->ctr2;
+			break;
+		case 3:
+			cctr = pcd->ctr3;
+			break;
+		case 4:
+			cctr = pcd->ctr4;
+			break;
+	}
+	const uint8_t funcnums[4] = {0, 1, 4, 5};
+	const uint8_t devnums[2] = {16, 30};
+	uint8_t devctr = 0, func = 0, sockctr = 0;
+	int i;
+	fprintf(dest, "Percent Requests Caused Page Empty\n");
+	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
+		if (i > 0 && i % 4 == 0) {
+			devctr++;
+		}
+		devctr %= 2;
+		func %= 4;
+		if (i > 0 && i % 8 == 0) {
+			sockctr++;
+		}
+		fprintf(dest, "dev %d func %d sock %d: ", devnums[devctr], funcnums[func], sockctr);
+		fprintf(dest, "%lf\n", (double) (*actr[i] - *pctr[i]) / (*cctr[i] ? *cctr[i] : 1));
+		func++;
+	}
+	return 0;
+}
+
+int print_mem_page_miss_from_ctr(const unsigned pre, const unsigned cas, FILE * dest)
+{
+	struct pmonctrs_data *pcd = pmon_ctr_storage();
+	uint64_t **pctr = NULL, **cctr = NULL;
+	read_imc_counter_batch(pre);
+	read_imc_counter_batch(cas);
+	switch (pre) {
+		case 0:
+			pctr = pcd->ctr0;
+			break;
+		case 1:
+			pctr = pcd->ctr1;
+			break;
+		case 2:
+			pctr = pcd->ctr2;
+			break;
+		case 3:
+			pctr = pcd->ctr3;
+			break;
+		case 4:
+			pctr = pcd->ctr4;
+			break;
+	}
+	switch (cas) {
+		case 0:
+			cctr = pcd->ctr0;
+			break;
+		case 1:
+			cctr = pcd->ctr1;
+			break;
+		case 2:
+			cctr = pcd->ctr2;
+			break;
+		case 3:
+			cctr = pcd->ctr3;
+			break;
+		case 4:
+			cctr = pcd->ctr4;
+			break;
+	}
+	const uint8_t funcnums[4] = {0, 1, 4, 5};
+	const uint8_t devnums[2] = {16, 30};
+	uint8_t devctr = 0, func = 0, sockctr = 0;
+	int i;
+	fprintf(dest, "Percent Requests Caused Page Miss\n");
+	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
+		if (i > 0 && i % 4 == 0) {
+			devctr++;
+		}
+		devctr %= 2;
+		func %= 4;
+		if (i > 0 && i % 8 == 0) {
+			sockctr++;
+		}
+		fprintf(dest, "dev %d func %d sock %d: ", devnums[devctr], funcnums[func], sockctr);
+		fprintf(dest, "%lf\n", (double) *pctr[i] / (*cctr[i] ? *cctr[i] : 1));
 		func++;
 	}
 	return 0;
@@ -353,11 +601,7 @@ int print_pmon_ctrs()
                 getenv("HOSTNAME"), __FILE__, __LINE__);
 	    return -1;
 	}
-	do_csr_batch_op(CSR_IMC_PMON0);
-	do_csr_batch_op(CSR_IMC_PMON1);
-	do_csr_batch_op(CSR_IMC_PMON2);
-	do_csr_batch_op(CSR_IMC_PMON3);
-	do_csr_batch_op(CSR_IMC_PMON4);
+	do_csr_batch_op(CSR_IMC_CTRS);
 	const uint8_t funcnums[4] = {0, 1, 4, 5};
 	const uint8_t devnums[2] = {16, 30};
 	uint8_t devctr = 0, func = 0, sockctr = 0;

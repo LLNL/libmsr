@@ -40,7 +40,7 @@
 #include "csr_core.h"
 #include "memhdlr.h"
 
-#define CSRDEBUG
+//#define CSRDEBUG
 #define FILENAME_SIZE 128
 #define MODULE "/dev/cpu/csr_safe"
 
@@ -232,7 +232,7 @@ int do_csr_batch_op(const int batchnum) {
 		return -1;
 	}
 #ifdef CSRDEBUG
-	fprintf(stderr, "CSRBATCH %d: numops %u\n", batchnum, batch->numops); 
+//	fprintf(stderr, "CSRBATCH %d: numops %u\n", batchnum, batch->numops); 
 #endif
 	if (batch->numops <= 0) {
 		fprintf(stderr, "%s %s::%d ERROR: attempted to use empty batch.\n",
@@ -246,7 +246,13 @@ int do_csr_batch_op(const int batchnum) {
 		perror("IOctl failed, does /dev/cpu/csr_batch exist?");
 		fprintf(stderr, "ioctl returned %d\n", res);
 		struct csr_batch_op *op;
+		int i = 0;
 		for (op = batch->ops; op < op + batch->numops; op++) {
+			i++;
+			if (i >= batch->numops)
+			{
+				break;
+			}
 			if (op->err) {
 				fprintf(stderr, "CSR %x, b%dd%df%ds%d, ERR %d\n",
 					op->offset, op->bus, op->device, op->function,

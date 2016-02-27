@@ -3,6 +3,7 @@ set(LIBMSR_SOURCES
   msr_clocks.c
   csr_core.c
   csr_imc.c
+  csr_qpi.c
   msr_core.c
   msr_counters.c
   msr_misc.c

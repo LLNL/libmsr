@@ -1303,19 +1303,19 @@ dump_rapl_terse( FILE * writeFile){
         // check to see which registers are available
         if (*rapl_flags & PKG_ENERGY_STATUS)
         {
-            fprintf(writeFile, "%8.4lf ", rapl->pkg_watts[0]);
+            fprintf(writeFile, "%8.4lf ", rapl->pkg_watts[socket]);
         }
         if (*rapl_flags & DRAM_ENERGY_STATUS)
         {
-            fprintf(writeFile, "%8.4lf ", rapl->dram_watts[0]);
+            fprintf(writeFile, "%8.4lf ", rapl->dram_watts[socket]);
         }
         if (*rapl_flags & PP0_ENERGY_STATUS)
         {
-            fprintf(writeFile, "%8.4lf ", rapl->pp0_watts[0]);
+            fprintf(writeFile, "%8.4lf ", rapl->pp0_watts[socket]);
         }
         if (*rapl_flags & PP1_ENERGY_STATUS)
         {
-            fprintf(writeFile, "%8.4lf ", rapl->pp1_watts[0]);
+            fprintf(writeFile, "%8.4lf ", rapl->pp1_watts[socket]);
         }
     }
     return 0;
