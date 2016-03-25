@@ -25,7 +25,7 @@
  *
  * This material is based upon work supported by the U.S. Department
  * of Energy's Lawrence Livermore National Laboratory. Office of
- * Science, under Award number XXXXX.
+ * Science, under Award number DE-AC52-07NA27344.
  *
  */
 
@@ -55,26 +55,26 @@ static int load_imc_batch_for_each(const size_t offt, uint64_t **loc,
 {
 		int idx = 0;
 		if (loc) {
-			create_csr_batch_op(offt, 1, 16, 0, 0, isread, size, &loc[idx], batchno);
-			create_csr_batch_op(offt, 1, 16, 1, 0, isread, size, &loc[++idx], batchno);
-			create_csr_batch_op(offt, 1, 16, 4, 0, isread, size, &loc[++idx], batchno);
-			create_csr_batch_op(offt, 1, 16, 5, 0, isread, size, &loc[++idx], batchno);
+			create_csr_batch_op(offt, 1, IMC0_DEV, IMC_CH0_FUNC, 0, isread, size, &loc[idx], batchno);
+			create_csr_batch_op(offt, 1, IMC0_DEV, IMC_CH1_FUNC, 0, isread, size, &loc[++idx], batchno);
+			create_csr_batch_op(offt, 1, IMC0_DEV, IMC_CH2_FUNC, 0, isread, size, &loc[++idx], batchno);
+			create_csr_batch_op(offt, 1, IMC0_DEV, IMC_CH3_FUNC, 0, isread, size, &loc[++idx], batchno);
 
-			create_csr_batch_op(offt, 1, 30, 0, 0, isread, size, &loc[++idx], batchno);
-			create_csr_batch_op(offt, 1, 30, 1, 0, isread, size, &loc[++idx], batchno);
-			create_csr_batch_op(offt, 1, 30, 4, 0, isread, size, &loc[++idx], batchno);
-			create_csr_batch_op(offt, 1, 30, 5, 0, isread, size, &loc[++idx], batchno);
+			create_csr_batch_op(offt, 1, IMC1_DEV, IMC_CH0_FUNC, 0, isread, size, &loc[++idx], batchno);
+			create_csr_batch_op(offt, 1, IMC1_DEV, IMC_CH1_FUNC, 0, isread, size, &loc[++idx], batchno);
+			create_csr_batch_op(offt, 1, IMC1_DEV, IMC_CH2_FUNC, 0, isread, size, &loc[++idx], batchno);
+			create_csr_batch_op(offt, 1, IMC1_DEV, IMC_CH3_FUNC, 0, isread, size, &loc[++idx], batchno);
 
 			if (num_sockets() > 1) {
-				create_csr_batch_op(offt, 1, 16, 0, 1, isread, size, &loc[++idx], batchno);
-				create_csr_batch_op(offt, 1, 16, 1, 1, isread, size, &loc[++idx], batchno);
-				create_csr_batch_op(offt, 1, 16, 4, 1, isread, size, &loc[++idx], batchno);
-				create_csr_batch_op(offt, 1, 16, 5, 1, isread, size, &loc[++idx], batchno);
+				create_csr_batch_op(offt, 1, IMC0_DEV, IMC_CH0_FUNC, 1, isread, size, &loc[++idx], batchno);
+				create_csr_batch_op(offt, 1, IMC0_DEV, IMC_CH1_FUNC, 1, isread, size, &loc[++idx], batchno);
+				create_csr_batch_op(offt, 1, IMC0_DEV, IMC_CH2_FUNC, 1, isread, size, &loc[++idx], batchno);
+				create_csr_batch_op(offt, 1, IMC0_DEV, IMC_CH3_FUNC, 1, isread, size, &loc[++idx], batchno);
 
-				create_csr_batch_op(offt, 1, 30, 0, 1, isread, size, &loc[++idx], batchno);
-				create_csr_batch_op(offt, 1, 30, 1, 1, isread, size, &loc[++idx], batchno);
-				create_csr_batch_op(offt, 1, 30, 4, 1, isread, size, &loc[++idx], batchno);
-				create_csr_batch_op(offt, 1, 30, 5, 1, isread, size, &loc[++idx], batchno);
+				create_csr_batch_op(offt, 1, IMC1_DEV, IMC_CH0_FUNC, 1, isread, size, &loc[++idx], batchno);
+				create_csr_batch_op(offt, 1, IMC1_DEV, IMC_CH1_FUNC, 1, isread, size, &loc[++idx], batchno);
+				create_csr_batch_op(offt, 1, IMC1_DEV, IMC_CH2_FUNC, 1, isread, size, &loc[++idx], batchno);
+				create_csr_batch_op(offt, 1, IMC1_DEV, IMC_CH3_FUNC, 1, isread, size, &loc[++idx], batchno);
 			}
 		} else {
 			fprintf(stderr, "%s %s::%d ERROR: unable to create imc batch. loc was NULL\n",
@@ -132,15 +132,15 @@ int init_pmon_ctrs()
 		allocate_csr_batch(CSR_IMC_CTRS, allocated * 4);
 		allocate_csr_batch(CSR_IMC_EVTS, allocated * 4);
 
-		load_imc_batch_for_each(0xA0, pmonctrs->ctr0, 1, 8, CSR_IMC_CTRS);
-		load_imc_batch_for_each(0xA8, pmonctrs->ctr1, 1, 8, CSR_IMC_CTRS);
-		load_imc_batch_for_each(0xB0, pmonctrs->ctr2, 1, 8, CSR_IMC_CTRS);
-		load_imc_batch_for_each(0xB8, pmonctrs->ctr3, 1, 8, CSR_IMC_CTRS);
+		load_imc_batch_for_each(CSR_PMONCTR0, pmonctrs->ctr0, 1, 8, CSR_IMC_CTRS);
+		load_imc_batch_for_each(CSR_PMONCTR1, pmonctrs->ctr1, 1, 8, CSR_IMC_CTRS);
+		load_imc_batch_for_each(CSR_PMONCTR2, pmonctrs->ctr2, 1, 8, CSR_IMC_CTRS);
+		load_imc_batch_for_each(CSR_PMONCTR3, pmonctrs->ctr3, 1, 8, CSR_IMC_CTRS);
 
-		load_imc_batch_for_each(0xD8, pmonctrs->ctrcfg0, 0, 4, CSR_IMC_EVTS);
-		load_imc_batch_for_each(0xDC, pmonctrs->ctrcfg1, 0, 4, CSR_IMC_EVTS);
-		load_imc_batch_for_each(0xE0, pmonctrs->ctrcfg2, 0, 4, CSR_IMC_EVTS);
-		load_imc_batch_for_each(0xE4, pmonctrs->ctrcfg3, 0, 4, CSR_IMC_EVTS);
+		load_imc_batch_for_each(CSR_PMONCTRCFG0, pmonctrs->ctrcfg0, 0, 4, CSR_IMC_EVTS);
+		load_imc_batch_for_each(CSR_PMONCTRCFG1, pmonctrs->ctrcfg1, 0, 4, CSR_IMC_EVTS);
+		load_imc_batch_for_each(CSR_PMONCTRCFG2, pmonctrs->ctrcfg2, 0, 4, CSR_IMC_EVTS);
+		load_imc_batch_for_each(CSR_PMONCTRCFG3, pmonctrs->ctrcfg3, 0, 4, CSR_IMC_EVTS);
 
 		return 10 * allocated;
 	}
@@ -159,8 +159,8 @@ int init_pmonctr_global()
 		allocate_csr_batch(CSR_IMC_PMONUNITCTRL, allocated);
 		allocate_csr_batch(CSR_IMC_PMONUNITSTAT, allocated);
 
-		load_imc_batch_for_each(0xF4, pgd->unitctrl, 0, 3, CSR_IMC_PMONUNITCTRL);
-		load_imc_batch_for_each(0xF8, pgd->unitstatus, 0, 1, CSR_IMC_PMONUNITSTAT);
+		load_imc_batch_for_each(CSR_PMONUNITCTRL, pgd->unitctrl, 0, 3, CSR_IMC_PMONUNITCTRL);
+		load_imc_batch_for_each(CSR_PMONUNITSTAT, pgd->unitstatus, 0, 1, CSR_IMC_PMONUNITSTAT);
 
 		return 2 * allocated;
 	}
@@ -366,8 +366,8 @@ int print_mem_bw_from_ctr(const unsigned counter, FILE * dest)
 			ctr = pcd->ctr4;
 			break;
 	}
-	const uint8_t funcnums[4] = {0, 1, 4, 5};
-	const uint8_t devnums[2] = {16, 30};
+	const uint8_t funcnums[4] = {IMC_CH0_FUNC, IMC_CH1_FUNC, IMC_CH2_FUNC, IMC_CH3_FUNC};
+	const uint8_t devnums[2] = {IMC0_DEV, IMC1_DEV};
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
 	fprintf(dest, "Memory Bandwidth\n");
@@ -427,8 +427,8 @@ int print_mem_pct_rw_from_ctr(const unsigned rcounter, const unsigned wcounter, 
 			wctr = pcd->ctr4;
 			break;
 	}
-	const uint8_t funcnums[4] = {0, 1, 4, 5};
-	const uint8_t devnums[2] = {16, 30};
+	const uint8_t funcnums[4] = {IMC_CH0_FUNC, IMC_CH1_FUNC, IMC_CH2_FUNC, IMC_CH3_FUNC};
+	const uint8_t devnums[2] = {IMC0_DEV, IMC1_DEV};
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
 	fprintf(dest, "Percent %s Requests\n", (type ? "read\0" : "write\0"));
@@ -510,8 +510,8 @@ int print_mem_page_empty_from_ctr(const unsigned act, const unsigned pre, const 
 			cctr = pcd->ctr4;
 			break;
 	}
-	const uint8_t funcnums[4] = {0, 1, 4, 5};
-	const uint8_t devnums[2] = {16, 30};
+	const uint8_t funcnums[4] = {IMC_CH0_FUNC, IMC_CH1_FUNC, IMC_CH2_FUNC, IMC_CH3_FUNC};
+	const uint8_t devnums[2] = {IMC0_DEV, IMC1_DEV};
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
 	fprintf(dest, "Percent Requests Caused Page Empty\n");
@@ -571,8 +571,8 @@ int print_mem_page_miss_from_ctr(const unsigned pre, const unsigned cas, FILE * 
 			cctr = pcd->ctr4;
 			break;
 	}
-	const uint8_t funcnums[4] = {0, 1, 4, 5};
-	const uint8_t devnums[2] = {16, 30};
+	const uint8_t funcnums[4] = {IMC_CH0_FUNC, IMC_CH1_FUNC, IMC_CH2_FUNC, IMC_CH3_FUNC};
+	const uint8_t devnums[2] = {IMC0_DEV, IMC1_DEV};
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
 	fprintf(dest, "Percent Requests Caused Page Miss\n");
@@ -602,8 +602,8 @@ int print_pmon_ctrs()
 	    return -1;
 	}
 	do_csr_batch_op(CSR_IMC_CTRS);
-	const uint8_t funcnums[4] = {0, 1, 4, 5};
-	const uint8_t devnums[2] = {16, 30};
+	const uint8_t funcnums[4] = {IMC_CH0_FUNC, IMC_CH1_FUNC, IMC_CH2_FUNC, IMC_CH3_FUNC};
+	const uint8_t devnums[2] = {IMC0_DEV, IMC1_DEV};
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
 	for (i = 0; i < num_sockets() * NUMCTRS; i++) {

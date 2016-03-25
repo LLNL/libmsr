@@ -39,6 +39,7 @@
 
 // Section 35.7 Table 35-11
 // Or Section 35.1 Table 35.2
+/*
 #define IA32_MISC_ENABLE		(0x1A0) 
 #define MSR_PKG_C3_RESIDENCY    (0x3F8)
 #define MSR_PKG_C6_RESIDENCY    (0x3F9)
@@ -47,6 +48,7 @@
 #define MSR_CORE_C6_RESIDENCY   (0x3FD)
 #define MSR_CORE_C7_RESIDENCY   (0x3FE)
 #define PKG_C2_RESIDENCY    (0x60D)
+*/
 
 //----------------------Misc_Enable functions-------------------------------------------------------------------
 /*

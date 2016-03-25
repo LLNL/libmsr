@@ -1,24 +1,25 @@
-v0.1.15 Batch
-+ Added msrmod command line utility
-- Removed msr 0x63B from architecture 06_3C
-+ updated msr_rapl to use the latest batch interface, details below
-	+ read_rapl_data no longer takes any arguments
-	+ read_rapl_data now uses the new batch interface
-	+ rapl_data struct has been changed, see msr_rapl.h for details
-	+ delta_rapl_data no longer takes arguments 
-	+ poll_rapl_data no longer takes arguments
-	+ dump_rapl_data arguments have changed, now only takes a FILE *
+v0.2.0 Auto
++ added new build system
+	+ must be installed with included install.sh
+	+ supports Sandy Bridge, Ivy Bridge, and Haswell
++ added autoconf.c header file generator
 
-v0.1.16
-- Removed deprecated variable from cpuid.c
-+ cpuid.c get_core_conf function has been reworked to be more portable
-- Removed extraneous code in msr_rapl.c
-+ msr_core devidx function now works with even-odd cpu ordering schemes
-+ msr_init now stats msr_whitelist
-+ libmsr_test now has an message saying if libmsr is working (WIP)
-+ libmsr_test now explicitly resets power values to defaults
+v0.1.18 CSR
++ added PCI configuration register (CSR) support
+	+ (note that this currently requires CSR-SAFE)
+	+ (also only supports Intel CSRs)
++ added iMC performance counters
+	+ MC0 Channel 0-3 perf counters
+	+ MC1 Channel 0-3 perf counters
++ added Cbo (caching agent) performance counters
+	+ C#MSR_PMON_CTL#
+	+ C#_MSR_PMON_CTR#
+	+ C#_MSR_PMON_BOX_FILTER
+	+ C#_MSR_PMON_BOX_FILTER1
+	+ C#_MSR_PMON_BOX_CTL
++ fixed problem in RAPL architecture detection
 
-v0.1.17
+v0.1.17 Request
 + will attempt to work even without whitelist (subject to change)
 + detects the kernel's core layout decisions at runtime
 + added MSRs
@@ -30,3 +31,23 @@ v0.1.17
 + will get energy readings if energy_status registers exist rather
 than power_limit 
 + power unit fixed for DRAM on Haswell
+
+v0.1.16 Mission
+- Removed deprecated variable from cpuid.c
++ cpuid.c get_core_conf function has been reworked to be more portable
+- Removed extraneous code in msr_rapl.c
++ msr_core devidx function now works with even-odd cpu ordering schemes
++ msr_init now stats msr_whitelist
++ libmsr_test now has an message saying if libmsr is working (WIP)
++ libmsr_test now explicitly resets power values to defaults
+
+v0.1.15 Batch
++ Added msrmod command line utility
+- Removed msr 0x63B from architecture 06_3C
++ updated msr_rapl to use the latest batch interface, details below
+	+ read_rapl_data no longer takes any arguments
+	+ read_rapl_data now uses the new batch interface
+	+ rapl_data struct has been changed, see msr_rapl.h for details
+	+ delta_rapl_data no longer takes arguments 
+	+ poll_rapl_data no longer takes arguments
+	+ dump_rapl_data arguments have changed, now only takes a FILE *

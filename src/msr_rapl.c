@@ -58,6 +58,7 @@
 #define UNIT_SCALE(x,y) ((x)/(double)(1<<(y)))
 #define UNIT_DESCALE(x,y) ((x)*(double)(1<<(y)))
 
+/*
 // Section 35.7
 // Table 35-11.  MSRs supported by Intel processors based on Intel 
 // microarchitecture code name Sandy Bridge.
@@ -89,7 +90,7 @@
 #define MSR_DRAM_PERF_STATUS 		(0x61B) // ro
 #define MSR_DRAM_POWER_INFO 		(0x61C) // rw (text states ro)
 
-/* TO BE REMOVED
+TO BE REMOVED
 // Section 35.8.1
 // Table 35-15. Selected MSRs supported by Intel Xeon processors E5 Family v2 
 // (based on Intel microarchitecture code name Ivy Bridge) 
@@ -103,6 +104,7 @@
 #define MSR_DRAM_POWER_INFO 		(0x61C) //
 #endif
 */
+
 
 // Processor specific rapl flags (see rapl_init function)
 // These indicate which rapl MSR's are available for a given cpu model

@@ -1,22 +1,21 @@
 libmsr
 ====================
 
-Welcome to libmsr, a friendly (well, friendlier) interface to several
-of the model-specific registers in Intel processors.
+Welcome to libmsr, a friendly (well, friendlier) interface to many
+of the model-specific registers in Intel processors. Now with PCI
+configuration register support for some Intel hardware.
 
-version 0.1.17
+version 0.1.18
 
 
 Installation
 ---------------------
 
-Installation is simple.  You will need [cmake](http://www.cmake.org)
-version 2.8 or higher.
+Installation is simple. You will need [cmake](http://www.cmake.org)
+version 2.8 or higher. The old installation method is deprecated,
+you MUST use the script.
 
-    mkdir BUILD && cd BUILD
-    cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/install
-    make
-    make install
+	install.sh /path/to/install
 
 Notes
 ----------------------
@@ -34,7 +33,7 @@ For sample code, see libmsr_test.c in the test folder.
 Our most up-to-date documentation for libmsr use is the pdf files in the documentation folder, however there
 is some additional useful information in API as well.
 
-Please feel free to contact the authors with questions and suggestions.
+Please feel free to contact the authors with questions, bugs, and suggestions.
 
 Authors
 ---------------------

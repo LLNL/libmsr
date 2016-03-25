@@ -25,7 +25,7 @@
  *
  * This material is based upon work supported by the U.S. Department
  * of Energy's Lawrence Livermore National Laboratory. Office of
- * Science, under Award number XXXXX.
+ * Science, under Award number DE-AC52-07NA27344.
  *
  */
 #include <sys/stat.h>

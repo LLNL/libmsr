@@ -8,11 +8,11 @@ set(LIBMSR_HEADERS
   cpuid.h
   csr_core.h
   csr_imc.h
-  csr_qpi.h
   msr_core.h
   msr_misc.h
   msr_thermal.h
   memhdlr.h
-  profile.h)
+  profile.h
+  master.h)
 
 install(FILES ${LIBMSR_HEADERS} DESTINATION include/msr)

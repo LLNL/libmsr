@@ -179,6 +179,7 @@ void counters_test()
 void clocks_test()
 {
     dump_clocks_readable(stdout);
+	dump_p_state(stdout);
     fprintf(stdout, "\n");
 }
 

@@ -25,12 +25,13 @@
  *
  * This material is based upon work supported by the U.S. Department
  * of Energy's Lawrence Livermore National Laboratory. Office of
- * Science, under Award number xxxx.
+ * Science, under Award number DE-AC52-07NA27344.
  *
  */
 
 #include <linux/types.h>
-
+#include "master.h"
+/*
 // These EVENTS are known to work with Ivy Bridge only
 #define EVT_DCLOCKTICKS 0x00
 #define EVT_ACT_COUNT 0x01
@@ -103,6 +104,7 @@
 #define UMASK_PRE_RD 0x4
 #define UMASK_PRE_WR 0x8
 #define UMASK_PRE_BYP 0x16
+*/
 
 enum{
 	READ_BW,
@@ -149,7 +151,6 @@ struct pmonctr_global
  	uint32_t umask, uint8_t event, const unsigned counter);
  int mem_bw_on_ctr(const unsigned counter, const int type);
  int get_mem_bw_from_ctr(const unsigned counter);
- int print_mem_bw_from_ctr(const unsigned counter);
  int mem_pct_rw_on_ctr(const unsigned rcounter, const unsigned wcounter);
  int mem_page_empty_on_ctr(const unsigned act_count, const unsigned pre_count, const unsigned cas_count);
  int mem_page_miss_on_ctr(const unsigned pre_count, const unsigned cas_count);

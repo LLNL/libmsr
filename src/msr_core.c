@@ -156,7 +156,7 @@ static int batch_storage(struct msr_batch_array ** batchsel, const int batchnum,
         int i;
         for (i = 0; i < arrsize; i++)
         {
-            size[i] = 8;
+            size[i] = 0;
             batch[i].ops = NULL;
             batch[i].numops = 0;
         }
@@ -174,7 +174,7 @@ static int batch_storage(struct msr_batch_array ** batchsel, const int batchnum,
         {
             batch[oldsize].ops = NULL;
             batch[oldsize].numops = 0;
-            size[oldsize] = 8;
+            size[oldsize] = 0;
         }
     }
     if (batchsel == NULL)
@@ -201,12 +201,18 @@ int allocate_batch(int batchnum, size_t bsize)
     {
         return -1;
     }
+#ifdef BATCH_DEBUG
+	fprintf(stderr, "BATCH: batch %d is at %p\n", batchnum, batch);
+#endif
     *size = bsize;
     if (batch->ops != NULL)
     {
         fprintf(stderr, "%s %s::%d ERROR: conflicting batch pointers for batch %d, was %p\n", getenv("HOSTNAME"), 
                 __FILE__, __LINE__, batchnum, batch);
     }
+#ifdef MEMHDLR_DEBUG
+	fprintf(stderr, "MEMHDLR: size of batch %d is %d\n", batchnum, *size);
+#endif
     batch->ops = (struct msr_batch_op *) libmsr_calloc(*size, sizeof(struct msr_batch_op));
     int i;
     for (i = batch->numops; i < *size; i++)
@@ -344,7 +350,8 @@ int create_batch_op(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnu
 #ifdef BATCH_DEBUG
     fprintf(stderr, "BATCH: batch %d is at %p\n", batchnum, batch);
 #endif
-    if (batch->numops >= *size)
+    //if (batch->numops >= *size)
+    if (batch->numops > *size)
     {
         fprintf(stderr, "%s %s::%d ERROR: batch %d is full, you probably used the wrong size\n", getenv("HOSTNAME"),
                 __FILE__, __LINE__, batchnum);
@@ -360,6 +367,7 @@ int create_batch_op(off_t msr, uint64_t cpu, uint64_t ** dest, const int batchnu
 #ifdef BATCH_DEBUG
     fprintf(stderr, "BATCH: destination of msr %lx on core %lx (at %p) is %p\n", msr, cpu, 
             dest, &batch->ops[batch->numops - 1].msrdata);
+	fprintf(stderr, "\tbatch numops is %d\n", batch->numops);
 #endif
     return 0;
 

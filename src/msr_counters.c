@@ -38,6 +38,7 @@
 #include "msr_counters.h"
 #include "cpuid.h"
 
+/*
 //These defines are from the Architectural MSRs (Should not change between models)
 
 #define IA32_FIXED_CTR_CTRL		(0x38D)	// Controls for fixed ctr0, 1, and 2 
@@ -257,6 +258,7 @@
 #define MSR_C14_PMON_CTR2		0xED8
 #define MSR_C14_PMON_CTR3		0xED9
 #define MSR_C14_BOX_FILTER1		0xEDA
+*/
 
 int print_available_counters()
 {

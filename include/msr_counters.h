@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "msr_core.h"
+#include "master.h"
 
 // Note: It should not matter which processor you are using because the MSRS are architectural
 // and should remain the same
