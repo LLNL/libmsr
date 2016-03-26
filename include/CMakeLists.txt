@@ -15,4 +15,4 @@ set(LIBMSR_HEADERS
   profile.h
   master.h)
 
-install(FILES ${LIBMSR_HEADERS} DESTINATION include/msr)
+install(FILES ${LIBMSR_HEADERS} DESTINATION include)

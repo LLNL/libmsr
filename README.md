@@ -5,14 +5,14 @@ Welcome to libmsr, a friendly (well, friendlier) interface to many
 of the model-specific registers in Intel processors. Now with PCI
 configuration register support for some Intel hardware.
 
-version 0.1.18
+version 0.2.0
 
 
 Installation
 ---------------------
 
 Installation is simple. You will need [cmake](http://www.cmake.org)
-version 2.8 or higher. The old installation method is deprecated,
+version 2.8 or higher and GCC. The old installation method is deprecated,
 you MUST use the script.
 
 	install.sh /path/to/install
