@@ -36,9 +36,6 @@
 #include "msr_core.h"
 #include "master.h"
 
-// Note: It should not matter which processor you are using because the MSRS are architectural
-// and should remain the same
-
 struct ctr_data
 {
     uint64_t * enable;
@@ -56,6 +53,7 @@ struct fixed_counter_data{
 	int width;		//when found, this is the bit width of the fixed counter MSRs
 };
 
+// the programmable performance counter event control
 struct evtsel
 {
     uint64_t ** perf_evtsel0;
@@ -68,6 +66,7 @@ struct evtsel
     uint64_t ** perf_evtsel7;
 };
 
+// the programmable performance counters
 struct pmc
 {
     uint64_t ** pmc0;
@@ -124,6 +123,7 @@ int enable_pmc();
 int clear_all_pmc();
 //int clear_pmc();
 int dump_pmc_readable(FILE * writefile);
+int dump_pmc_thread_terse(FILE * writefile, const int thread);
 int set_pmc_ctrl_flags(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pmcnum, unsigned thread);
 int set_all_pmc_ctrl(uint64_t cmask, uint64_t flags, uint64_t umask, uint64_t eventsel, int pmcnum);
 

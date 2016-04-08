@@ -34,6 +34,31 @@
 #include <stdio.h>
 #include "master.h"
 
+// Change function names to new standard
+#define store_temp_target(tt) { \
+	temp_target_storage(tt) }
+#define store_therm_stat(ts) { \
+	therm_stat_storage(ts) }
+#define store_therm_interrupt(ti) { \
+	therm_interrupt_storage(ti) }
+#define store_pkg_therm_stat(ps) { \
+	pkg_therm_stat_storage(ps) }
+#define store_pkg_therm_interrupt(pi) { \
+	pkg_therm_interrupt_storage(pi) }
+
+/*
+inline int store_temp_target(struct msr_temp_target **tt) {
+	return temp_target_storage(tt); }
+inline int store_therm_stat(struct therm_stat **ts) {
+	return therm_stat_storage(ts); }
+inline int store_therm_interrupt(struct therm_interrupt ** ti) {
+	return therm_interrupt_storage(ti); }
+inline int store_pkg_therm_stat(struct pkg_therm_stat ** ps) {
+	return pkg_therm_stat_storage(ps); }
+inline int store_pkg_therm_interrupt(struct pkg_therm_interrupt ** pi) {
+	return pkg_therm_interrupt_storage(pi); }
+*/
+
 // TODO: used num_sockets
 struct msr_temp_target{				//Scope is "unique" for Sandy Bridge
 						//Assuming that it is by socket
@@ -45,38 +70,24 @@ struct msr_temp_target{				//Scope is "unique" for Sandy Bridge
 struct therm_stat{			//Scope is "core" for Sandy Bridge
 	uint64_t ** raw;
 	int * status;				//Read only
-
 	int * status_log;			//Read and Write (Sticky bit)
 							//Cleared by software to 0 or RESET
-
 	int * PROCHOT_or_FORCEPR_event;	//Read only
-
 	int * PROCHOT_or_FORCEPR_log;		//Read and Write
-
 	int * crit_temp_status;		//Read only
-
 	int * crit_temp_log;			//Read and Write
 							//Sticky bit
-
 	int * therm_thresh1_status;		//Read only
-
 	int * therm_thresh1_log;		//Read and Write
 							//Sticky bit
-
 	int * therm_thresh2_status;		//Read only
-
 	int * therm_thresh2_log;		//Read and Write
 							//Sticky bit
-
 	int * power_limit_status;		//Read only
-
 	int * power_notification_log;		//Read and Write
 							//Sticky bit
-
 	int * readout;				//Read only
-
 	int * resolution_deg_celsius;		//Read only
-
 	int * readout_valid;			//Read only
 };
 
@@ -146,13 +157,12 @@ struct pkg_therm_interrupt{			//Package(socket) scope
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 // These functions allow access of the raw MSR data
-int store_temp_target(struct msr_temp_target ** tt);
-int store_therm_stat(struct therm_stat ** ts);
-int store_therm_interrupt(struct therm_interrupt ** ti);
-int store_pkg_therm_stat(struct pkg_therm_stat ** ps);
-int store_pkg_therm_interrupt(struct pkg_therm_interrupt ** pi);
+int temp_target_storage(struct msr_temp_target ** tt);
+int therm_stat_storage(struct therm_stat ** ts);
+int therm_interrupt_storage(struct therm_interrupt ** ti);
+int pkg_therm_stat_storage(struct pkg_therm_stat ** ps);
+int pkg_therm_interrupt_storage(struct pkg_therm_interrupt ** pi);
 int therm2_ctl_storage(uint64_t ** thermctlref);
 
 void dump_msr_temp_target();

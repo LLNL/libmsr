@@ -40,6 +40,10 @@
 
 #define FNAMESIZE 128
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct csr_batch_op {
 	uint8_t  bus;
 	uint8_t  device;
@@ -82,3 +86,7 @@ int free_csr_batch(const int batchnum);
 int create_csr_batch_op(off_t csr, uint8_t bus, uint8_t device, uint8_t function,
 	uint8_t socket, uint8_t isread, size_t opsize, uint64_t **dest, const int batchnum);
 int do_csr_batch_op(const int batchnum);
+
+#ifdef __cplusplus
+}
+#endif

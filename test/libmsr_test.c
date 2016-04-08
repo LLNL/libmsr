@@ -206,8 +206,8 @@ void turbo_test()
 //#define MEMTEST 1
 
 #ifdef MEMTEST
-char * args[] = {"mg.B.1"};
-const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-MPI/bin/mg.B.1";
+char * args[] = {"mg.B.x"};
+const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-SER/bin/mg.B.x";
 #endif
 //#ifdef PROCTEST
 //char *args[] = {"ep.B.1"};
@@ -215,7 +215,7 @@ const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-MPI/bin/mg.B.1";
 //#endif
 
 // We use 24 for Catalyst, (2 sockets * 12 cores)
-#define NPROCS 24 
+#define NPROCS 1 
 
 void rapl_r_test(struct rapl_data ** rd)
 {
@@ -233,8 +233,9 @@ void rapl_r_test(struct rapl_data ** rd)
    pid_t pid[NPROCS];
    int status[NPROCS];
    cpu_set_t cpuselect;
+   int err;
 
-   int i;
+   int i = 0;
    for (i = 0; i < nprocs; i++)
    {   
        CPU_ZERO(&cpuselect);
@@ -245,11 +246,15 @@ void rapl_r_test(struct rapl_data ** rd)
            // this is just testing on 1 node 
            sched_setaffinity(0, sizeof(cpu_set_t), &cpuselect);
            fprintf(stderr, "executing stress test\n");
-           execve(path, args, NULL);
+           err = execve(path, args, NULL);
+		   if (err == -1)
+		   {
+		   		fprintf(stdout, "ERROR: benchmark execution failed\n");
+		   }
            exit(1);
        }
     }
-    fprintf(stderr, "waiting for test to complete\n");
+	fprintf(stderr, "waiting for test to complete\n");
     for (i = 0; i < nprocs; i++)
     {   
         wait(&status[i]);

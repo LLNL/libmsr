@@ -77,7 +77,6 @@ extern "C" {
 #endif
 
 // This function allows access to the raw MSR data
-// there are plans to change these to structs so the indirection is less crazy
 int clocks_storage(struct clocks_data ** cd);
 int perf_storage(struct perf_data **pd);
 

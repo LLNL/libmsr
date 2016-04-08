@@ -353,10 +353,16 @@
 #define IA32_PERF_CTL	0x199
 
 // CSR iMC
-#define IMC0_DEV 20
-#define IMC0_2_DEV (IMC0_DEV + 1)
-#define IMC1_DEV 23
-#define IMC1_2_DEV (IMC1_DEV + 1)
+#define IMC0_DEV_1 20
+#define IMC0_DEV_2 20
+#define IMC0_DEV_3 21
+#define IMC0_DEV_4 21 
+
+#define IMC1_DEV_1 23
+#define IMC1_DEV_2 23
+#define IMC1_DEV_3 24
+#define IMC1_DEV_4 24
+
 #define IMC_CH0_FUNC 0
 #define IMC_CH1_FUNC 1
 #define IMC_CH2_FUNC 0
@@ -446,3 +452,26 @@
 #define UMASK_PRE_RD 0x4
 #define UMASK_PRE_WR 0x8
 #define UMASK_PRE_BYP 0x16
+
+// CSR iMC code
+#define LOAD_IMC_BATCH(offt, loc, isread, size, batchno) \
+	{ \
+	create_csr_batch_op(offt, 1, IMC0_DEV_1, IMC_CH0_FUNC, 0, isread, size, &loc[idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC0_DEV_2, IMC_CH1_FUNC, 0, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC0_DEV_3, IMC_CH2_FUNC, 0, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC0_DEV_4, IMC_CH3_FUNC, 0, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC1_DEV_1, IMC_CH0_FUNC, 0, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC1_DEV_2, IMC_CH1_FUNC, 0, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC1_DEV_3, IMC_CH2_FUNC, 0, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC1_DEV_4, IMC_CH3_FUNC, 0, isread, size, &loc[++idx], batchno); \
+	if (num_sockets() > 1) { \
+	create_csr_batch_op(offt, 1, IMC0_DEV_1, IMC_CH0_FUNC, 1, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC0_DEV_2, IMC_CH1_FUNC, 1, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC0_DEV_3, IMC_CH2_FUNC, 1, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC0_DEV_4, IMC_CH3_FUNC, 1, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC1_DEV_1, IMC_CH0_FUNC, 1, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC1_DEV_2, IMC_CH1_FUNC, 1, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC1_DEV_3, IMC_CH2_FUNC, 1, isread, size, &loc[++idx], batchno); \
+	create_csr_batch_op(offt, 1, IMC1_DEV_4, IMC_CH3_FUNC, 1, isread, size, &loc[++idx], batchno); \
+	} \
+	}

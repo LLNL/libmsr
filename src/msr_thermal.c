@@ -147,7 +147,7 @@ static int init_pkg_therm_interrupt(struct pkg_therm_interrupt * pti)
     return 0;
 }
 
-int store_temp_target(struct msr_temp_target ** tt)
+int temp_target_storage(struct msr_temp_target ** tt)
 {
     static struct msr_temp_target t_target;
     static int init = 1;
@@ -163,7 +163,7 @@ int store_temp_target(struct msr_temp_target ** tt)
     return 0;
 }
 
-int store_therm_stat(struct therm_stat ** ts)
+int therm_stat_storage(struct therm_stat ** ts)
 {
     static struct therm_stat t_stat;
     static int init = 1;
@@ -179,7 +179,7 @@ int store_therm_stat(struct therm_stat ** ts)
     return 0;
 }
 
-int store_therm_interrupt(struct therm_interrupt ** ti)
+int therm_interrupt_storage(struct therm_interrupt ** ti)
 {
     static struct therm_interrupt t_interrupt;
     static int init = 1;
@@ -195,7 +195,7 @@ int store_therm_interrupt(struct therm_interrupt ** ti)
     return 0;
 }
 
-int store_pkg_therm_stat(struct pkg_therm_stat ** ps)
+int pkg_therm_stat_storage(struct pkg_therm_stat ** ps)
 {
     static struct pkg_therm_stat pkg_status;
     static int init = 1;
@@ -211,7 +211,7 @@ int store_pkg_therm_stat(struct pkg_therm_stat ** ps)
     return 0;
 }
 
-int store_pkg_therm_interrupt(struct pkg_therm_interrupt ** pi)
+int pkg_therm_interrupt_storage(struct pkg_therm_interrupt ** pi)
 {
     static struct pkg_therm_interrupt pkg_interrupt;
     static int init = 1;
@@ -232,7 +232,7 @@ void is_init() {
     static struct msr_temp_target * t_target = NULL;
     if (t_target == NULL)
     {
-        store_temp_target(&t_target);
+        temp_target_storage(&t_target);
     }
 	if(!initialized)
 	{
@@ -685,8 +685,8 @@ void dump_thermal_terse( FILE *writeFile )
     static struct msr_temp_target * t_target = NULL;
     if (t_stat == NULL || t_target == NULL)
     {
-        store_therm_stat(&t_stat);
-        store_temp_target(&t_target);
+        therm_stat_storage(&t_stat);
+        temp_target_storage(&t_target);
     }
 	get_therm_stat(t_stat);
 	int core, socket;
@@ -790,11 +790,11 @@ void dump_therm_reading(FILE *writeFile)
     static struct pkg_therm_interrupt * pkg_interrupt = NULL;
     if (pkg_stat == NULL)
     {
-        store_therm_stat(&t_stat);
-        store_therm_interrupt(&t_interrupt);
-        store_pkg_therm_stat(&pkg_stat);
-        store_temp_target(&t_target);
-        store_pkg_therm_interrupt(&pkg_interrupt);
+        therm_stat_storage(&t_stat);
+        therm_interrupt_storage(&t_interrupt);
+        pkg_therm_stat_storage(&pkg_stat);
+        temp_target_storage(&t_target);
+        pkg_therm_interrupt_storage(&pkg_interrupt);
     }
 	get_therm_stat(t_stat);
 	get_therm_interrupt(t_interrupt);
@@ -838,11 +838,11 @@ void dump_thermal_verbose( FILE *writeFile )
     static struct msr_temp_target * t_target = NULL;
     if (t_stat == NULL || pkg_stat == NULL || t_interrupt == NULL || pkg_interrupt == NULL)
     {
-        store_therm_stat(&t_stat);
-        store_therm_interrupt(&t_interrupt);
-        store_pkg_therm_interrupt(&pkg_interrupt);
-        store_pkg_therm_stat(&pkg_stat);
-        store_temp_target(&t_target);
+        therm_stat_storage(&t_stat);
+        therm_interrupt_storage(&t_interrupt);
+        pkg_therm_interrupt_storage(&pkg_interrupt);
+        pkg_therm_stat_storage(&pkg_stat);
+        temp_target_storage(&t_target);
     }
 	get_therm_stat(t_stat);
 	get_therm_interrupt(t_interrupt);
