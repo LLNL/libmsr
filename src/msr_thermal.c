@@ -39,6 +39,7 @@
 
 // Section 35.7 Table 35-11
 // Or Section 35.1 Table 35.2
+/*
 #define IA32_THERM_STATUS		(0x19C) //core scope
 #define MSR_THERM2_CTL         (0x19D) // unique scope
 #define IA32_THERM_INTERRUPT		(0x19B) //core scope
@@ -46,6 +47,7 @@
 #define IA32_PACKAGE_THERM_INTERRUPT	(0x1B2) //package scope
 #define MSR_TEMPERATURE_TARGET		(0x1A2)	// unique scope (Noted in documentation but do no know 
 						// what it means exactly)
+						// */
 
 //#define THERM_DEBUG 1
 

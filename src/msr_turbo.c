@@ -35,11 +35,13 @@
 #include "msr_turbo.h"
 #include "memhdlr.h"
 
+/*
 // MSRs common to 062A and 062D.
 #define MSR_MISC_ENABLE			0x1A0	// aka IA32_MISC_ENABLE
 						// setting bit 38 high DISABLES turbo mode. To be done in the BIOS.
 						//
 #define IA32_PERF_CTL			0x199   // setting bit 32 high DISABLES turbo mode. This is the software control.
+*/
 
 int turbo_storage(uint64_t *** val)
 {

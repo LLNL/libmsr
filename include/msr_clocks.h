@@ -32,6 +32,7 @@
 #ifndef MSR_CLOCKS_H
 #define MSR_CLOCKS_H
 #include <stdint.h>
+#include "master.h"
 
 struct clock_mod{
 	uint64_t raw;
@@ -58,20 +59,36 @@ struct clock_mod{
 	int duty_cycle_enable;	// Read/Write
 };
 
+struct clocks_data
+{
+	uint64_t ** aperf;
+	uint64_t ** mperf;
+	uint64_t ** tsc;
+};
+
+struct perf_data
+{
+	uint64_t ** perf_status;
+	uint64_t ** perf_ctl;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // This function allows access to the raw MSR data
 // there are plans to change these to structs so the indirection is less crazy
-int clocks_storage(uint64_t *** aperf_val, uint64_t *** mperf_val, uint64_t *** tsc_val);
+int clocks_storage(struct clocks_data ** cd);
+int perf_storage(struct perf_data **pd);
 
-void read_all_clocks(uint64_t ** aperf, uint64_t ** mperf, uint64_t ** tsc);
-void read_all_aperf(uint64_t **aperf);
-void read_all_mperf(uint64_t **mperf);
-void read_all_tsc  (uint64_t **tsc);
+void read_all_clocks(struct clocks_data *cd);
+//void read_all_aperf(struct clocks_data *cd);
+//void read_all_mperf(struct clocks_data *cd);
+//void read_all_tsc  (struc clocks_data *cd);
 void dump_clocks_terse(FILE *w);
 void dump_clocks_terse_label(FILE *w);
+void dump_p_state(FILE *w);
+void set_p_state(unsigned socket, uint64_t pstate);
 
 void dump_clocks_readable(FILE * writeFile);
 void dump_clock_mod(struct clock_mod *s, FILE *w);

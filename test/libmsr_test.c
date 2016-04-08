@@ -13,6 +13,7 @@
 #include "../include/msr_misc.h"
 #include "../include/msr_turbo.h"
 #include "../include/csr_core.h"
+#include "../include/csr_imc.h"
 #ifdef MPI
 #include <mpi.h>
 #endif
@@ -166,6 +167,9 @@ void counters_test()
     fprintf(stdout, "\n");
     set_all_pmc_ctrl(0x0, 0x67, 0x00, 0xC4, 1);
     set_all_pmc_ctrl(0x0, 0x67, 0x00, 0xC4, 2);
+    //set_all_pmc_ctrl(0x0, 0x67, 0x00, 0x3C, 3);
+    //set_all_pmc_ctrl(0x0, 0x41, 0x01, 0x3C, 4);
+    //set_all_pmc_ctrl(0x0, 0x41, 0x01, 0xC0, 5);
     enable_pmc();
     dump_pmc_readable(stdout);
     fprintf(stdout, "\n");
@@ -175,6 +179,7 @@ void counters_test()
 void clocks_test()
 {
     dump_clocks_readable(stdout);
+	dump_p_state(stdout);
     fprintf(stdout, "\n");
 }
 
@@ -327,6 +332,10 @@ int main(int argc, char** argv)
     printf("mpi init done\n");
 	#endif
 
+#ifdef SKIPMSR
+goto csrpart;
+#endif
+
 	if(init_msr())
     {
         fprintf(stderr, "ERROR: Unable to initialize libmsr\n");
@@ -378,19 +387,10 @@ int main(int argc, char** argv)
     repeated_poll_test();
     set_to_defaults();
 
-// this code requires root (for now)
-/*    char * b0d5f0;
-    b0d5f0 = pcieMap(0, 5, 0);
-    uint32_t value;
-    pcieRead32(b0d5f0, 0x0, &value);
-    fprintf(stdout, "1st pcie value is %x\n", value);
-    pcieRead32(b0d5f0, 0x1, &value);
-    fprintf(stdout, "2nd pcie value is %x\n", value);
-    csr_finalize();
-
-*/
 	finalize_msr();
 	#ifdef MPI
+
+csrpart:
 	MPI_Finalize();
 	#endif
     fprintf(stdout, "Test Finished Successfully\n");

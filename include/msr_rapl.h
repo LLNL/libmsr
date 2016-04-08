@@ -34,6 +34,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/time.h>
+#include "master.h"
+
 // TLCC2 architecture uses 062D processors; 
 // those are the only ones we care about.
 #define USE_062D 1

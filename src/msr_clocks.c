@@ -35,6 +35,7 @@
 #include "memhdlr.h"
 
 
+/*
 #define MSR_IA32_MPERF 		0x000000e7
 #define MSR_IA32_APERF 		0x000000e8
 #define IA32_TIME_STAMP_COUNTER 0x00000010
@@ -43,37 +44,52 @@
 						// for each logical processor. 
 						// Must have it enabled and the same for all logical
 						// processors within the physical processor
+*/
 
-int clocks_storage(uint64_t *** aperf_val, uint64_t *** mperf_val, uint64_t *** tsc_val)
+int clocks_storage(struct clocks_data **cd)
 {
     static int init = 1;
-    static uint64_t ** aperf = NULL, ** mperf = NULL, ** tsc = NULL;
+	static struct clocks_data d;
     static uint64_t totalThreads = 0;
     if (init)
     {
         totalThreads = num_devs();
-        aperf = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
-        mperf = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
-        tsc = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
+        d.aperf = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
+        d.mperf = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
+        d.tsc = (uint64_t **) libmsr_malloc(totalThreads * sizeof(uint64_t *));
         allocate_batch(CLOCKS_DATA, 3UL * num_devs());
-        load_thread_batch(MSR_IA32_APERF, aperf, CLOCKS_DATA);
-        load_thread_batch(MSR_IA32_MPERF, mperf, CLOCKS_DATA);
-        load_thread_batch(IA32_TIME_STAMP_COUNTER, tsc, CLOCKS_DATA);
+        load_thread_batch(MSR_IA32_APERF, d.aperf, CLOCKS_DATA);
+        load_thread_batch(MSR_IA32_MPERF, d.mperf, CLOCKS_DATA);
+        load_thread_batch(IA32_TIME_STAMP_COUNTER, d.tsc, CLOCKS_DATA);
         init = 0;
     }
-    if (aperf_val)
-    {
-        *aperf_val = aperf;
-    }
-    if (mperf_val)
-    {
-        *mperf_val = mperf;
-    }
-    if (tsc_val)
-    {
-        *tsc_val = tsc;
-    }
+	if (cd)
+	{
+		*cd = &d;
+	}
     return 0;
+}
+
+int perf_storage(struct perf_data **pd)
+{
+	static int init = 1;
+	static struct perf_data d;
+	static uint64_t procs = 0;
+	if (!procs)
+	{
+		procs = num_sockets();
+		d.perf_status = (uint64_t **) libmsr_malloc(procs * sizeof(uint64_t *));
+		d.perf_ctl = (uint64_t **) libmsr_malloc(procs * sizeof(uint64_t *));
+		allocate_batch(PERF_DATA, 2UL * num_sockets());
+		load_socket_batch(IA32_PERF_STATUS, d.perf_status, PERF_DATA);
+		load_socket_batch(IA32_PERF_CTL, d.perf_ctl, PERF_DATA);
+		init = 0;
+	}
+	if (pd)
+	{
+		*pd = &d;
+	}
+	return 0;
 }
 
 void
@@ -93,32 +109,58 @@ dump_clocks_terse_label(FILE *writeFile){
 void
 dump_clocks_terse(FILE *writeFile){
     static uint64_t totalThreads = 0;
-    static uint64_t ** aperf_val = NULL, 
-                    ** mperf_val = NULL, 
-                    ** tsc_val = NULL;
+	static struct clocks_data * cd;
     if (!totalThreads)
     {
         totalThreads = num_devs();
-        clocks_storage(&aperf_val, &mperf_val, &tsc_val);
+        clocks_storage(&cd);
     }
 	int thread_idx;
     read_batch(CLOCKS_DATA);
 	for(thread_idx=0; thread_idx<totalThreads; thread_idx++){
 		fprintf(writeFile, "%20lu %20lu %20lu ", 
-			*aperf_val[thread_idx], *mperf_val[thread_idx], *tsc_val[thread_idx]);
+			*cd->aperf[thread_idx], *cd->mperf[thread_idx], *cd->tsc[thread_idx]);
 	}
+}
+
+void dump_p_state(FILE *w)
+{
+	static uint64_t procs = 0;
+	static struct perf_data *cd;
+	if (!procs)
+	{
+		procs = num_sockets();
+		perf_storage(&cd);
+	}
+	int sock_idx;
+	read_batch(PERF_DATA);
+	for (sock_idx = 0; sock_idx < procs; sock_idx++)
+	{
+		fprintf(w, "%lx\n", *cd->perf_status[sock_idx] & 0xFFFF);
+	}
+}
+
+void set_p_state(unsigned socket, uint64_t pstate)
+{
+	static uint64_t procs = 0;
+	static struct perf_data *cd;
+	if (!procs)
+	{
+		procs = num_sockets();
+		perf_storage(&cd);
+	}
+	*cd->perf_ctl[socket] = pstate;
+	write_batch(PERF_DATA);
 }
 
 void dump_clocks_readable(FILE * writeFile)
 {
     static uint64_t totalThreads = 0;
-    static uint64_t ** aperf_val = NULL, 
-                    ** mperf_val = NULL, 
-                    ** tsc_val = NULL;
+	static struct clocks_data *cd;
     if (!totalThreads)
     {
         totalThreads = num_devs();
-        clocks_storage(&aperf_val, &mperf_val, &tsc_val);
+        clocks_storage(&cd);
     }
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "DEBUG: (clocks_readable) totalThreads is %lu\n", totalThreads);
@@ -127,8 +169,8 @@ void dump_clocks_readable(FILE * writeFile)
     read_batch(CLOCKS_DATA);
 	for(thread_idx=0; thread_idx<totalThreads; thread_idx++){
 		fprintf(writeFile, "aperf%02d:%20lu mperf%02d:%20lu tsc%02d:%20lu\n", 
-			thread_idx, *aperf_val[thread_idx], thread_idx, *mperf_val[thread_idx], 
-            thread_idx, *tsc_val[thread_idx]);
+			thread_idx, *cd->aperf[thread_idx], thread_idx, *cd->mperf[thread_idx], 
+            thread_idx, *cd->tsc[thread_idx]);
 	}
 }
 //----------------------------Software Controlled Clock Modulation-----------------------------------------------

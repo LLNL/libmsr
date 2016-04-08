@@ -1,6 +1,6 @@
 /* csr_core.h
  *
- * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
+ * Copyright (c) 2011-2016, Lawrence Livermore National Security, LLC.
  * Produced at Lawrence Livermore National Laboratory  
  * Written by  Barry Rountree, rountree@llnl.gov
  *             Scott Walker,   walker91@llnl.gov
@@ -29,6 +29,7 @@
  *
  */
 
+#include <linux/ioctl.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -39,42 +40,45 @@
 
 #define FNAMESIZE 128
 
-// The following two structs are Copyright (c) 2009-2013, Intel Corporation
-// written by Roman Dementiev
-
-struct MCFGRecord
-{
-    unsigned long long baseAddress;
-    unsigned short PCISegmentGroupNumber;
-    unsigned char startBusNumber;
-    unsigned char endBusNumber;
-    char reserved[4];
+struct csr_batch_op {
+	uint8_t  bus;
+	uint8_t  device;
+	uint8_t  function;
+	uint8_t  socket;
+	uint16_t offset;
+	int err;
+	uint8_t isread;
+	uint64_t csrdata;
+	uint64_t wmask;
+	uint8_t size;
 };
 
-struct MCFGHeader
-{
-    char signature[4];
-    unsigned length;
-    unsigned char revision;
-    unsigned char checksum;
-    char OEMID[6];
-    char OEMTableID[8];
-    unsigned OEMRevision;
-    unsigned creatorID;
-    unsigned creatorRevision;
-    char reserved[8];
+struct csr_batch_array {
+	uint32_t numops;
+	struct csr_batch_op *ops;
 };
 
-// END INTEL CODE
+#define CSRSAFE_8086_BATCH _IOWR('a', 0x05, struct csr_batch_array)
 
-int memhandle();
-int openMCFG();
-uint64_t getBAR();
-char * pcieMap(uint32_t bus, uint32_t device, uint32_t function);
+enum{
+	CSR_IMC_MEMCTRA,
+	CSR_IMC_MEMCTRR,
+	CSR_IMC_MEMCTRW,
+	CSR_IMC_IMCCTR,
+	CSR_IMC_CTRS,
+	CSR_IMC_EVTS,
+	CSR_IMC_PMONUNITCTRL,
+	CSR_IMC_PMONUNITSTAT,
+	CSR_QPI_CTRS,
+	CSR_QPI_EVTS
+};
+
+int init_csr();
 int finalize_csr();
-uint8_t getCoreBus(const unsigned socket);
-uint8_t getUncoreBus(const unsigned socket);
-int pcieRead64(char * mmapAddr, uint32_t offset, uint64_t * value);
-int pcieRead32(char * mmapAddr, uint32_t offset, uint32_t * value);
-int pcieRead16(char * mmapAddr, uint32_t offset, uint16_t * value);
-int pcieRead8(char * mmapAddr, uint32_t offset, uint8_t * value);
+//int csr_batch_storage(struct csr_batch_array **batchsel, const int batchnum,
+//	unsigned **opssize);
+int allocate_csr_batch(const int batchnum, size_t bsize);
+int free_csr_batch(const int batchnum);
+int create_csr_batch_op(off_t csr, uint8_t bus, uint8_t device, uint8_t function,
+	uint8_t socket, uint8_t isread, size_t opsize, uint64_t **dest, const int batchnum);
+int do_csr_batch_op(const int batchnum);

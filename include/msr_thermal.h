@@ -32,6 +32,7 @@
 #ifndef MSR_THERMAL_H
 #define MSR_THERMAL_H
 #include <stdio.h>
+#include "master.h"
 
 // TODO: used num_sockets
 struct msr_temp_target{				//Scope is "unique" for Sandy Bridge

@@ -33,6 +33,7 @@
 #define MSR_TURBO_H
 
 #include <stdio.h>
+#include "master.h"
 
 #ifdef __cplusplus
 extern "C" {

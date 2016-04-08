@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include "master.h"
 
 struct misc_enable{
 	uint64_t raw;

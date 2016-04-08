@@ -102,7 +102,7 @@ int memory_handler(void * address, void * oldaddr, int type)
 {
     static void ** arrays = NULL;
     static unsigned last = 0;
-    static unsigned size = 3;
+    static unsigned size = 16;
     int i;
     switch (type)
     {
@@ -112,7 +112,8 @@ int memory_handler(void * address, void * oldaddr, int type)
                 if (arrays[i])
                 {
 #ifdef MEMHDLR_DEBUG
-                fprintf(stderr, "MEMHDLR: data at %p has been deallocated\n", arrays[i]);
+                fprintf(stderr, "MEMHDLR: data at %p (number %d) has been deallocated\n", arrays[i], i);
+				fprintf(stderr, "\tlast is %d, size is %d\n", last, size);
 #endif
                     free(arrays[i]);
                 }
