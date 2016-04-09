@@ -294,33 +294,6 @@ int repeated_poll_test()
     return 0;
 }
 
-void set_to_defaults()
-{
-    int socket = 0;
-    int numsockets = num_sockets();
-    struct rapl_power_info raplinfo;
-    struct rapl_limit socketlim, socketlim2, dramlim;
-    fprintf(stdout, "Setting Defaults\n");
-    for (socket = 0; socket < numsockets; socket++)
-    {
-        get_rapl_power_info(socket, &raplinfo);
-        socketlim.bits = 0;
-        socketlim.watts = raplinfo.pkg_therm_power;
-        socketlim.seconds = 1;
-        socketlim2.bits = 0;
-        socketlim2.watts = raplinfo.pkg_therm_power * 1.2;
-        socketlim2.seconds = 3;
-        dramlim.bits = 0;
-        dramlim.watts = raplinfo.dram_max_power;
-        dramlim.seconds = 1;
-        dump_rapl_limit(&socketlim, stdout);
-        dump_rapl_limit(&socketlim2, stdout);
-        dump_rapl_limit(&dramlim, stdout);
-        set_pkg_rapl_limit(socket, &socketlim, &socketlim2);
-        set_dram_rapl_limit(socket, &dramlim);
-    }
-}
-
 
 // TODO: check if test for oversized bitfield is in place, change that warning to an error
 int main(int argc, char** argv)

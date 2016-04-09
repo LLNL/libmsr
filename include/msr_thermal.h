@@ -46,19 +46,6 @@
 #define store_pkg_therm_interrupt(pi) { \
 	pkg_therm_interrupt_storage(pi) }
 
-/*
-inline int store_temp_target(struct msr_temp_target **tt) {
-	return temp_target_storage(tt); }
-inline int store_therm_stat(struct therm_stat **ts) {
-	return therm_stat_storage(ts); }
-inline int store_therm_interrupt(struct therm_interrupt ** ti) {
-	return therm_interrupt_storage(ti); }
-inline int store_pkg_therm_stat(struct pkg_therm_stat ** ps) {
-	return pkg_therm_stat_storage(ps); }
-inline int store_pkg_therm_interrupt(struct pkg_therm_interrupt ** pi) {
-	return pkg_therm_interrupt_storage(pi); }
-*/
-
 // TODO: used num_sockets
 struct msr_temp_target{				//Scope is "unique" for Sandy Bridge
 						//Assuming that it is by socket

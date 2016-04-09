@@ -336,6 +336,8 @@
 #define CSR_PMONUNITSTAT 0xF8
 
 // CSR iMC events
+#define IMC_NUMCTRS 8
+
 #define EVT_DCLOCKTICKS 0x00
 #define EVT_ACT_COUNT 0x01
 #define EVT_PRE_COUNT 0x02

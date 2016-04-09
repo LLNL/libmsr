@@ -207,6 +207,8 @@
 #define IA32_PERF_CTL	0x199
 
 // CSR iMC
+#define IMC_NUMCTRS 4
+
 #define IMC0_DEV_1 16
 #define IMC0_DEV_2 16
 #define IMC0_DEV_3 16

@@ -48,7 +48,6 @@
 //#define CSRDEBUG
 #define FILENAME_SIZE 128
 #define MODULE "/dev/cpu/csr_safe"
-#define NUMCTRS 8
 
 static int load_imc_batch_for_each(const size_t offt, uint64_t **loc, 
 	const int isread, const size_t size, const unsigned batchno)
@@ -69,7 +68,7 @@ struct imc_ctrs_data *imc_ctr_storage()
 	static struct imc_ctrs_data pcd;
 	static int init = 1;
 	if (init) {
-		int allocated = NUMCTRS * num_sockets();
+		int allocated = IMC_NUMCTRS * num_sockets();
 		pcd.ctr0 = (uint64_t **) libmsr_calloc(allocated, sizeof(uint64_t *));
 		pcd.ctr1 = (uint64_t **) libmsr_calloc(allocated, sizeof(uint64_t *));
 		pcd.ctr2 = (uint64_t **) libmsr_calloc(allocated, sizeof(uint64_t *));
@@ -89,7 +88,7 @@ struct imc_global_data *imc_global_storage()
 	static struct imc_global_data pgd;
 	static int init = 1;
 	if (init) {
-		int allocated = NUMCTRS * num_sockets();
+		int allocated = IMC_NUMCTRS * num_sockets();
 		pgd.unitctrl = (uint64_t **) libmsr_calloc(allocated, sizeof(uint64_t *));
 		pgd.unitstatus = (uint64_t **) libmsr_calloc(allocated, sizeof(uint64_t *));
 		init = 0;
@@ -104,7 +103,7 @@ int init_imc_ctrs()
 	static struct imc_ctrs_data *pmonctrs;
 	if (init) {
 		init = 0;
-		allocated = NUMCTRS * num_sockets();
+		allocated = IMC_NUMCTRS * num_sockets();
 		pmonctrs = imc_ctr_storage();
 
 		// allocated * 4 because putting all 4 counters in the same batch
@@ -133,7 +132,7 @@ int init_imc_global()
 	static struct imc_global_data *pgd;
 	if (init) {
 		init = 0;
-		allocated = NUMCTRS * num_sockets();
+		allocated = IMC_NUMCTRS * num_sockets();
 		pgd = imc_global_storage();
 		allocate_csr_batch(CSR_IMC_PMONUNITCTRL, allocated);
 		allocate_csr_batch(CSR_IMC_PMONUNITSTAT, allocated);
@@ -154,7 +153,7 @@ static int set_pmon_config(const uint32_t setting, uint64_t **cfg)
 		return -1;
 	}
 	int i;
-	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
+	for (i = 0; i < IMC_NUMCTRS * num_sockets(); i++) {
 		*cfg[i] = setting;
 	}
 	return 0;
@@ -211,7 +210,7 @@ int set_imc_unit_ctrl(uint32_t ovf_en, uint16_t freeze_en, uint16_t freeze, uint
 	uint32_t setting = 0x0 | (ovf_en << 17) | (freeze_en << 16) | (freeze << 8) |
 					(reset << 1) | reset_cfg;
 	int i;
-	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
+	for (i = 0; i < IMC_NUMCTRS * num_sockets(); i++) {
 		*pgd->unitctrl[i] = setting;
 	}
 	return do_csr_batch_op(CSR_IMC_PMONUNITCTRL);
@@ -331,7 +330,7 @@ int dump_mem_bw_from_ctr(const unsigned counter, FILE * dest)
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
 	fprintf(dest, "Memory Bandwidth\n");
-	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
+	for (i = 0; i < IMC_NUMCTRS * num_sockets(); i++) {
 		devctr %= 8;
 		func %= 4;
 		if (i > 0 && i % 8 == 0) {
@@ -368,7 +367,7 @@ int dump_mem_bw_from_ctr_terse(const unsigned counter, FILE * dest)
 			break;
 	}
 	int i;
-	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
+	for (i = 0; i < IMC_NUMCTRS * num_sockets(); i++) {
 		fprintf(dest, "%lu\t", *ctr[i] * 64LU);
 	}
 	return 0;
@@ -420,7 +419,7 @@ int dump_mem_pct_rw_from_ctr(const unsigned rcounter, const unsigned wcounter, i
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
 	fprintf(dest, "Percent %s Requests\n", (type ? "read\0" : "write\0"));
-	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
+	for (i = 0; i < IMC_NUMCTRS * num_sockets(); i++) {
 		devctr %= 8;
 		func %= 4;
 		if (i > 0 && i % 8 == 0) {
@@ -479,7 +478,7 @@ int dump_mem_pct_rw_from_ctr_terse(const unsigned rcounter, const unsigned wcoun
 			break;
 	}
 	int i;
-	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
+	for (i = 0; i < IMC_NUMCTRS * num_sockets(); i++) {
 		if (type) {
 			fprintf(dest, "%lf\t", (double) *rctr[i] / ((*rctr[i] + *wctr[i]) ? (*rctr[i] + *wctr[i]) : 1));
 		} else {
@@ -553,7 +552,7 @@ int dump_mem_page_empty_from_ctr(const unsigned act, const unsigned pre, const u
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
 	fprintf(dest, "Percent Requests Caused Page Empty\n");
-	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
+	for (i = 0; i < IMC_NUMCTRS * num_sockets(); i++) {
 		devctr %= 8;
 		func %= 4;
 		if (i > 0 && i % 8 == 0) {
@@ -613,7 +612,7 @@ int dump_mem_page_miss_from_ctr(const unsigned pre, const unsigned cas, FILE * d
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
 	fprintf(dest, "Percent Requests Caused Page Miss\n");
-	for (i = 0; i < NUMCTRS * num_sockets(); i++) {
+	for (i = 0; i < IMC_NUMCTRS * num_sockets(); i++) {
 		devctr %= 8;
 		func %= 4;
 		if (i > 0 && i % 8 == 0) {
@@ -627,7 +626,7 @@ int dump_mem_page_miss_from_ctr(const unsigned pre, const unsigned cas, FILE * d
 	return 0;
 }
 
-int dump_pmon_ctrs()
+int dump_imc_ctrs()
 {
 	struct imc_ctrs_data *pcd = imc_ctr_storage();
 	if (init_imc_ctrs() > 0)
@@ -642,7 +641,7 @@ int dump_pmon_ctrs()
 								IMC1_DEV_1, IMC1_DEV_2, IMC1_DEV_3, IMC1_DEV_4};
 	uint8_t devctr = 0, func = 0, sockctr = 0;
 	int i;
-	for (i = 0; i < num_sockets() * NUMCTRS; i++) {
+	for (i = 0; i < num_sockets() * IMC_NUMCTRS; i++) {
 		devctr %= 8;
 		func %= 4;
 		if (i > 0 && i % 8 == 0) {

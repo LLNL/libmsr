@@ -58,6 +58,29 @@ FILE * open_header(char * a)
 	FILE * header = NULL;
 	char fname[FNAME_SIZE];
 	uint64_t arch = detect_arch();
+	switch (arch)
+	{
+		// Haswell
+		case 0x3C:
+		case 0x45:
+		case 0x46:
+		// Broadwell, same as Haswell for now
+		case 0x3D:
+		case 0x47:
+		case 0x4F:
+		case 0x56:
+			arch = 0x3F;
+			break;
+		case 0x3A:
+			// Ivy Bridge
+			arch = 0x3E;
+			break;
+		case 0x2F:
+		case 0x2A:
+			// Sandy Bridge
+			arch = 0x2D;
+			break;
+	}
 
 	if (a)
 	{

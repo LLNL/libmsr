@@ -20,7 +20,7 @@ you MUST use the script. In most cases, the installation is as follows:
 The install script can take 2 arguments. The first must be the install directory.
 The second can tell the auto configuration tool to use the header files for a specific architecture.
 To do this simply put "-f[hexadecimal architecture number]".
-Currently supported architectures are Xeon v1-3 (Sandy Bridge, Ivy Bridge, and Haswell processors for servers).
+Currently supported architectures are Xeon v1-3 (Sandy Bridge, Ivy Bridge, and Haswell processors).
 The library technically supports all  processors from these architecture buts some features will be missing from client chips.
 Using the wrong header files is likely to cause problems.
 
@@ -49,7 +49,7 @@ running as root (or going through the bother of additing the
 capabilities to the binaries) are other options.
 
 If you need the PCI configuration register (CSR) support in Libmsr, you MUST have CSR-SAFE installed.
-This code is not currently on github, you'll have to ask the author for it.
+This code is not currently on github, you'll have to request it from walker91@llnl.gov.
 
 Call `msr_init()` before using any of the APIs.
 

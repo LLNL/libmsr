@@ -156,6 +156,7 @@ extern "C" {
 #endif
 
 int print_available_rapl();
+void set_to_defaults();
 
 int rapl_storage(struct rapl_data ** data, uint64_t ** flags);
 int rapl_init(struct rapl_data ** rapl, uint64_t ** rapl_flags);
