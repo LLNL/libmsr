@@ -1,4 +1,4 @@
-v0.2.1
+v0.2.1 Uniform
 + made storage function names more consistent
 	+ thermal: old function names still work
 	+ csr_imc: old function names do not work
@@ -6,6 +6,9 @@ v0.2.1
 + changed data output function names in csr_imc
 + added missing function prototypes for global counters to csr_imc.h
 + Broadwell supported (mostly)
++ Updated pdf documenation
+- Removed NUMCTRS from csr_imc.c
++ Added IMC_NUMCTRS to master.h
 
 v0.2.0 Auto
 + added new build system

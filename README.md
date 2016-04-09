@@ -48,8 +48,7 @@ have found it easier to use our own [MSR-SAFE](https://github.com/LLNL/msr-safe)
 running as root (or going through the bother of additing the
 capabilities to the binaries) are other options.
 
-If you need the PCI configuration register (CSR) support in Libmsr, you MUST have CSR-SAFE installed.
-This code is not currently on github, you'll have to request it from walker91@llnl.gov.
+If you need the PCI configuration register (CSR) support in Libmsr, you MUST have [CSR-SAFE](https://github.com/scott-walker-llnl/msr-safe/tree/master/csr-safe) installed.
 
 Call `msr_init()` before using any of the APIs.
 
