@@ -1,7 +1,0 @@
-create table PowerIn (
-    node varchar(128), 
-    sock0con real, 
-    sock1con real, 
-    sock0alloc real, 
-    sock1alloc real
-)

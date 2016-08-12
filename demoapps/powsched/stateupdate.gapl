@@ -1,7 +1,0 @@
-subscribe ns to newnodestate;
-associate cs with cluster;
-sequence s;
-behavior {
-    s = Sequence( ns.node, ns.state );
-    insert( cs, Identifier(ns.node), s );
-}

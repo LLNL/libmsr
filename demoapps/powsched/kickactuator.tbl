@@ -1,3 +1,0 @@
-CREATE TABLE kickactuator (
-    actuator varchar(128)
-)

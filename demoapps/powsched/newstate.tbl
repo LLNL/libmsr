@@ -1,4 +1,0 @@
-CREATE TABLE newnodestate (
-    node varchar(128),
-    state integer
-)

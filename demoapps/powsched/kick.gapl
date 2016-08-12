@@ -1,4 +1,0 @@
-subscribe k to kickactuator;
-behavior {
-    send(k);
-}

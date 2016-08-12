@@ -1,6 +1,0 @@
-create table metrictoggles ( 
-    node varchar(128), 
-    metric varchar(128), 
-    onoff integer, 
-    intervalms integer
-)

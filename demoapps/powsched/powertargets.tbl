@@ -1,5 +1,0 @@
-CREATE PERSISTENTTABLE powertargets (
-    node varchar(128) primary key,
-    socket0alloc real,
-    socket1alloc real
-)

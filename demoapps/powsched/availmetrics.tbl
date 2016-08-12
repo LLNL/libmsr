@@ -1,6 +1,0 @@
-CREATE PERSISTENTTABLE availmetrics (
-    pk varchar(256) primary key,
-    node varchar(128),
-    metric varchar(128),
-    desc   varchar(128)
-)
