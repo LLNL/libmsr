@@ -16,7 +16,7 @@ generate the configure script and the configure script to generate the
 makefiles for your environment.
 
 To generate the configure script: 
-autoconf -if
+autoreconf -if
 
 To generate the makefiles:
 ./configure --prefix=<install path>
@@ -24,4 +24,6 @@ To generate the makefiles:
 To make and install the binaries:
 make install
 
-Each monitor includes a usage string. All three monitors are wrappers around some other process that will be executing on the node and include logic so that only one monitor is run per node.
+Each monitor includes a usage string. All three monitors are wrappers around
+some other process that will be executing on the node and include logic so that
+only one monitor is run per node.

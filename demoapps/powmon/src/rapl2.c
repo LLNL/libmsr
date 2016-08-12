@@ -30,8 +30,8 @@
  *
  */
 #include <stdlib.h>
-#include <msr/msr_core.h>
-#include <msr/msr_rapl.h>
+#include <msr_core.h>
+#include <msr_rapl.h>
 #include <sys/types.h>
 
 static struct rapl_data* rdat;
@@ -49,17 +49,16 @@ void read_rapl_init() {
 void read_rapl_energy_and_power(double* ret) {
     static struct rapl_limit rlim[2];
     // RAPL reads
-    poll_rapl_data(0,NULL);
-    poll_rapl_data(1,NULL);
+    poll_rapl_data();
     get_pkg_rapl_limit(0,&(rlim[0]),NULL);
     get_pkg_rapl_limit(1,&(rlim[1]),NULL);
 
-    ret[0] = rdat[0].pkg_delta_joules;
-    ret[1] = rdat[1].pkg_delta_joules;
-    ret[2] = rlim[0].watts * rdat[0].elapsed;
-    ret[3] = rlim[1].watts * rdat[1].elapsed;
-    ret[4] = rdat[0].pkg_delta_joules / rdat[0].elapsed;
-    ret[5] = rdat[1].pkg_delta_joules / rdat[1].elapsed;
+    ret[0] = rdat->pkg_delta_joules[0];
+    ret[1] = rdat->pkg_delta_joules[1];
+    ret[2] = rlim[0].watts * rdat->elapsed;
+    ret[3] = rlim[1].watts * rdat->elapsed;
+    ret[4] = rdat->pkg_delta_joules[0] / rdat->elapsed;
+    ret[5] = rdat->pkg_delta_joules[1] / rdat->elapsed;
     ret[6] = rlim[0].watts;
     ret[7] = rlim[1].watts;
 }

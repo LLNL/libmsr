@@ -31,8 +31,8 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <msr/msr_core.h>
-#include <msr/msr_rapl.h>
+#include <msr_core.h>
+#include <msr_rapl.h>
 
 static struct rapl_data rdat[NUM_SOCKETS];
 static struct rapl_limit rlim[NUM_SOCKETS];

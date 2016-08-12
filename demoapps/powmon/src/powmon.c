@@ -40,8 +40,8 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-#include <msr/msr_core.h>
-#include <msr/msr_counters.h>
+#include <msr_core.h>
+#include <msr_counters.h>
 #include "ghighres.c"
 #include "highlander.h"
 #include "rapl.h"
