@@ -1,0 +1,21 @@
+<map id="include/master.h" name="include/master.h">
+<area shape="rect" id="node3" href="$csr__imc_8h.html" title="include/csr_imc.h" alt="" coords="95,83,217,112"/>
+<area shape="rect" id="node7" href="$msr__clocks_8h.html" title="include/msr_clocks.h" alt="" coords="341,83,485,112"/>
+<area shape="rect" id="node20" href="$msr__counters_8h.html" title="include/msr_counters.h" alt="" coords="1103,83,1260,112"/>
+<area shape="rect" id="node27" href="$msr__misc_8h.html" title="include/msr_misc.h" alt="" coords="1391,83,1524,112"/>
+<area shape="rect" id="node31" href="$msr__rapl_8h.html" title="include/msr_rapl.h" alt="" coords="717,83,845,112"/>
+<area shape="rect" id="node40" href="$msr__thermal_8h.html" title="include/msr_thermal.h" alt="" coords="513,83,663,112"/>
+<area shape="rect" id="node46" href="$msr__turbo_8h.html" title="include/msr_turbo.h" alt="" coords="869,83,1005,112"/>
+<area shape="rect" id="node5" href="$csr__imc_8c.html" title="src/csr_imc.c" alt="" coords="5,160,107,189"/>
+<area shape="rect" id="node9" href="$msr__clocks_8c.html" title="src/msr_clocks.c" alt="" coords="131,160,253,189"/>
+<area shape="rect" id="node11" href="$profile_8c.html" title="src/profile.c" alt="" coords="729,237,820,267"/>
+<area shape="rect" id="node13" href="$profile_8h.html" title="include/profile.h" alt="" coords="672,160,784,189"/>
+<area shape="rect" id="node16" href="$signal_combined_8h.html" title="include/signalCombined.h" alt="" coords="328,160,499,189"/>
+<area shape="rect" id="node18" href="$signal_combined_8c.html" title="src/signalCombined.c" alt="" coords="340,237,487,267"/>
+<area shape="rect" id="node22" href="$msr__core_8c.html" title="src/msr_core.c" alt="" coords="1173,160,1283,189"/>
+<area shape="rect" id="node24" href="$msr__counters_8c.html" title="src/msr_counters.c" alt="" coords="1307,160,1440,189"/>
+<area shape="rect" id="node29" href="$msr__misc_8c.html" title="src/msr_misc.c" alt="" coords="1464,160,1576,189"/>
+<area shape="rect" id="node33" href="$msr__rapl_8c.html" title="src/msr_rapl.c" alt="" coords="859,160,963,189"/>
+<area shape="rect" id="node35" href="$msr__turbo_8c.html" title="src/msr_turbo.c" alt="" coords="987,160,1099,189"/>
+<area shape="rect" id="node42" href="$msr__thermal_8c.html" title="src/msr_thermal.c" alt="" coords="523,160,648,189"/>
+</map>

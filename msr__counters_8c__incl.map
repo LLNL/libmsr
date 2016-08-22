@@ -1,0 +1,8 @@
+<map id="src/msr_counters.c" name="src/msr_counters.c">
+<area shape="rect" id="node11" href="$msr__core_8h.html" title="msr_core.h" alt="" coords="200,160,285,189"/>
+<area shape="rect" id="node18" href="$memhdlr_8h.html" title="memhdlr.h" alt="" coords="99,83,181,112"/>
+<area shape="rect" id="node22" href="$msr__counters_8h.html" title="msr_counters.h" alt="" coords="363,83,475,112"/>
+<area shape="rect" id="node29" href="$cpuid_8h.html" title="cpuid.h" alt="" coords="549,83,613,112"/>
+<area shape="rect" id="node35" href="$libmsr__debug_8h.html" title="libmsr_debug.h" alt="" coords="741,83,851,112"/>
+<area shape="rect" id="node27" href="$master_8h.html" title="master.h" alt="" coords="309,160,381,189"/>
+</map>

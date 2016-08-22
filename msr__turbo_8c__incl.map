@@ -1,0 +1,10 @@
+<map id="src/msr_turbo.c" name="src/msr_turbo.c">
+<area shape="rect" id="node7" href="$msr__core_8h.html" title="msr_core.h" alt="" coords="139,83,224,112"/>
+<area shape="rect" id="node14" href="$msr__turbo_8h.html" title="msr_turbo.h" alt="" coords="579,83,669,112"/>
+<area shape="rect" id="node19" href="$msr__rapl_8h.html" title="msr_rapl.h" alt="" coords="472,83,555,112"/>
+<area shape="rect" id="node26" href="$memhdlr_8h.html" title="memhdlr.h" alt="" coords="693,83,776,112"/>
+<area shape="rect" id="node30" href="$libmsr__error_8h.html" title="libmsr_error.h" alt="" coords="800,83,901,112"/>
+<area shape="rect" id="node32" href="$cpuid_8h.html" title="cpuid.h" alt="" coords="333,83,397,112"/>
+<area shape="rect" id="node38" href="$libmsr__debug_8h.html" title="libmsr_debug.h" alt="" coords="925,83,1035,112"/>
+<area shape="rect" id="node17" href="$master_8h.html" title="master.h" alt="" coords="619,160,691,189"/>
+</map>

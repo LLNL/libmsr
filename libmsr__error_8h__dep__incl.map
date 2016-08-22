@@ -1,0 +1,10 @@
+<map id="include/libmsr_error.h" name="include/libmsr_error.h">
+<area shape="rect" id="node3" href="$cpuid_8c.html" title="src/cpuid.c" alt="" coords="5,83,91,112"/>
+<area shape="rect" id="node5" href="$csr__core_8c.html" title="src/csr_core.c" alt="" coords="115,83,219,112"/>
+<area shape="rect" id="node7" href="$csr__imc_8c.html" title="src/csr_imc.c" alt="" coords="243,83,344,112"/>
+<area shape="rect" id="node9" href="$libmsr__error_8c.html" title="src/libmsr_error.c" alt="" coords="368,83,491,112"/>
+<area shape="rect" id="node11" href="$memhdlr_8c.html" title="src/memhdlr.c" alt="" coords="515,83,619,112"/>
+<area shape="rect" id="node13" href="$msr__core_8c.html" title="src/msr_core.c" alt="" coords="643,83,752,112"/>
+<area shape="rect" id="node15" href="$msr__rapl_8c.html" title="src/msr_rapl.c" alt="" coords="776,83,880,112"/>
+<area shape="rect" id="node17" href="$msr__turbo_8c.html" title="src/msr_turbo.c" alt="" coords="904,83,1016,112"/>
+</map>

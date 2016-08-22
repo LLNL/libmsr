@@ -1,0 +1,10 @@
+<map id="src/msr_rapl.c" name="src/msr_rapl.c">
+<area shape="rect" id="node17" href="$msr__core_8h.html" title="msr_core.h" alt="" coords="267,83,352,112"/>
+<area shape="rect" id="node24" href="$memhdlr_8h.html" title="memhdlr.h" alt="" coords="837,83,920,112"/>
+<area shape="rect" id="node27" href="$cpuid_8h.html" title="cpuid.h" alt="" coords="427,83,491,112"/>
+<area shape="rect" id="node33" href="$msr__rapl_8h.html" title="msr_rapl.h" alt="" coords="565,83,648,112"/>
+<area shape="rect" id="node41" href="$msr__turbo_8h.html" title="msr_turbo.h" alt="" coords="672,83,763,112"/>
+<area shape="rect" id="node45" href="$libmsr__error_8h.html" title="libmsr_error.h" alt="" coords="1040,83,1141,112"/>
+<area shape="rect" id="node47" href="$libmsr__debug_8h.html" title="libmsr_debug.h" alt="" coords="1165,83,1275,112"/>
+<area shape="rect" id="node39" href="$master_8h.html" title="master.h" alt="" coords="721,160,793,189"/>
+</map>

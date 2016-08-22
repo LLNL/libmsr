@@ -1,0 +1,7 @@
+<map id="include/msr_thermal.h" name="include/msr_thermal.h">
+<area shape="rect" id="node3" href="$msr__thermal_8c.html" title="src/msr_thermal.c" alt="" coords="5,83,131,112"/>
+<area shape="rect" id="node5" href="$profile_8h.html" title="include/profile.h" alt="" coords="155,83,267,112"/>
+<area shape="rect" id="node9" href="$signal_combined_8h.html" title="include/signalCombined.h" alt="" coords="291,83,461,112"/>
+<area shape="rect" id="node7" href="$profile_8c.html" title="src/profile.c" alt="" coords="165,160,256,189"/>
+<area shape="rect" id="node11" href="$signal_combined_8c.html" title="src/signalCombined.c" alt="" coords="303,160,449,189"/>
+</map>

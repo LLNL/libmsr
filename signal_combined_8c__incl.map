@@ -1,0 +1,8 @@
+<map id="src/signalCombined.c" name="src/signalCombined.c">
+<area shape="rect" id="node13" href="$signal_combined_8h.html" title="signalCombined.h" alt="" coords="471,83,596,112"/>
+<area shape="rect" id="node20" href="$msr__core_8h.html" title="msr_core.h" alt="" coords="119,160,204,189"/>
+<area shape="rect" id="node28" href="$msr__thermal_8h.html" title="msr_thermal.h" alt="" coords="540,160,644,189"/>
+<area shape="rect" id="node33" href="$msr__rapl_8h.html" title="msr_rapl.h" alt="" coords="433,160,516,189"/>
+<area shape="rect" id="node39" href="$msr__clocks_8h.html" title="msr_clocks.h" alt="" coords="228,160,327,189"/>
+<area shape="rect" id="node31" href="$master_8h.html" title="master.h" alt="" coords="439,237,511,267"/>
+</map>

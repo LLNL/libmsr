@@ -1,0 +1,25 @@
+var searchData=
+[
+  ['libmsr_5fcalloc',['LIBMSR_CALLOC',['../memhdlr_8h.html#a0c602dbfd27a9df5be0d07e203adfa6aa4f3a0f89c506991f88c1ab06ca32e089',1,'memhdlr.h']]],
+  ['libmsr_5ferror_5farray_5fbounds',['LIBMSR_ERROR_ARRAY_BOUNDS',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661a7c525cdb688f11a534c5220751104cc8',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fcsr_5fcounters',['LIBMSR_ERROR_CSR_COUNTERS',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661a0727c65b9c573a48dde62d98227a3b16',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fcsr_5finit',['LIBMSR_ERROR_CSR_INIT',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661aa8ce4f345d40a7bda792248c2b7c2b30',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5finval',['LIBMSR_ERROR_INVAL',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661a9b7b7065e1716c0ff3462e8e4d13b63b',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fmemory_5fallocation',['LIBMSR_ERROR_MEMORY_ALLOCATION',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661a6b5eed5289d97d27d6ff472b563d9b43',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fmsr_5fbatch',['LIBMSR_ERROR_MSR_BATCH',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661ad339288810ad8f9fdf740689f66af7a2',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fmsr_5fclose',['LIBMSR_ERROR_MSR_CLOSE',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661a8f59804f617a62f3ba0e26e190999a61',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fmsr_5finit',['LIBMSR_ERROR_MSR_INIT',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661a1e948b4ea9aeb540a622403ed2071de6',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fmsr_5fmodule',['LIBMSR_ERROR_MSR_MODULE',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661a30a557503aaeddd779884023b2552b88',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fmsr_5fopen',['LIBMSR_ERROR_MSR_OPEN',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661a3247ef4824fcc5f41f7ada260f29f312',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fmsr_5fread',['LIBMSR_ERROR_MSR_READ',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661a0c3161402ad844667c144a0d2c563d7b',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fmsr_5fwrite',['LIBMSR_ERROR_MSR_WRITE',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661abc4f7287b39e518eb9f6a075185de586',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fnot_5fimplemented_5fyet',['LIBMSR_ERROR_NOT_IMPLEMENTED_YET',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661af4ba0137a15b349d33b0941e65c35fd6',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fplatform_5fenv',['LIBMSR_ERROR_PLATFORM_ENV',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661ae9891642a882ffe5d67214716a5a2159',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fplatform_5fnot_5fsupported',['LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661ab25003bf5c9bc267fed3b4d82651fa9d',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5frapl_5finit',['LIBMSR_ERROR_RAPL_INIT',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661a46426d1d7f824ef9f5267efcdfa81f0d',1,'libmsr_error.h']]],
+  ['libmsr_5ferror_5fruntime',['LIBMSR_ERROR_RUNTIME',['../libmsr__error_8h.html#ac0e9a8158b6ee99c2ec8fdd0442b9661a69e23434bb7fba521c13d4908cd3aa2a',1,'libmsr_error.h']]],
+  ['libmsr_5ffinalize',['LIBMSR_FINALIZE',['../memhdlr_8h.html#a0c602dbfd27a9df5be0d07e203adfa6aa553e7ffad7aa3b1fc8616469c487c841',1,'memhdlr.h']]],
+  ['libmsr_5ffree',['LIBMSR_FREE',['../memhdlr_8h.html#a0c602dbfd27a9df5be0d07e203adfa6aa80099902fcc10440326d213a90431b33',1,'memhdlr.h']]],
+  ['libmsr_5fmalloc',['LIBMSR_MALLOC',['../memhdlr_8h.html#a0c602dbfd27a9df5be0d07e203adfa6aa0a3cd686e99fd4c6f0657d52cacb0146',1,'memhdlr.h']]],
+  ['libmsr_5frealloc',['LIBMSR_REALLOC',['../memhdlr_8h.html#a0c602dbfd27a9df5be0d07e203adfa6aa6714a5ae0b80128139138fd51a6683e1',1,'memhdlr.h']]]
+];

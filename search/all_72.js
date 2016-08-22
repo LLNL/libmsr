@@ -1,0 +1,22 @@
+var searchData=
+[
+  ['rapl_5fdata',['rapl_data',['../structrapl__data.html',1,'rapl_data'],['../msr__core_8h.html#ae792115c60949d626f139203873beb1ba1f13432d03f55a9dcf04fdea2f7aab1a',1,'RAPL_DATA():&#160;msr_core.h']]],
+  ['rapl_5finit',['rapl_init',['../msr__rapl_8c.html#ab4cf04e65243fe0ec3dc1f9b761bbd3e',1,'rapl_init(struct rapl_data **rapl, uint64_t **rapl_flags):&#160;msr_rapl.c'],['../msr__rapl_8h.html#ab4cf04e65243fe0ec3dc1f9b761bbd3e',1,'rapl_init(struct rapl_data **rapl, uint64_t **rapl_flags):&#160;msr_rapl.c']]],
+  ['rapl_5flimit',['rapl_limit',['../structrapl__limit.html',1,'']]],
+  ['rapl_5fpower_5finfo',['rapl_power_info',['../structrapl__power__info.html',1,'']]],
+  ['rapl_5fstorage',['rapl_storage',['../msr__rapl_8c.html#a63c0eae91c8af418140de6edfc821fd8',1,'rapl_storage(struct rapl_data **data, uint64_t **flags):&#160;msr_rapl.c'],['../msr__rapl_8h.html#a63c0eae91c8af418140de6edfc821fd8',1,'rapl_storage(struct rapl_data **data, uint64_t **flags):&#160;msr_rapl.c']]],
+  ['rapl_5funit',['RAPL_UNIT',['../msr__core_8h.html#ae792115c60949d626f139203873beb1ba9b2446315e455a12e4ece9310101ece4',1,'msr_core.h']]],
+  ['rapl_5funits',['rapl_units',['../structrapl__units.html',1,'']]],
+  ['raw',['raw',['../structclock__mod.html#a3db7afee1608a0ee2efa4ca2e77e05bd',1,'clock_mod::raw()'],['../structmisc__enable.html#a566a2dd4dfbd554dd8a1a2f7b0b61058',1,'misc_enable::raw()'],['../structmsr__temp__target.html#a06600f33e24c31a0bdc902f6ce7a085a',1,'msr_temp_target::raw()'],['../structtherm__stat.html#a2965b7be08d1ba9389dd811ae433683b',1,'therm_stat::raw()'],['../structtherm__interrupt.html#a95a8a4308f8b173c8e81076936ad5cc1',1,'therm_interrupt::raw()'],['../structpkg__therm__stat.html#a92217fab52ebf931a96698f0545374c3',1,'pkg_therm_stat::raw()'],['../structpkg__therm__interrupt.html#a025d3e48194b95123dfddadacdf85c38',1,'pkg_therm_interrupt::raw()']]],
+  ['read_5fbatch',['read_batch',['../msr__core_8c.html#af45fbe99be8e66b8da636cf700c4c79f',1,'read_batch(const int batchnum):&#160;msr_core.c'],['../msr__core_8h.html#af45fbe99be8e66b8da636cf700c4c79f',1,'read_batch(const int batchnum):&#160;msr_core.c']]],
+  ['read_5fimc_5fcounter_5fbatch',['read_imc_counter_batch',['../csr__imc_8c.html#af96037c772d3ff8ce5d52f85c29ef19e',1,'read_imc_counter_batch(const unsigned counter):&#160;csr_imc.c'],['../csr__imc_8h.html#af96037c772d3ff8ce5d52f85c29ef19e',1,'read_imc_counter_batch(const unsigned counter):&#160;csr_imc.c']]],
+  ['read_5fmsr_5fby_5fcoord',['read_msr_by_coord',['../msr__core_8c.html#a5b9c1ca6642535de8957ac1b3c16e6dc',1,'read_msr_by_coord(unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t *val):&#160;msr_core.c'],['../msr__core_8h.html#a5b9c1ca6642535de8957ac1b3c16e6dc',1,'read_msr_by_coord(unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t *val):&#160;msr_core.c']]],
+  ['read_5fmsr_5fby_5fcoord_5fbatch',['read_msr_by_coord_batch',['../msr__core_8c.html#ac051cc4d3150cd272b1c293d5cec843c',1,'read_msr_by_coord_batch(unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t **val, int batchnum):&#160;msr_core.c'],['../msr__core_8h.html#ac051cc4d3150cd272b1c293d5cec843c',1,'read_msr_by_coord_batch(unsigned socket, unsigned core, unsigned thread, off_t msr, uint64_t **val, int batchnum):&#160;msr_core.c']]],
+  ['read_5fmsr_5fby_5fidx',['read_msr_by_idx',['../msr__core_8c.html#a8ab6cc869d0bc39469dfb3721b56f0c9',1,'read_msr_by_idx(int dev_idx, off_t msr, uint64_t *val):&#160;msr_core.c'],['../msr__core_8h.html#a8ab6cc869d0bc39469dfb3721b56f0c9',1,'read_msr_by_idx(int dev_idx, off_t msr, uint64_t *val):&#160;msr_core.c']]],
+  ['read_5frapl_5fdata',['read_rapl_data',['../msr__rapl_8c.html#a66c66a416b7abb202a34e6ef753f6723',1,'read_rapl_data(void):&#160;msr_rapl.c'],['../msr__rapl_8h.html#a66c66a416b7abb202a34e6ef753f6723',1,'read_rapl_data(void):&#160;msr_rapl.c']]],
+  ['readme_2emd',['README.md',['../_r_e_a_d_m_e_8md.html',1,'']]],
+  ['readout',['readout',['../structtherm__stat.html#a9d395fa6dd240baa348379122b03c54a',1,'therm_stat::readout()'],['../structpkg__therm__stat.html#a28c5d80668d82da0f9773f78215c7721',1,'pkg_therm_stat::readout()']]],
+  ['readout_5fvalid',['readout_valid',['../structtherm__stat.html#a6c68fd25294acfd10939b20d5ea5a51b',1,'therm_stat']]],
+  ['resolution_5fdeg_5fcelsius',['resolution_deg_celsius',['../structtherm__stat.html#ae5b3f5a2ab5721ec84629cfdcce69ce0',1,'therm_stat']]],
+  ['ring_5flevel',['ring_level',['../structfixed__counter.html#a73ade829fd87886f457baab94d71e384',1,'fixed_counter']]]
+];

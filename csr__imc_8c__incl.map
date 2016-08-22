@@ -1,0 +1,10 @@
+<map id="src/csr_imc.c" name="src/csr_imc.c">
+<area shape="rect" id="node19" href="$csr__core_8h.html" title="csr_core.h" alt="" coords="357,83,440,112"/>
+<area shape="rect" id="node33" href="$memhdlr_8h.html" title="memhdlr.h" alt="" coords="1053,83,1136,112"/>
+<area shape="rect" id="node36" href="$msr__core_8h.html" title="msr_core.h" alt="" coords="843,83,928,112"/>
+<area shape="rect" id="node42" href="$csr__imc_8h.html" title="csr_imc.h" alt="" coords="952,83,1029,112"/>
+<area shape="rect" id="node47" href="$cpuid_8h.html" title="cpuid.h" alt="" coords="679,83,743,112"/>
+<area shape="rect" id="node53" href="$libmsr__debug_8h.html" title="libmsr_debug.h" alt="" coords="1421,83,1531,112"/>
+<area shape="rect" id="node55" href="$libmsr__error_8h.html" title="libmsr_error.h" alt="" coords="1555,83,1656,112"/>
+<area shape="rect" id="node45" href="$master_8h.html" title="master.h" alt="" coords="1088,160,1160,189"/>
+</map>
