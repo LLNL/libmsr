@@ -1,0 +1,51 @@
+Todo Tags
+---------
+
+src/csr_imc.c   Combine into 1 counter batch and 1 event batch.
+src/msr_rapl.c  Should we flip bits for pkg_limit?
+src/msr_rapl.c  Currently unused, but if it ever is used, we need a fix for
+                Haswell
+
+Ongoing
+-------
+
+- [2016-08-08] Create patch for libmsr on Cab, which uses the msr-safeB kernel.
+
+- [2016-08-08] Finish tagging PCI configuration (CSR) files with Doxygen tags.
+
+- [2016-08-11] Check functionality of signalCombined.c once batch operation is
+  fixed. There may be some changes.
+
+- [2016-08-11] Check functionality of powmon with current libmsr status. Remove
+  check for older version of libmsr.
+
+- [2016-08-11] Add member variables for converted bit fields (i.e.,
+  human-readable values) in performance counter structs. Current implementation
+  only stores raw values of bit fields.
+
+- [2016-08-11] Finish CSRs for QPI, PCU, caching agent, iMC, currently only
+  have a partial implementation for iMC.
+
+Optimizations
+-------------
+
+- [2016-08-11] Clean up memory incrementally along the way, instead of doing a
+  big clean up before terminating.
+- [2016-08-11] Define width of struct member variables. For example, if we have
+  an int, but are only going to store a 0 or 1 in it, we can re-define this
+  variable and tell the compiler we will only use 1 byte instead of the default
+  4 bytes.
+
+Known Bugs
+----------
+
+- [2016-08-11] msr-safe and enabling hyperthreads in slurm.
+
+- [2016-08-11] msr-safe is not compatible with msub scheduler.
+
+Needs Testing
+-------------
+
+- [2016-08-11] Libmsr in MPI program.
+
+- [2016-08-11] Libmsr in Openmp program.

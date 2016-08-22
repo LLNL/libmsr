@@ -1,1 +1,0 @@
-/usr/bin/cc  -fPIC   -shared -Wl,-soname,libmsr.so -o libmsr.so CMakeFiles/msr.dir/msr_clocks.o CMakeFiles/msr.dir/msr_core.o CMakeFiles/msr.dir/msr_counters.o CMakeFiles/msr.dir/msr_misc.o CMakeFiles/msr.dir/msr_rapl.o CMakeFiles/msr.dir/msr_thermal.o CMakeFiles/msr.dir/msr_turbo.o CMakeFiles/msr.dir/cpuid.o CMakeFiles/msr.dir/profile.o CMakeFiles/msr.dir/signalCombined.o 

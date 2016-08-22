@@ -1,14 +1,14 @@
-v0.2.1 Uniform
-+ made storage function names more consistent
-	+ thermal: old function names still work
-	+ csr_imc: old function names do not work
-+ changed struct names in csr_imc
-+ changed data output function names in csr_imc
-+ added missing function prototypes for global counters to csr_imc.h
-+ Broadwell supported (mostly)
-+ Updated pdf documenation
-- Removed NUMCTRS from csr_imc.c
-+ Added IMC_NUMCTRS to master.h
+v0.3.0 Cleanup, New features
++ added three new features related to Turbo Boost and clocks
+	+ change frequency of a given domain (e.g., core, socket)
+	+ get maximum Turbo Boost ratio fused on the processor given a number of
+	cores active
+	+ read MSR_TURBO_ACTIVATION_RATIO to get the max non-turbo ratio currently
+	set on the processor
++ standardized libmsr error and warning messages
++ standardized code format
++ in-depth documentation of libmsr code base
+- removing deprecated variables from code base
 
 v0.2.0 Auto
 + added new build system
@@ -35,21 +35,21 @@ v0.1.17 Request
 + will attempt to work even without whitelist (subject to change)
 + detects the kernel's core layout decisions at runtime
 + added MSRs
-	+ 0x3f8 - 0x3FE // in msr_misc.c
+	+ 0x3F8 - 0x3FE // in msr_misc.c
 	+ 0x60D // in msr_misc.c
 	+ 0xC30 - 0xC33 // in msr_counters.c
 	+ 0xC36 - 0xC39 // in msr_counters.c
 	+ 0x19D // in msr_thermal.c
 + will get energy readings if energy_status registers exist rather
-than power_limit 
+than power_limit
 + power unit fixed for DRAM on Haswell
 
 v0.1.16 Mission
 - Removed deprecated variable from cpuid.c
-+ cpuid.c get_core_conf function has been reworked to be more portable
++ cpuid.c get_core_conf() function has been reworked to be more portable
 - Removed extraneous code in msr_rapl.c
-+ msr_core devidx function now works with even-odd cpu ordering schemes
-+ msr_init now stats msr_whitelist
++ msr_core.c devidx() function now works with even-odd cpu ordering schemes
++ msr_init() now stats msr_whitelist
 + libmsr_test now has an message saying if libmsr is working (WIP)
 + libmsr_test now explicitly resets power values to defaults
 
@@ -57,9 +57,9 @@ v0.1.15 Batch
 + Added msrmod command line utility
 - Removed msr 0x63B from architecture 06_3C
 + updated msr_rapl to use the latest batch interface, details below
-	+ read_rapl_data no longer takes any arguments
-	+ read_rapl_data now uses the new batch interface
+	+ read_rapl_data() no longer takes any arguments
+	+ read_rapl_data() now uses the new batch interface
 	+ rapl_data struct has been changed, see msr_rapl.h for details
-	+ delta_rapl_data no longer takes arguments 
-	+ poll_rapl_data no longer takes arguments
-	+ dump_rapl_data arguments have changed, now only takes a FILE *
+	+ delta_rapl_data() no longer takes arguments
+	+ poll_rapl_data() no longer takes arguments
+	+ dump_rapl_data() arguments have changed, now only takes a FILE*

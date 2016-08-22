@@ -1,19 +1,22 @@
+#
 # Static and dynamic libs have the same sources, so make a variable.
+#
 set(LIBMSR_SOURCES
-  msr_clocks.c
-  csr_core.c
-  csr_imc.c
-  msr_core.c
-  msr_counters.c
-  msr_misc.c
-  msr_rapl.c
-  msr_thermal.c
-  msr_turbo.c
-  cpuid.c
-  profile.c
-  memhdlr.c
-  signalCombined.c)
-
+    cpuid.c
+    csr_core.c
+    csr_imc.c
+    memhdlr.c
+    libmsr_error.c
+    msr_clocks.c
+    msr_core.c
+    msr_counters.c
+    msr_misc.c
+    msr_rapl.c
+    msr_thermal.c
+    msr_turbo.c
+    profile.c
+    signalCombined.c
+)
 
 #
 # Add dynamic library
@@ -31,8 +34,9 @@ set_target_properties(msr-static PROPERTIES OUTPUT_NAME "msr")
 #
 # Install target should install the two library targets above.
 #
-install(TARGETS msr msr-static DESTINATION
-"${CMAKE_INSTALL_PREFIX}/lib" EXPORT libmsr-libs)
+install(TARGETS msr msr-static DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" EXPORT libmsr-libs)
 
+#
 # Headers are in ../include
+#
 include_directories(${PROJECT_SOURCE_DIR}/include)

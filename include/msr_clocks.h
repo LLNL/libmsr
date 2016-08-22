@@ -1,101 +1,168 @@
 /* msr_clocks.h
  *
- * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
- * Produced at Lawrence Livermore National Laboratory  
+ * Copyright (c) 2011-2016, Lawrence Livermore National Security, LLC.
+ * LLNL-CODE-645430
+ *
+ * Produced at Lawrence Livermore National Laboratory
  * Written by  Barry Rountree, rountree@llnl.gov
  *             Scott Walker,   walker91@llnl.gov
  *             Kathleen Shoga, shoga1@llnl.gov
  *
- * All rights reserved. 
- * 
+ * All rights reserved.
+ *
  * This file is part of libmsr.
- * 
+ *
  * libmsr is free software: you can redistribute it and/or modify it under the
  * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- * 
- * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
- * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU Lesser General Public License along
- * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
  *
- * This material is based upon work supported by the U.S. Department
- * of Energy's Lawrence Livermore National Laboratory. Office of
- * Science, under Award number DE-AC52-07NA27344.
+ * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmsr. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * This material is based upon work supported by the U.S. Department of
+ * Energy's Lawrence Livermore National Laboratory. Office of Science, under
+ * Award number DE-AC52-07NA27344.
  *
  */
 
-#ifndef MSR_CLOCKS_H
-#define MSR_CLOCKS_H
+#ifndef MSR_CLOCKS_H_INCLUDE
+#define MSR_CLOCKS_H_INCLUDE
+
 #include <stdint.h>
+
 #include "master.h"
-
-struct clock_mod{
-	uint64_t raw;
-
-// There is a bit at 0 that can be used for Extended On-Demand Clock Modulation Duty Cycle
-// It is added with the bits 3:1. When used, the granularity of clock modulation duty cycle
-// is increased to 6.25% as opposed to 12.5%
-// To enable this, must have CPUID.06H:EAX[Bit 5] = 1
-// I am not sure how to check that because otherwise bit 0 is reserved
-
-	int duty_cycle;		// 3 binary digits
-				// 0-7 in decimal
-				//
-				// Value	Duty Cycle
-				//   0		 Reserved
-				//   1		 12.5% (default)
-				//   2		 25.0%
-				//   3		 37.5%
-				//   4		 50.0%
-				//   5		 63.5%
-				//   6		 75.0%
-				//   7		 87.5%
-
-	int duty_cycle_enable;	// Read/Write
-};
-
-struct clocks_data
-{
-	uint64_t ** aperf;
-	uint64_t ** mperf;
-	uint64_t ** tsc;
-};
-
-struct perf_data
-{
-	uint64_t ** perf_status;
-	uint64_t ** perf_ctl;
-};
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// This function allows access to the raw MSR data
-int clocks_storage(struct clocks_data ** cd);
-int perf_storage(struct perf_data **pd);
+/// @brief Structure containing data for IA32_CLOCK_MODULATION.
+///
+/// There is a bit at 0 that can be used for Extended On-Demand Clock
+/// Modulation Duty Cycle. It is added with the bits 3:1. When used, the
+/// granularity of clock modulation duty cycle is increased to 6.25% as opposed
+/// to 12.5%. To enable this, must have CPUID.06H:EAX[Bit 5] = 1. I am not sure
+/// how to check that because otherwise bit 0 is reserved.
+struct clock_mod {
+    /// @brief Raw 64-bit value stored in IA32_CLOCK_MODULATION.
+    uint64_t raw;
+    /// @brief Enable/disable on-demand software-controlled clock modulation.
+    int duty_cycle_enable;
+    /// @brief On-demand clock modulation duty cycle.
+    int duty_cycle;
+    //   Value   | Duty Cycle
+    // 000b = 0	 |  Reserved
+    // 001b = 1	 |    12.5% (default)
+    // 010b = 2	 |    25.0%
+    // 011b = 3	 |    37.5%
+    // 100b = 4	 |    50.0%
+    // 101b = 5	 |    63.5%
+    // 110b = 6	 |    75.0%
+    // 111b = 7	 |    87.5%
+};
 
-void read_all_clocks(struct clocks_data *cd);
-//void read_all_aperf(struct clocks_data *cd);
-//void read_all_mperf(struct clocks_data *cd);
-//void read_all_tsc  (struc clocks_data *cd);
-void dump_clocks_terse(FILE *w);
-void dump_clocks_terse_label(FILE *w);
-void dump_p_state(FILE *w);
-void set_p_state(unsigned socket, uint64_t pstate);
+/// @brief Structure containing data for IA32_APERF, IA32_MPERF, and
+/// IA32_TIME_STAMP_COUNTER.
+struct clocks_data {
+    /// @brief Raw 64-bit value stored in IA32_APERF.
+    uint64_t **aperf;
+    /// @brief Raw 64-bit value stored in IA32_MPERF.
+    uint64_t **mperf;
+    /// @brief Raw 64-bit value stored in IA32_TIME_STAMP_COUNTER.
+    uint64_t **tsc;
+};
 
-void dump_clocks_readable(FILE * writeFile);
-void dump_clock_mod(struct clock_mod *s, FILE *w);
-void get_clock_mod(int socket, int core, struct clock_mod *s);
-int set_clock_mod(int socket, int core, struct clock_mod *s);
+/// @brief Structure containing data for IA32_PERF_STATUS and IA32_PERF_CTL.
+struct perf_data {
+    /// @brief Raw 64-bit value stored in IA32_PERF_STATUS.
+    uint64_t **perf_status;
+    /// @brief Raw 64-bit value stored in IA32_PERF_CTL.
+    uint64_t **perf_ctl;
+};
+
+/// @brief Allocate array for storing raw register data from IA32_APERF,
+/// IA32_MPERF, and IA32_TIME_STAMP_COUNTER.
+///
+/// There are plans to use a struct to make the indirection less crazy.
+///
+/// @param [in] cd Pointer to clock-related data.
+void clocks_storage(struct clocks_data **cd);
+
+/// @brief Allocate array for storing raw register data from IA32_PERF_STATUS
+/// and IA32_PERF_CTL.
+///
+/// @param [in] pd Pointer to perf-related data.
+void perf_storage(struct perf_data **pd);
+
+/// @brief Print the label for the abbreviated clocks data print out.
+///
+/// @param [in] writedest File stream where output will be written to.
+void dump_clocks_data_terse_label(FILE *writedest);
+
+/// @brief Print abbreviated clocks data.
+///
+/// @param [in] writedest File stream where output will be written to.
+void dump_clocks_data_terse(FILE *writedest);
+
+/// @brief Print current p-state.
+///
+/// @param [in] writedest File stream where output will be written to.
+void dump_p_state(FILE *writedest);
+
+/// @brief Request new current p-state.
+///
+/// @param [in] socket Unique socket/package identifier.
+///
+/// @param [in] pstate Desired p-state.
+void set_p_state(unsigned socket,
+                 uint64_t pstate);
+
+/// @brief Print detailed clocks data.
+///
+/// @param [in] writedest File stream where output will be written to.
+void dump_clocks_data_readable(FILE *writedest);
+
+/****************************************/
+/* Software Controlled Clock Modulation */
+/****************************************/
+
+/// @brief Print clock modulation data.
+///
+/// @param [in] s Data for clock modulation.
+///
+/// @param [in] writedest File stream where output will be written to.
+void dump_clock_mod(struct clock_mod *s,
+                    FILE *writedest);
+
+/// @brief Get contents of IA32_CLOCK_MODULATION.
+///
+/// @param [in] socket Unique socket/package identifier.
+///
+/// @param [in] core Unique core identifier.
+///
+/// @param [out] s Data for clock modulation.
+void get_clock_mod(int socket,
+                   int core,
+                   struct clock_mod *s);
+
+/// @brief Change value of IA32_CLOCK_MODULATION.
+///
+/// @param [in] socket Unique socket/package identifier.
+///
+/// @param [in] core Unique core identifier.
+///
+/// @param [in] s Data for clock modulation.
+int set_clock_mod(int socket,
+                  int core,
+                  struct clock_mod *s);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif //MSR_CLOCKS_H
+#endif

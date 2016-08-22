@@ -15,7 +15,7 @@ These tools are built using GNU autotools. You will need to use autotools to
 generate the configure script and the configure script to generate the
 makefiles for your environment.
 
-To generate the configure script: 
+To generate the configure script:
 autoreconf -if
 
 To generate the makefiles:

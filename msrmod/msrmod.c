@@ -1,179 +1,92 @@
 /* msrmod.c
  *
- * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
- * Produced at Lawrence Livermore National Laboratory  
+ * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC.
+ * LLNL-CODE-645430
+ *
+ * Produced at Lawrence Livermore National Laboratory
  * Written by  Scott Walker,   walker91@llnl.gov
  *
- * All rights reserved. 
- * 
+ * All rights reserved.
+ *
  * Command line utility for interacting with MSRs.
  *
  * msrmod is free software: you can redistribute it and/or modify it under the
  * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- * 
- * msrmod is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
- * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU Lesser General Public License along
- * with msrmod.  If not, see <http://www.gnu.org/licenses/>. 
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
  *
- * This material is based upon work supported by the U.S. Department
- * of Energy's Lawrence Livermore National Laboratory. Office of
- * Science, under Award number DE-AC52-07NA27344.
+ * msrmod is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with msrmod. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * This material is based upon work supported by the U.S. Department of
+ * Energy's Lawrence Livermore National Laboratory. Office of Science, under
+ * Award number DE-AC52-07NA27344.
  *
  */
-//#include "msr_rapl.h"
-//#include "msr_counters.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-//#include "../libmsr-walker/include/msr_rapl.h"
-//#include "../libmsr-walker/include/msr_counters.h"
+#include <string.h>
+#include <unistd.h>
+
 #include <msr_rapl.h>
 #include <msr_counters.h>
 
 short ISVERBOSE;
 
-void help_stuff()
+int list_functions(char *type)
 {
-    fprintf(stdout, "msrmod help\n");
-    fprintf(stdout, "This tool is in alpha so it has lots of problems. Honestly, updates will be sparse.\n");
-    fprintf(stdout, "-l, -list\n\tlist available msrs. Can refine list by adding r/rapl or c/counters\n");
-    fprintf(stdout, "-p\n\tprint data, must add i/info for general rapl info or r/rapl for current rapl data\n");
-    fprintf(stdout, "-s, -set\n\tset rapl msrs, can restore to defaults with d/default or set a custom setting in the format\n\t");
-    fprintf(stdout, "socket limit1 limit1time limit2 limit2time\n");
-    fprintf(stdout, "\tcan an an 'm' flag to set memory limits in the format limit limittime\n");
-    fprintf(stdout, "-i, -interactive\n\t, currently not implemented\n");
-    fprintf(stdout, "-v, -verbose\n\t, msrmod will tell you what it is doing (usually), must be first argument\n");
-    fprintf(stdout, "-r, -read\n\t, read the register, msr must be given in hexadecimal\n\t");
-    fprintf(stdout, "thread msr\n");
-    fprintf(stdout, "-w, -write\n\t, write the register, msr and data must be given in dexadecimal\n\t");
-    fprintf(stdout, "thread msr data\n");
-    fprintf(stdout, "--h, --help\n\tdisplay this help information\n");
-}
-
-void generic_error(int idx, char ** argv)
-{
-    fprintf(stderr, "Error: invalid argument %s\n", argv[idx]);
-    help_stuff();
-    exit(-1);
-}
-
-char eat_whitespace(char * arg)
-{
-    int i = 2;
-    while((arg[i] == ' ' || arg[i] == '\t' || arg[i] == '\n') && arg[i] != '\0')
+    if (init_msr())
     {
-        i++;
+        fprintf(stderr, "Error: unable to initialize msr.\n");
+        return -1;
     }
-    return arg[i - 1];
-}
 
-int do_rapl_stuff(short isverbose)
-{
-    int sockets = num_sockets();
-    struct rapl_limit pkg, pkg2;
-    struct rapl_limit dram;
-    int i;
-    for (i = 0; i < sockets; i++)
+    if (strncmp(type, "rapl", strlen("rapl")) == 0)
     {
-        fprintf(stdout, "Setting Limit on Socket %d\n", i);
-        fprintf(stdout, "Package Limit(Watts): ");
-        fscanf(stdout, "%d", &pkg.watts);
+        /* Print available rapl stuff. */
+        fprintf(stdout, "\n=== RAPL MSRs ===\n");
+        print_available_rapl();
         fprintf(stdout, "\n");
-        fprintf(stdout, "Package Timeframe(Seconds): ");
-        fscanf(stdout, "%d", &pkg.seconds);
+    }
+    else if (strncmp(type, "counters", strlen("counters")) == 0)
+    {
+        /* Print available counter stuff. */
+        fprintf(stdout, "\n=== Counter MSRs ===\n");
+        print_available_counters();
         fprintf(stdout, "\n");
-        fprintf(stdout, "Package Limit 2(Watts): ");
-        fscanf(stdout, "%d", &pkg2.watts);
+    }
+    else if (strncmp(type, "all", strlen("all")) == 0)
+    {
+        /* Print everything available. */
+        fprintf(stdout, "\n=== All MSRs ===");
+        fprintf(stdout, "\n- RAPL MSRs -\n");
+        print_available_rapl();
+        fprintf(stdout, "\n- Counter MSRs -\n");
+        print_available_counters();
         fprintf(stdout, "\n");
-        fprintf(stdout, "Package Timeframe 2(Milleseconds): ");
-        fscanf(stdout, "%d", &pkg2.seconds);
-        fprintf(stdout, "\n");
-        fprintf(stdout, "DRAM Limit(Watts): ");
-        fscanf(stdout, "%d", &dram.watts);
-        fprintf(stdout, "\n");
-        fprintf(stdout, "DRAM Timeframe(Seconds): ");
-        fscanf(stdout, "%d", &dram.seconds);
-        fprintf(stdout, "\n");
-
-        if (set_pkg_rapl_limit(i, &pkg, &pkg2))
-        {
-            fprintf(stderr, "Error setting rapl limit on pkg %d\n", i);
-            return -1;
-        }
-        if (set_dram_rapl_limit(i, &dram))
-        {
-            fprintf(stderr, "Error setting rapl DRAM limit on pkg %d\n", i);
-            return -1;
-        }
+    }
+    else
+    {
+        fprintf(stderr, "Error: unknown list_functions() parameter \"%s\"\n", type);
+        return -1;
     }
     return 0;
 }
 
-void type2_list(int * idx, int argc, char ** argv)
+void set_to_defaults(void)
 {
-    switch(argv[++*idx][0])
-    {
-        case 'a':
-            // print everything available
-            print_available_counters();
-            print_available_rapl();
-            break;
-        case 'r':
-            //print available rapl stuff
-            print_available_rapl();
-            break;
-        case 'c':
-            // print available counter stuff
-            print_available_counters();
-            break;
-        default:
-            generic_error(*idx, argv);
-    }
-}
-
-void list_functions(int * idx, int argc, char ** argv)
-{
-    switch(argv[*idx][2])
-    {
-        case '\0':
-        case ' ':
-        case 'i':
-            if (*idx + 1 >= argc)
-            {
-                print_available_counters();
-                print_available_rapl();
-                return;
-            }
-            type2_list(idx, argc, argv);            
-            break;
-        case 'a':
-            print_available_counters();
-            print_available_rapl();
-            break;
-        case 'r':
-            print_available_rapl();
-            break;
-        case 'c':
-            print_available_counters();
-            break;
-        default:
-            generic_error(*idx, argv);
-    }
-}
-
-void set_to_defaults()
-{
-    int socket = 0;
-    int numsockets = num_sockets();
+    int socket;
     struct rapl_power_info raplinfo;
     struct rapl_limit socketlim, socketlim2, dramlim;
+
     fprintf(stdout, "Setting Defaults\n");
-    for (socket = 0; socket < numsockets; socket++)
+    for (socket = 0; socket < num_sockets(); socket++)
     {
         get_rapl_power_info(socket, &raplinfo);
         socketlim.bits = 0;
@@ -187,8 +100,12 @@ void set_to_defaults()
         dramlim.seconds = 1;
         if (ISVERBOSE)
         {
+            fprintf(stdout, "\n=== Socket %d ===\n", socket);
+            fprintf(stdout, "- Power Limit 1 -\n");
             dump_rapl_limit(&socketlim, stdout);
+            fprintf(stdout, "- Power Limit 2 -\n");
             dump_rapl_limit(&socketlim2, stdout);
+            fprintf(stdout, "- DRAM Power Limit -\n");
             dump_rapl_limit(&dramlim, stdout);
         }
         set_pkg_rapl_limit(socket, &socketlim, &socketlim2);
@@ -196,242 +113,355 @@ void set_to_defaults()
     }
 }
 
-void set_mem_limit(int * idx, int argc, char ** argv)
+void set_mem_limit(int socket, double watts, double seconds)
 {
-    struct rapl_limit dramlim; 
-    int socket = 0;
-    int numsockets = num_sockets();
-    if (argc - *idx < 2)
-    {
-        fprintf(stderr, "Error: invalid number of parameters for dram power limit\n");
-        generic_error(*idx, argv);
-    }
+    struct rapl_limit dramlim;
+
     dramlim.bits = 0;
     dramlim.watts = 0;
     dramlim.seconds = 0;
-    socket = atoi(argv[++*idx]);
-    dramlim.watts = strtod(argv[++*idx], NULL);
-    dramlim.seconds = strtod(argv[++*idx], NULL);
-    if (ISVERBOSE) dump_rapl_limit(&dramlim, stdout);
+    dramlim.watts = watts;
+    dramlim.seconds = seconds;
+    if (ISVERBOSE)
+    {
+        fprintf(stdout, "\n=== Socket %d ===\n", socket);
+        fprintf(stdout, "- DRAM Power Limit -\n");
+        dump_rapl_limit(&dramlim, stdout);
+    }
     set_dram_rapl_limit(socket, &dramlim);
 }
 
-void type2_set(int * idx, int argc, char ** argv)
+int set_functions(char *type, int socket, double watts1, double seconds1, double watts2, double seconds2)
 {
-    int socket = 0;
-    int numsockets = num_sockets();
-    struct rapl_power_info raplinfo;
-    struct rapl_limit socketlim, socketlim2, dramlim;
-    socketlim.bits = 0;
-    socketlim.watts = 0;
-    socketlim.seconds = 0;
-    socketlim2.bits = 0;
-    socketlim2.watts = 0;
-    socketlim2.seconds = 0;
-    switch (argv[++*idx][0])
+    if (init_msr())
     {
-        case 'd':
-            set_to_defaults();            
-            break;
-        case 'm':
-            // set a memory limit
-            set_mem_limit(idx, argc, argv);
-            break;
-        default:
-            // -s socket watts seconds
-            //fprintf(stdout, "%s\n", argv[i]);
-            if (*idx >= argc)
-            {
-                generic_error(*idx, argv);
-            }
-            if (argc - *idx < 5)
-            {
-                fprintf(stderr, "Error: invalid number of parameters for power limit\n");
-                generic_error(*idx, argv);
-            }
-            socket = atoi(argv[*idx]);
-            socketlim.watts = strtod(argv[++*idx], NULL);
-            socketlim.seconds = strtod(argv[++*idx], NULL);
-            if (ISVERBOSE) fprintf(stdout, "Socket %d\n", socket);
-            if (ISVERBOSE) dump_rapl_limit(&socketlim, stdout);
-            socketlim2.watts = strtod(argv[++*idx], NULL);
-            socketlim2.seconds = strtod(argv[++*idx], NULL);
-            if (ISVERBOSE) dump_rapl_limit(&socketlim2, stdout);
-            set_pkg_rapl_limit(socket, &socketlim, &socketlim2);
-            break;
+        fprintf(stderr, "Error: unable to initialize msr.\n");
+        return -1;
     }
+
+    if (strncmp(type, "default", strlen("default")) == 0)
+    {
+        set_to_defaults();
+    }
+    else if (strncmp(type, "memory", strlen("memory")) == 0)
+    {
+        set_mem_limit(socket, watts1, seconds1);
+    }
+    else if (strncmp(type, "package", strlen("package")) == 0)
+    {
+        struct rapl_power_info raplinfo;
+        struct rapl_limit socketlim, socketlim2, dramlim;
+
+        socketlim.bits = 0;
+        socketlim.watts = 0;
+        socketlim.seconds = 0;
+        socketlim2.bits = 0;
+        socketlim2.watts = 0;
+        socketlim2.seconds = 0;
+
+        socketlim.watts = watts1;
+        socketlim.seconds = seconds2;
+        if (ISVERBOSE)
+        {
+            fprintf(stdout, "\n=== Socket %d ===\n", socket);
+            fprintf(stdout, "- Power Limit 1 -\n");
+            dump_rapl_limit(&socketlim, stdout);
+        }
+        socketlim2.watts = watts2;
+        socketlim2.seconds = seconds2;
+        if (ISVERBOSE)
+        {
+            fprintf(stdout, "- Power Limit 2 -\n");
+            dump_rapl_limit(&socketlim2, stdout);
+        }
+        set_pkg_rapl_limit(socket, &socketlim, &socketlim2);
+    }
+    else
+    {
+        fprintf(stderr, "Error: unknown set_functions() parameter \"%s\"\n", type);
+        return -1;
+    }
+    return 0;
 }
 
-void set_functions(int * idx, int argc, char ** argv)
-{
-    switch (argv[*idx][2])
-    {
-        case '\0':
-        case ' ':
-        case 'e':
-            if (*idx + 1 >= argc)
-            {
-                generic_error(*idx, argv);
-                return;
-            }
-            type2_set(idx, argc, argv);
-            break;
-        case 'm':
-            set_mem_limit(idx, argc, argv);
-            break;
-        case 'd':
-            set_to_defaults();
-            break;
-        default:
-            generic_error(*idx, argv);
-    }
-}
-
-void get_rapl_stuff()
+void get_rapl_stuff(void)
 {
     struct rapl_limit l1, l2, l3, l4;
+
     get_pkg_rapl_limit(0, &l1, &l2);
-    fprintf(stdout, "Socket 0 Limit 0\n");
+    fprintf(stdout, "=== Pkg Domain ===\n");
+    fprintf(stdout, "- Socket 0 Limit 0 -\n");
     dump_rapl_limit(&l1, stdout);
-    fprintf(stdout, "Socket 0 Limit 1\n");
+    fprintf(stdout, "- Socket 0 Limit 1 -\n");
     dump_rapl_limit(&l2, stdout);
     get_pkg_rapl_limit(1, &l1, &l2);
-    fprintf(stdout, "Socket 1 Limit 0\n");
+    fprintf(stdout, "- Socket 1 Limit 0 -\n");
     dump_rapl_limit(&l1, stdout);
-    fprintf(stdout, "Socket 1 Limit 1\n");
+    fprintf(stdout, "- Socket 1 Limit 1 -\n");
     dump_rapl_limit(&l2, stdout);
-    fprintf(stdout, "Socket 0 DRAM Limit\n");
+
+    fprintf(stdout, "\n=== DRAM Domain ===\n");
+    fprintf(stdout, "- Socket 0 -\n");
     get_dram_rapl_limit(0, &l3);
     dump_rapl_limit(&l3, stdout);
-    fprintf(stdout, "Socket 1 DRAM Limit\n");
+    fprintf(stdout, "- Socket 1 -\n");
     get_dram_rapl_limit(1, &l3);
     dump_rapl_limit(&l3, stdout);
-    fprintf(stdout, "Socket 0 PP0 Limit\n");
+
+    fprintf(stdout, "\n=== PP0 Domain ===\n");
+    fprintf(stdout, "- Socket 0 -\n");
     get_pp_rapl_limit(0, &l4, NULL);
     dump_rapl_limit(&l4, stdout);
-    fprintf(stdout, "Socket 1 PP0 Limit\n");
+    fprintf(stdout, "- Socket 1 -\n");
     get_pp_rapl_limit(1, &l4, NULL);
     dump_rapl_limit(&l4, stdout);
-
 }
 
-void type2_print(int * idx, int argc, char ** argv)
+
+int printing_functions(char *type)
 {
-    switch  (argv[++*idx][0])
+    uint64_t *rapl_flags = NULL;
+    struct rapl_data *rd = NULL;
+
+    if (init_msr())
     {
-        case 'r':        
-            get_rapl_stuff();            
-            break;
-        case 'i':
-            dump_rapl_power_info(stdout);
-            break;
-        default:
-            generic_error(*idx, argv);
+        fprintf(stderr, "Error: unable to initialize msr.\n");
+        return -1;
     }
+
+    int ret = rapl_init(&rd, &rapl_flags);
+    if (ret < 0)
+    {
+        fprintf(stderr, "Error: unable to initialize rapl.\n");
+        return -1;
+    }
+
+    if (strncmp(type, "rapl", strlen("rapl")) == 0)
+    {
+        get_rapl_stuff();
+    }
+    else if (strncmp(type, "info", strlen("info")) == 0)
+    {
+        dump_rapl_power_info(stdout);
+    }
+    else
+    {
+        fprintf(stderr, "Error: unknown printing_functions() parameter \"%s\"\n", type);
+        return -1;
+    }
+    return 0;
 }
 
-void printing_functions(int * idx, int argc, char ** argv)
-{
-    uint64_t * rapl_flags = NULL;
-    struct rapl_data * rd = NULL, *r1 = NULL, *r2 = NULL;
-    switch(argv[*idx][2])
-    {
-        rapl_init(&rd, &rapl_flags);
-        case '\0':
-            if (*idx >= argc)
-            {
-                generic_error(*idx, argv);
-            }
-            type2_print(idx, argc, argv);
-            break;
-        case 'r':
-            get_rapl_stuff();
-            break;
-        case 'i':
-            dump_rapl_power_info(stdout);
-            break;
-        default:
-            generic_error(*idx, argv);
-    }
-}
-
-int main(int argc, char ** argv)
+int main(int argc, char **argv)
 {
     short israpl = 0;
-    char next = '\0';
-    ISVERBOSE = 0;
-    init_msr();
-    uint64_t msr_data;
-    uint64_t msr;
-    unsigned thread;
-    int i;
-    for (i = 0; i < argc; i++)
+    int i, opt;
+    const char *usage = "\n"
+                        "NAME\n"
+                        "  msrmod - quick access to msr functions\n"
+                        "\n"
+                        "SYNOPSIS\n"
+                        "   %s [--help | -h]\n"
+                        "      [-v] [-i] [-p data_type] [-l msr_type]\n"
+                        "      [-r msr_hex] [-w msr_hex] [-s set_type]\n"
+                        "      [-c socket_id] [-t thread_id] [-d value_hex]\n"
+                        "      [-a power1] [-b time1] [-e power2] [-f time2]\n"
+                        "\n"
+                        "OVERVIEW\n"
+                        "  MSRMOD is designed for quick access to common\n"
+                        "  libmsr functionalities, such as restoring the\n"
+                        "  RAPL power limits to default values and enforcing\n"
+                        "  a package domain RAPL power limit on a socket.\n"
+                        "  This tool is in alpha and is not fully tested.\n"
+                        "  Updates may be sparse.\n"
+                        "\n"
+                        "OPTIONS\n"
+                        "  --help | -h \n"
+                        "      Display this help information, then exit.\n"
+                        "  -v\n"
+                        "      Verbose mode.\n"
+                        "  -i\n"
+                        "      Interactive mode currently not implemented.\n"
+                        "  -p data_type\n"
+                        "      Print data. Valid values for data_type are\n"
+                        "      'info' for general rapl info or 'rapl' for\n"
+                        "      current rapl data.\n"
+                        "  -l msr_type\n"
+                        "      List available MSRs. Valid values for msr_type\n"
+                        "      are 'all', 'rapl', or 'counters'.\n"
+                        "  -r msr_hex\n"
+                        "      Read the register. MSR must be given in\n"
+                        "      hexadecimal. Used in conjunction with the -t\n"
+                        "      flag.\n"
+                        "  -w msr_hex\n"
+                        "      Write the register. MSR must be given in\n"
+                        "      hexadecimal. Used in conjunction with the -t\n"
+                        "      and -d flags.\n"
+                        "  -s set_type\n"
+                        "      Set rapl MSRs. Valid values for set_type are\n"
+                        "      'default' or 'package' or 'memory'. Used in\n"
+                        "      conjunction with the -c, -a, -b, -e, and -f\n"
+                        "      flags.\n"
+                        "  -c socket_id\n"
+                        "      Socket ID where power limit will be enforced.\n"
+                        "      Default is socket 0.\n"
+                        "  -t thread_id\n"
+                        "      Thread ID where read/write MSR will be\n"
+                        "      performed. Default is thread 0.\n"
+                        "  -d value_hex\n"
+                        "      Value to write to MSR in hexadecimal.\n"
+                        "  -a power1_watts\n"
+                        "      Power limit 1 for RAPL package domain.\n"
+                        "  -b time1_sec\n"
+                        "      Time window 1 for RAPL package domain.\n"
+                        "  -e power2_watts\n"
+                        "      Power limit 2 for RAPL package domain.\n"
+                        "  -f time2_sec\n"
+                        "      Time window 2 for RAPL package domain.\n"
+                        "\n";
+
+    if (argc == 1 || argc > 1 && (
+                strncmp(argv[1], "--help" , strlen("--help")) == 0 ||
+                strncmp(argv[1], "-h" , strlen("-h")) == 0 ))
     {
-        if (argv[i][0] == '-')
+        printf(usage, argv[0]);
+        return 0;
+    }
+
+    ISVERBOSE = 0;
+    char *print_data_type = '\0';
+    char *print_events = '\0';
+    char *set_msr_type= '\0';
+    uint64_t msr_data, msr;
+    int set_msr_data = 0;
+    int set_power_lim1 = 0;
+    int set_power_lim2 = 0;
+    int set_time_lim1 = 0;
+    int set_time_lim2 = 0;
+    unsigned thread = 0;
+    unsigned socket = 0;
+    int isread = 0;
+    int iswrite = 0;
+    int isset = 0;
+    int power_lim1 = 0;
+    int power_lim2 = 0;
+    int time_lim1 = 0;
+    int time_lim2 = 0;
+
+    while ((opt = getopt(argc, argv, "vip:l:r:w:s:c:t:d:a:b:e:f:")) != -1)
+    {
+        switch (opt)
         {
-            switch(argv[i][1])
-            {
-                case 'v':
-                    // do verbose stuff
-                    ISVERBOSE = 1;
-                    break;
-                case 'r':
-                    // read an msr
-                    if (argc - i < 3)
-                    {
-                        fprintf(stderr, "Error: not enough parameters to read flag\n");
-                        generic_error(i, argv);
-                    }
-                    thread = atoi(argv[++i]);
-                    msr = strtol(argv[++i], NULL, 16);
-                    read_msr_by_idx(thread, msr, &msr_data);
-                    fprintf(stdout, "%lx\n", msr_data);
-                    break;
-                case 'w':
-                    // write an msr
-                    if (argc - i < 4)
-                    {
-                        fprintf(stderr, "Error: not enough parameters to write flag\n");
-                        generic_error(i, argv);
-                    }
-                    thread = atoi(argv[++i]);
-                    msr = strtol(argv[++i], NULL, 16);
-                    msr_data = strtol(argv[++i], NULL, 16);
-                    write_msr_by_idx(thread, msr, msr_data);
-                    break;
-                case 'i':
-                    // do interactive stuff
-                    fprintf(stdout, "Interactive mode is not yet available\n");
-                    break;
-                case '-':
-                    // go deeper down the rabbit hole
-                    switch(argv[i][2])
-                    {
-                        case 'h':
-                            // print help stuff
-                            help_stuff();
-                            break;
-                    }
-                    return 0;
-                case 'p':
-                    // print out stuff
-                    printing_functions(&i, argc, argv);
-                    break;
-                case 's':
-                    // set a socket limit or set to default
-                    set_functions(&i, argc, argv);
-                    break;
-                case 'l':
-                    // list available events
-                    list_functions(&i, argc, argv);
-                    
-                    return 0;
-            }
+            case 'v':
+                /* Do verbose stuff. */
+                ISVERBOSE = 1;
+                break;
+            case 'i':
+                /* Do interactive stuff. */
+                fprintf(stdout, "Interactive mode is not yet available\n");
+                break;
+            case 'p':
+                /* Print out stuff. */
+                print_data_type = optarg;
+                printing_functions(print_data_type);
+                break;
+            case 'l':
+                /* List available events. */
+                print_events = optarg;
+                list_functions(print_events);
+                break;
+            case 'r':
+                /* Read an msr. */
+                isread = 1;
+                msr = strtol(optarg, NULL, 16);
+                break;
+            case 'w':
+                /* Write an msr. */
+                iswrite = 1;
+                msr = strtol(optarg, NULL, 16);
+                break;
+            case 's':
+                /* Set a socket limit or restore to defaults. */
+                set_msr_type = optarg;
+                isset = 1;
+                break;
+            case 'c':
+                /* Set socket ID. */
+                socket = atoi(optarg);
+                break;
+            case 't':
+                /* Set location where read/write will be performed. */
+                thread = atoi(optarg);
+                break;
+            case 'd':
+                /* Set value to write to msr. */
+                set_msr_data = 1;
+                msr_data = strtol(optarg, NULL, 16);
+                break;
+            case 'a':
+                /* Power (in Watts) for RAPL limit 1. */
+                set_power_lim1 = 1;
+                power_lim1 = atof(optarg);
+                break;
+            case 'b':
+                /* Time (in seconds) for RAPL limit 1. */
+                set_time_lim1 = 1;
+                time_lim1 = atof(optarg);
+                break;
+            case 'e':
+                /* Power (in Watts) for RAPL limit 2. */
+                set_power_lim2 = 1;
+                power_lim2 = atof(optarg);
+                break;
+            case 'f':
+                /* Time (in seconds) for RAPL limit 2. */
+                set_time_lim2 = 1;
+                time_lim2 = atof(optarg);
+                break;
+            default:
+                fprintf(stderr, "\nError: unknown parameter \"%c\"\n", optopt);
+                fprintf(stderr, usage, argv[0]);
+                return -1;
+                break;
         }
     }
- //   if (israpl)
- //   {
-//        do_rapl_stuff(isverbose);
- //   }
+
+    if (isread && iswrite)
+    {
+        fprintf(stderr, "\nError: can only perform read or write: -r OR -w.\n");
+        fprintf(stderr, usage, argv[0]);
+        return -1;
+    }
+
+    if (isread)
+    {
+        if (init_msr())
+        {
+            fprintf(stderr, "Error: unable to initialize msr.\n");
+            return -1;
+        }
+        read_msr_by_idx(thread, msr, &msr_data);
+        fprintf(stdout, "Reading MSR 0x%lx on CPU %d: %lx\n", msr, thread, msr_data);
+    }
+    else if (iswrite && set_msr_data)
+    {
+        if (init_msr())
+        {
+            fprintf(stderr, "Error: unable to initialize msr.\n");
+            return -1;
+        }
+        write_msr_by_idx(thread, msr, msr_data);
+        fprintf(stdout, "Writing %lx to MSR 0x%lx on CPU %d\n", msr_data, msr, thread);
+    }
+    else if (iswrite && !set_msr_data)
+    {
+        fprintf(stderr, "\nError: missing value to write (-d).\n");
+        fprintf(stderr, usage, argv[0]);
+        return -1;
+    }
+    else if (isset)
+    {
+        set_functions(set_msr_type, socket, power_lim1, time_lim1, power_lim2, time_lim2);
+    }
     return 0;
 }

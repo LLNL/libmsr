@@ -1,123 +1,252 @@
 /* msr_turbo.c
  *
- * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
- * Produced at Lawrence Livermore National Laboratory  
+ * Copyright (c) 2011-2016, Lawrence Livermore National Security, LLC.
+ * LLNL-CODE-645430
+ *
+ * Produced at Lawrence Livermore National Laboratory
  * Written by  Barry Rountree, rountree@llnl.gov
  *             Scott Walker,   walker91@llnl.gov
  *             Kathleen Shoga, shoga1@llnl.gov
  *
- * All rights reserved. 
- * 
+ * All rights reserved.
+ *
  * This file is part of libmsr.
- * 
+ *
  * libmsr is free software: you can redistribute it and/or modify it under the
  * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- * 
- * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
- * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU Lesser General Public License along
- * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
  *
- * This material is based upon work supported by the U.S. Department
- * of Energy's Lawrence Livermore National Laboratory. Office of
- * Science, under Award number DE-AC52-07NA27344.
+ * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmsr. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * This material is based upon work supported by the U.S. Department of
+ * Energy's Lawrence Livermore National Laboratory. Office of Science, under
+ * Award number DE-AC52-07NA27344.
  *
  */
 
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
+
 #include "msr_core.h"
 #include "msr_turbo.h"
+#include "msr_rapl.h"
 #include "memhdlr.h"
+#include "libmsr_error.h"
+#include "cpuid.h"
+#include "libmsr_debug.h"
 
-/*
-// MSRs common to 062A and 062D.
-#define MSR_MISC_ENABLE			0x1A0	// aka IA32_MISC_ENABLE
-						// setting bit 38 high DISABLES turbo mode. To be done in the BIOS.
-						//
-#define IA32_PERF_CTL			0x199   // setting bit 32 high DISABLES turbo mode. This is the software control.
-*/
+/* IA32_MISC_ENABLE (0x1A0)
+ * Setting bit 38 high disables Turbo Boost. To be done in the BIOS.
+ *
+ * IA32_PERF_CTL (0x199)
+ * Setting bit 32 high disables Turbo Boost. This is the software control.
+ */
 
-int turbo_storage(uint64_t *** val)
+void turbo_storage(uint64_t ***val)
 {
-    static uint64_t ** perf_ctl = NULL;
-    static int init = 1;
+    static uint64_t **perf_ctl = NULL;
+    static int init = 0;
     static uint64_t numDevs = 0;
-    if (init)
+    if (!init)
     {
         numDevs = num_devs();
         perf_ctl = (uint64_t **) libmsr_malloc(numDevs * sizeof(uint64_t *));
-        init = 0;
+        init = 1;
     }
-    if (val)
+    if (val != NULL)
     {
         *val = perf_ctl;
+    }
+}
+
+void enable_turbo(void)
+{
+    int j;
+    static uint64_t numDevs = 0;
+    static uint64_t **val =  NULL;
+    if (!numDevs)
+    {
+        numDevs = num_devs();
+        val = (uint64_t **) libmsr_malloc(numDevs * sizeof(uint64_t *));
+        turbo_storage(&val);
+    }
+    /* Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 1. */
+    read_batch(PERF_CTL);
+    for (j = 0; j < numDevs; j++)
+    {
+        *val[j] &= ~(((uint64_t)1) << 32);
+        fprintf(stderr, "0x%016lx\t", *val[j] & (((uint64_t)1)<<32));
+    }
+    write_batch(PERF_CTL);
+}
+
+void disable_turbo(void)
+{
+    int j;
+    static uint64_t numDevs = 0;
+    static uint64_t **val = NULL;
+    if (!numDevs)
+    {
+        numDevs = num_devs();
+        val = (uint64_t **) libmsr_malloc(numDevs * sizeof(uint64_t *));
+        turbo_storage(&val);
+    }
+    /* Set IDA/Turbo DISENGAGE (bit 32) of IA32_PERF_CTL to 0. */
+    read_batch(PERF_CTL);
+    for (j = 0; j < numDevs; j++)
+    {
+        *val[j] |= ((uint64_t)1) << 32;
+    }
+    write_batch(PERF_CTL);
+}
+
+void dump_turbo(FILE *writedest)
+{
+    int core;
+    static uint64_t numDevs = 0;
+    uint64_t val;
+    if (!numDevs)
+    {
+        numDevs = num_devs();
+    }
+    for (core = 0; core < numDevs; core++)
+    {
+        read_msr_by_idx(core, IA32_MISC_ENABLE, &val);
+        fprintf(writedest, "Core: %d\n", core);
+        fprintf(writedest, "0x%016lx\t", val & (((uint64_t)1)<<38));
+        fprintf(writedest, "| IA32_MISC_ENABLE | 38 (0 = Turbo Available) \n");
+        read_msr_by_idx(core, IA32_PERF_CTL, &val);
+        fprintf(writedest, "0x%016lx \t", val & (((uint64_t)1)<<32));
+        fprintf(writedest, "|   IA32_PERF_CTL  | 32 (0 = Turbo Engaged) \n");
+    }
+}
+
+void calc_max_non_turbo(const unsigned socket, struct turbo_activation_ratio_data *info)
+{
+    sockets_assert(&socket, __LINE__, __FILE__);
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "%s %s::%d DEBUG: (calc_max_non_turbo)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+#endif
+    printf("  bits = %lx\n", info->bits);
+    info->max_non_turbo_ratio = ((double)(MASK_VAL(info->bits, 7, 0))) * 100;
+    printf("  max non turbo ratio = %.0f\n", info->max_non_turbo_ratio);
+}
+
+int get_max_turbo_activation_ratio(const unsigned socket, struct turbo_activation_ratio_data *info)
+{
+    static uint64_t *rapl_flags = NULL;
+    sockets_assert(&socket, __LINE__, __FILE__);
+
+    if (rapl_flags == NULL)
+    {
+        if (rapl_storage(NULL, &rapl_flags))
+        {
+            return -1;
+        }
+    }
+
+    /* Check if MSR_TURBO_ACTIVATION_RATIO exists on this platform. */
+    if (*rapl_flags & TURBO_ACTIVATION_RATIO)
+    {
+        read_msr_by_coord(socket, 0, 0, MSR_TURBO_ACTIVATION_RATIO, &(info->bits));
+        calc_max_non_turbo(socket, info);
+    }
+    else
+    {
+        libmsr_error_handler("get_max_turbo_activation_ratio(): MSR_TURBO_ACTIVATION_RATIO not supported", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
     }
     return 0;
 }
 
-void
-disable_turbo(){
+void calc_max_turbo_ratio(const unsigned socket, struct turbo_limit_data *info, struct turbo_limit_data *info2)
+{
+    sockets_assert(&socket, __LINE__, __FILE__);
+#ifdef LIBMSR_DEBUG
+    fprintf(stderr, "%s %s::%d DEBUG: (calc_max_non_turbo)\n", getenv("HOSTNAME"), __FILE__, __LINE__);
+#endif
 
-	int j;
-    static uint64_t numDevs = 0;
-    static uint64_t ** val = NULL;
-    if (!numDevs)
+    if (info != NULL)
     {
-        numDevs = num_devs();
-        val = (uint64_t **) libmsr_malloc(numDevs * sizeof(uint64_t *));
-        turbo_storage(&val);
+        printf("   bits = %lx\n", info->bits);
+        info->max_1c = ((double)(MASK_VAL(info->bits, 7, 0))) * 100;
+        info->max_2c = ((double)(MASK_VAL(info->bits, 15, 8))) * 100;
+        info->max_3c = ((double)(MASK_VAL(info->bits, 23, 16))) * 100;
+        info->max_4c = ((double)(MASK_VAL(info->bits, 31, 24))) * 100;
+        info->max_5c = ((double)(MASK_VAL(info->bits, 39, 32))) * 100;
+        info->max_6c = ((double)(MASK_VAL(info->bits, 47, 40))) * 100;
+        info->max_7c = ((double)(MASK_VAL(info->bits, 55, 48))) * 100;
+        info->max_8c = ((double)(MASK_VAL(info->bits, 63, 56))) * 100;
+        printf("   max ratio 1C  = %.0f MHz\n", info->max_1c);
+        printf("   max ratio 2C  = %.0f MHz\n", info->max_2c);
+        printf("   max ratio 3C  = %.0f MHz\n", info->max_3c);
+        printf("   max ratio 4C  = %.0f MHz\n", info->max_4c);
+        printf("   max ratio 5C  = %.0f MHz\n", info->max_5c);
+        printf("   max ratio 6C  = %.0f MHz\n", info->max_6c);
+        printf("   max ratio 7C  = %.0f MHz\n", info->max_7c);
+        printf("   max ratio 8C  = %.0f MHz\n", info->max_8c);
+        printf("\n");
     }
-    // Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 0.
-    read_batch(PERF_CTL);
-	for(j=0; j<numDevs; j++){
-		*val[j] |= ((uint64_t)1) << 32;
-	}
-    write_batch(PERF_CTL);
+    else if (info2 != NULL)
+    {
+        printf("   bits = %lx\n", info2->bits);
+        info2->max_1c = ((double)(MASK_VAL(info2->bits, 7, 0))) * 100;
+        info2->max_2c = ((double)(MASK_VAL(info2->bits, 15, 8))) * 100;
+        info2->max_3c = ((double)(MASK_VAL(info2->bits, 23, 16))) * 100;
+        info2->max_4c = ((double)(MASK_VAL(info2->bits, 31, 24))) * 100;
+        info2->max_5c = ((double)(MASK_VAL(info2->bits, 39, 32))) * 100;
+        info2->max_6c = ((double)(MASK_VAL(info2->bits, 47, 40))) * 100;
+        info2->max_7c = ((double)(MASK_VAL(info2->bits, 55, 48))) * 100;
+        info2->max_8c = ((double)(MASK_VAL(info2->bits, 63, 56))) * 100;
+        printf("   max ratio 9C  = %.0f MHz\n", info2->max_1c);
+        printf("   max ratio 10C = %.0f MHz\n", info2->max_2c);
+        printf("   max ratio 11C = %.0f MHz\n", info2->max_3c);
+        printf("   max ratio 12C = %.0f MHz\n", info2->max_4c);
+        printf("   max ratio 13C = %.0f MHz\n", info2->max_5c);
+        printf("   max ratio 14C = %.0f MHz\n", info2->max_6c);
+        printf("   max ratio 15C = %.0f MHz\n", info2->max_7c);
+        printf("   max ratio 16C = %.0f MHz\n", info2->max_8c);
+    }
 }
 
-
-void
-enable_turbo(){
-	int j;
-    static uint64_t numDevs = 0;
-    static uint64_t ** val =  NULL;
-    if (!numDevs)
+int get_turbo_ratio_limit(const unsigned socket, struct turbo_limit_data *info, struct turbo_limit_data *info2)
+{
+    static uint64_t *rapl_flags = NULL;
+    sockets_assert(&socket, __LINE__, __FILE__);
+    if (rapl_flags == NULL)
     {
-        numDevs = num_devs();
-        val = (uint64_t **) libmsr_malloc(numDevs * sizeof(uint64_t *));
-        turbo_storage(&val);
+        if (rapl_storage(NULL, &rapl_flags))
+        {
+            return -1;
+        }
     }
-    // Set bit 32 "IDA/Turbo DISENGAGE" of IA32_PERF_CTL to 1.
-    read_batch(PERF_CTL);
-	for(j=0; j<numDevs;j++){
-		*val[j] &= ~(((uint64_t)1) << 32);
-        fprintf(stderr, "0x%016lx\t", *val[j] & (((uint64_t)1)<<32));
-	}
-    write_batch(PERF_CTL);
-}
 
-void
-dump_turbo(FILE * writeFile){
-	int core;
-    static uint64_t numDevs = 0;
-    if (!numDevs)
+    /* Check if MSR_TURBO_RATIO_LIMIT exists on this platform. */
+    if (*rapl_flags & TURBO_RATIO_LIMIT)
     {
-        numDevs = num_devs();
+        read_msr_by_coord(socket, 0, 0, MSR_TURBO_RATIO_LIMIT, &(info->bits));
+        calc_max_turbo_ratio(socket, info, NULL);
     }
-	uint64_t val;
-    for(core=0; core<numDevs; core++){
-        read_msr_by_idx(core, MSR_MISC_ENABLE, &val);
-        fprintf(writeFile, "Core: %d\n", core);
-        fprintf(writeFile, "0x%016lx\t", val & (((uint64_t)1)<<38));
-        fprintf(writeFile, "| MSR_MISC_ENABLE | 38 (0=Turbo Available) \n");
-        read_msr_by_idx(core, IA32_PERF_CTL, &val);
-        fprintf(writeFile, "0x%016lx \t", val & (((uint64_t)1)<<32));
-        fprintf(writeFile, "| IA32_PERF_CTL | 32 (0=Turbo Engaged) \n");
+    else
+    {
+        libmsr_error_handler("get_turbo_ratio_limit(): MSR_TURBO_RATIO_LIMIT not supported", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
     }
+
+    /* Check if MSR_TURBO_RATIO_LIMIT1 exists on this platform. */
+    if (*rapl_flags & TURBO_RATIO_LIMIT1)
+    {
+        read_msr_by_coord(socket, 0, 0, MSR_TURBO_RATIO_LIMIT1, &(info2->bits));
+        calc_max_turbo_ratio(socket, NULL, info2);
+    }
+    else
+    {
+        libmsr_error_handler("get_turbo_ratio_limit(): MSR_TURBO_RATIO_LIMIT1 not supported", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+    }
+    return 0;
 }

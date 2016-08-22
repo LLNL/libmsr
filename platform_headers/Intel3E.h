@@ -1,55 +1,53 @@
-/* Intel Ivy Bridge master header file
+/* Intel Ivy Bridge Master Header File
  *
- * Copyright (c) 2011-2016, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
- * Produced at Lawrence Livermore National Laboratory  
+ * Copyright (c) 2011-2016, Lawrence Livermore National Security, LLC.
+ * LLNL-CODE-645430
+ *
+ * Produced at Lawrence Livermore National Laboratory
  * Written by  Barry Rountree, rountree@llnl.gov
  *             Scott Walker,   walker91@llnl.gov
  *             Kathleen Shoga, shoga1@llnl.gov
  *
- * All rights reserved. 
- * 
+ * All rights reserved.
+ *
  * This file is part of libmsr.
- * 
+ *
  * libmsr is free software: you can redistribute it and/or modify it under the
  * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- * 
- * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
- * PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU Lesser General Public License along
- * with libmsr.  If not, see <http://www.gnu.org/licenses/>. 
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
  *
- * This material is based upon work supported by the U.S. Department
- * of Energy's Lawrence Livermore National Laboratory. Office of
- * Science, under Award number DE-AC52-07NA27344.
+ * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libmsr. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * This material is based upon work supported by the U.S. Department of
+ * Energy's Lawrence Livermore National Laboratory. Office of Science, under
+ * Award number DE-AC52-07NA27344.
  *
  */
-
-//#define EXPERIMENTAL
-
-#ifdef EXPERIMENTAL
-#define STR(s) #s
-#define XSTR(s) STR(s)
-#define CAT(s, t) s ## t
-#endif
 
 #define COMPILED_VEND 0x8086 // Intel
 #define COMPILED_ARCH 0x3E   // Ivy Bridge
 
-// CLOCKS
-#define MSR_IA32_MPERF 			0xE7
-#define MSR_IA32_APERF 			0xE8
+/**********/
+/* CLOCKS */
+/**********/
+#define IA32_MPERF              0xE7
+#define IA32_APERF              0xE8
 #define IA32_TIME_STAMP_COUNTER 0x10
-#define IA32_CLOCK_MODULATION	0x19A
-#define IA32_PERF_STATUS		0x198
-#define IA32_PERF_CTL			0x199
+#define IA32_CLOCK_MODULATION   0x19A
+#define IA32_PERF_STATUS        0x198
+#define IA32_PERF_CTL           0x199
 
-// COUNTERS
-#define IA32_FIXED_CTR_CTRL			0x38D	// Controls for fixed ctr0, 1, and 2 
+/************/
+/* COUNTERS */
+/************/
+#define IA32_FIXED_CTR_CTRL			0x38D	// Controls for fixed ctr0, 1, and 2
 #define IA32_PERF_GLOBAL_CTRL		0x38F	// Enables for fixed ctr0,1,and2 here
 #define IA32_PERF_GLOBAL_STATUS		0x38E	// Overflow condition can be found here
 #define IA32_PERF_GLOBAL_OVF_CTRL	0x390	// Can clear the overflow here
@@ -264,170 +262,152 @@
 #define MSR_C14_PMON_CTR3		0xED9
 #define MSR_C14_BOX_FILTER1		0xEDA
 
-// MISC
-#define IA32_MISC_ENABLE 		0x1A0
-#define MSR_PKG_C3_RESIDENCY 	0x3F8
-#define MSR_PKG_C6_RESIDENCY 	0x3F9
-#define MSR_PKG_C7_RESIDENCY 	0x3FA
-#define MSR_CORE_C3_RESIDENCY 	0x3FC
-#define MSR_CORE_C6_RESIDENCY 	0x3FD
-#define MSR_CORE_C7_RESIDENCY 	0x3FE
-#define PKG_C2_RESIDENCY		0x60D
+/********/
+/* MISC */
+/********/
+#define IA32_MISC_ENABLE      0x1A0
+#define MSR_PKG_C2_RESIDENCY  0x60D
+#define MSR_PKG_C3_RESIDENCY  0x3F8
+#define MSR_PKG_C6_RESIDENCY  0x3F9
+#define MSR_PKG_C7_RESIDENCY  0x3FA
+#define MSR_CORE_C3_RESIDENCY 0x3FC
+#define MSR_CORE_C6_RESIDENCY 0x3FD
+#define MSR_CORE_C7_RESIDENCY 0x3FE
 
-// RAPL
-#define MSR_RAPL_POWER_UNIT 		0x606	// ro
-#define MSR_PKG_POWER_LIMIT 		0x610 // rw
-#define MSR_PKG_ENERGY_STATUS 		0x611 // ro sic;  MSR_PKG_ENERY_STATUS
-#define MSR_PKG_POWER_INFO 			0x614 // rw text states ro
-#define MSR_PP0_POWER_LIMIT 		0x638 // rw
-#define MSR_PP0_ENERGY_STATUS 		0x639 // ro
-#define MSR_PP0_POLICY 				0x63A // rw
-#define MSR_PP0_PERF_STATUS 		0x63B // ro
+/********/
+/* RAPL */
+/********/
+#define MSR_RAPL_POWER_UNIT    0x606 // ro
+#define MSR_PKG_POWER_LIMIT    0x610 // rw
+#define MSR_PKG_ENERGY_STATUS  0x611 // ro sic;
+#define MSR_PKG_POWER_INFO     0x614 // rw text states ro
+#define MSR_PP0_POWER_LIMIT    0x638 // rw
+#define MSR_PP0_ENERGY_STATUS  0x639 // ro
+#define MSR_PP0_POLICY         0x63A // rw
+#define MSR_PP0_PERF_STATUS    0x63B // ro
 
-#define MSR_PP1_POWER_LIMIT 		0x640 // rw
-#define MSR_PP1_ENERGY_STATUS 		0x641	// ro.  sic; MSR_PP1_ENERY_STATUS
-#define MSR_PP1_POLICY 				0x642 // rw
+#define MSR_PP1_POWER_LIMIT    0x640 // rw
+#define MSR_PP1_ENERGY_STATUS  0x641 // ro. sic
+#define MSR_PP1_POLICY         0x642 // rw
 
-#define MSR_PKG_PERF_STATUS 		0x613 // ro
-#define MSR_DRAM_POWER_LIMIT 		0x618 // rw	
-#define MSR_DRAM_ENERGY_STATUS 		0x619	// ro.  sic; MSR_DRAM_ENERY_STATUS
-#define MSR_DRAM_PERF_STATUS 		0x61B // ro
-#define MSR_DRAM_POWER_INFO 		0x61C // rw text states ro
+#define MSR_PKG_PERF_STATUS    0x613 // ro
+#define MSR_DRAM_POWER_LIMIT   0x618 // rw
+#define MSR_DRAM_ENERGY_STATUS 0x619 // ro. sic;
+#define MSR_DRAM_PERF_STATUS   0x61B // ro
+#define MSR_DRAM_POWER_INFO    0x61C // rw text states ro
 
-// THERMAL
-#define IA32_THERM_STATUS			 0x19C
-#define MSR_THERM2_CTL				 0x19D
-#define IA32_THERM_INTERRUPT		 0x19B
-#define IA32_PACKAGE_THERM_STATUS	 0x1B1
+/***********/
+/* THERMAL */
+/***********/
+#define IA32_THERM_STATUS            0x19C
+#define MSR_THERM2_CTL               0x19D
+#define IA32_THERM_INTERRUPT         0x19B
+#define IA32_PACKAGE_THERM_STATUS    0x1B1
 #define IA32_PACKAGE_THERM_INTERRUPT 0x1B2
-#define MSR_TEMPERATURE_TARGET		 0x1A2
+#define MSR_TEMPERATURE_TARGET       0x1A2
 
-// TURBO
-#define MSR_MISC_ENABLE	0x1A0
-#define IA32_PERF_CTL	0x199
+/*********/
+/* TURBO */
+/*********/
+#define IA32_MISC_ENABLE           0x1A0
+#define IA32_PERF_CTL              0x199
+#define MSR_TURBO_ACTIVATION_RATIO 0x64C
+#define MSR_TURBO_RATIO_LIMIT      0x1AD
+#define MSR_TURBO_RATIO_LIMIT1     0x1AE
 
-// CSR iMC
-#define IMC0_DEV_1 16
-#define IMC0_DEV_2 16
-#define IMC0_DEV_3 16
-#define IMC0_DEV_4 16
+/***********/
+/* CSR iMC */
+/***********/
+#define IMC0_DEV         16
+#define IMC1_DEV         30
+#define IMC_CH0_FUNC     4
+#define IMC_CH1_FUNC     5
+#define IMC_CH2_FUNC     0
+#define IMC_CH3_FUNC     1
 
-#define IMC1_DEV_1 30
-#define IMC1_DEV_2 30
-#define IMC1_DEV_3 30
-#define IMC1_DEV_4 30
+#define CSR_PMONCTRCFG0  0xD8
+#define CSR_PMONCTRCFG1  0xDC
+#define CSR_PMONCTRCFG2  0xE0
+#define CSR_PMONCTRCFG3  0xE8
 
-#define IMC_CH0_FUNC 4
-#define IMC_CH1_FUNC 5
-#define IMC_CH2_FUNC 0
-#define IMC_CH3_FUNC 1
-
-#define CSR_PMONCTRCFG0 0xD8
-#define CSR_PMONCTRCFG1 0xDC
-#define CSR_PMONCTRCFG2 0xE0
-#define CSR_PMONCTRCFG3 0xE8
-
-#define CSR_PMONCTR0	 0xA0
-#define CSR_PMONCTR1	 0xA8
-#define CSR_PMONCTR2	 0xB0
-#define CSR_PMONCTR3	 0xB8
+#define CSR_PMONCTR0     0xA0
+#define CSR_PMONCTR1     0xA8
+#define CSR_PMONCTR2     0xB0
+#define CSR_PMONCTR3     0xB8
 
 #define CSR_PMONUNITCTRL 0xF4
 #define CSR_PMONUNITSTAT 0xF8
 
-// CSR iMC events
-#define IMC_NUMCTRS 8
-
-#define EVT_DCLOCKTICKS 0x00
-#define EVT_ACT_COUNT 0x01
-#define EVT_PRE_COUNT 0x02
-#define EVT_CAS_COUNT 0x04
-#define EVT_DRAM_REFRESH 0x05
-#define EVT_DRAM_PRE_ALL 0x06
-#define EVT_MAJOR_MODES 0x07
-#define EVT_PREEMPTION 0x08
-#define EVT_ECC_CORRECTABLE_ERRORS 0x09
-#define EVT_RPQ_INSERTS 0x10
-#define EVT_RPQ_CYCLES_NE 0x11
-#define EVT_WPQ_INSERTS 0x20
-#define EVT_WPQ_CYCLES_NE 0x21
-#define EVT_WPQ_CYCLES_FULL 0x22
-#define EVT_WPQ_READ_HIT 0x23
-#define EVT_WPQ_WRITE_HIT 0x24
-#define EVT_POWER_THROTTLE_CYCLES 0x41
-#define EVT_POWER_PCU_THROTTLING 0x42
-#define EVT_POWER_SELF_REFRESH 0x43
-#define EVT_POWER_CKE_CYCLES 0x83
-#define EVT_POWER_CHANNEL_DLLOFF 0x84
-#define EVT_POWER_CHANNEL_PD 0x85
+/******************/
+/* CSR iMC EVENTS */
+/******************/
+#define EVT_DCLOCKTICKS                    0x00
+#define EVT_ACT_COUNT                      0x01
+#define EVT_PRE_COUNT                      0x02
+#define EVT_CAS_COUNT                      0x04
+#define EVT_DRAM_REFRESH                   0x05
+#define EVT_DRAM_PRE_ALL                   0x06
+#define EVT_MAJOR_MODES                    0x07
+#define EVT_PREEMPTION                     0x08
+#define EVT_ECC_CORRECTABLE_ERRORS         0x09
+#define EVT_RPQ_INSERTS                    0x10
+#define EVT_RPQ_CYCLES_NE                  0x11
+#define EVT_WPQ_INSERTS                    0x20
+#define EVT_WPQ_CYCLES_NE                  0x21
+#define EVT_WPQ_CYCLES_FULL                0x22
+#define EVT_WPQ_READ_HIT                   0x23
+#define EVT_WPQ_WRITE_HIT                  0x24
+#define EVT_POWER_THROTTLE_CYCLES          0x41
+#define EVT_POWER_PCU_THROTTLING           0x42
+#define EVT_POWER_SELF_REFRESH             0x43
+#define EVT_POWER_CKE_CYCLES               0x83
+#define EVT_POWER_CHANNEL_DLLOFF           0x84
+#define EVT_POWER_CHANNEL_PD               0x85
 #define EVT_POWER_CRITICAL_THROTTLE_CYCLES 0x86
-#define EVT_VMSE_WR_PUSH 0x90
-#define EVT_VMSE_MXB_WR_OCCUPANCY 0x91
-#define EVT_RD_CAS_PRIO	0xA0
-#define EVT_BYP_CMDS 0xA1
-#define EVT_RD_CAS_RANK0 0xB0 
-#define EVT_RD_CAS_RANK1 0xB1 
-#define EVT_RD_CAS_RANK2 0xB2 
-#define EVT_RD_CAS_RANK3 0xB3 
-#define EVT_RD_CAS_RANK4 0xB4 
-#define EVT_RD_CAS_RANK5 0xB5 
-#define EVT_RD_CAS_RANK6 0xB6 
-#define EVT_RD_CAS_RANK7 0xB7 
-#define EVT_WR_CAS_RANK0 0xB8 
-#define EVT_WR_CAS_RANK1 0xB9 
-#define EVT_WR_CAS_RANK2 0xBA 
-#define EVT_WR_CAS_RANK3 0xBB 
-#define EVT_WR_CAS_RANK4 0xBC 
-#define EVT_WR_CAS_RANK5 0xBD 
-#define EVT_WR_CAS_RANK6 0xBE 
-#define EVT_WR_CAS_RANK7 0xBF 
-#define EVT_WMM_TO_RMM 0xC0
-#define EVT_WRONG_MM 0xC1
+#define EVT_VMSE_WR_PUSH                   0x90
+#define EVT_VMSE_MXB_WR_OCCUPANCY          0x91
+#define EVT_RD_CAS_PRIO	                   0xA0
+#define EVT_BYP_CMDS                       0xA1
+#define EVT_RD_CAS_RANK0                   0xB0
+#define EVT_RD_CAS_RANK1                   0xB1
+#define EVT_RD_CAS_RANK2                   0xB2
+#define EVT_RD_CAS_RANK3                   0xB3
+#define EVT_RD_CAS_RANK4                   0xB4
+#define EVT_RD_CAS_RANK5                   0xB5
+#define EVT_RD_CAS_RANK6                   0xB6
+#define EVT_RD_CAS_RANK7                   0xB7
+#define EVT_WR_CAS_RANK0                   0xB8
+#define EVT_WR_CAS_RANK1                   0xB9
+#define EVT_WR_CAS_RANK2                   0xBA
+#define EVT_WR_CAS_RANK3                   0xBB
+#define EVT_WR_CAS_RANK4                   0xBC
+#define EVT_WR_CAS_RANK5                   0xBD
+#define EVT_WR_CAS_RANK6                   0xBE
+#define EVT_WR_CAS_RANK7                   0xBF
+#define EVT_WMM_TO_RMM                     0xC0
+#define EVT_WRONG_MM                       0xC1
 
-#define UMASK_CAS_RD_REG 0x1
+#define UMASK_CAS_RD_REG       0x1
 #define UMASK_CAS_RD_UNDERFILL 0x2
-#define UMASK_CAS_RD 0x3
-#define UMASK_CAS_WR_WMM 0x4
-#define UMASK_CAS_WR_RMM 0x8
-#define UMASK_CAS_WR 0xC
-#define UMASK_CAS_ALL 0xF
-#define UMASK_CAS_RD_WMM 0x16
-#define UMASK_CAS_RD_RMM 0x32
+#define UMASK_CAS_RD           0x3
+#define UMASK_CAS_WR_WMM       0x4
+#define UMASK_CAS_WR_RMM       0x8
+#define UMASK_CAS_WR           0xC
+#define UMASK_CAS_ALL          0xF
+#define UMASK_CAS_RD_WMM       0x16
+#define UMASK_CAS_RD_RMM       0x32
 
-#define UMASK_ACT_COUNT_RD 0x1
-#define UMASK_ACT_COUNT_WR 0x2
-#define UMASK_ACT_COUNT_BYP 0x8
+#define UMASK_ACT_COUNT_RD     0x1
+#define UMASK_ACT_COUNT_WR     0x2
+#define UMASK_ACT_COUNT_BYP    0x8
 
-#define UMASK_BYP_CMDS_ACT 0x1
-#define UMASK_BYP_CMDS_CAS 0x2
-#define UMASK_BYP_CMDS_PRE 0x4
+#define UMASK_BYP_CMDS_ACT     0x1
+#define UMASK_BYP_CMDS_CAS     0x2
+#define UMASK_BYP_CMDS_PRE     0x4
 // ... there are lots more of these...
 
-#define UMASK_PRE_PAGE_MISS 0x1
-#define UMASK_PRE_PAGE_CLOSE 0x2
-#define UMASK_PRE_RD 0x4
-#define UMASK_PRE_WR 0x8
-#define UMASK_PRE_BYP 0x16
-
-// CSR iMC code
-#define LOAD_IMC_BATCH(offt, loc, isread, size, batchno) \
-	{ \
-	create_csr_batch_op(offt, 1, IMC0_DEV_1, IMC_CH0_FUNC, 0, isread, size, &loc[idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC0_DEV_2, IMC_CH1_FUNC, 0, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC0_DEV_3, IMC_CH2_FUNC, 0, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC0_DEV_4, IMC_CH3_FUNC, 0, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC1_DEV_1, IMC_CH0_FUNC, 0, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC1_DEV_2, IMC_CH1_FUNC, 0, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC1_DEV_3, IMC_CH2_FUNC, 0, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC1_DEV_4, IMC_CH3_FUNC, 0, isread, size, &loc[++idx], batchno); \
-	if (num_sockets() > 1) { \
-	create_csr_batch_op(offt, 1, IMC0_DEV_1, IMC_CH0_FUNC, 1, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC0_DEV_2, IMC_CH1_FUNC, 1, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC0_DEV_3, IMC_CH2_FUNC, 1, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC0_DEV_4, IMC_CH3_FUNC, 1, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC1_DEV_1, IMC_CH0_FUNC, 1, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC1_DEV_2, IMC_CH1_FUNC, 1, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC1_DEV_3, IMC_CH2_FUNC, 1, isread, size, &loc[++idx], batchno); \
-	create_csr_batch_op(offt, 1, IMC1_DEV_4, IMC_CH3_FUNC, 1, isread, size, &loc[++idx], batchno); \
-	} \
-	}
+#define UMASK_PRE_PAGE_MISS    0x1
+#define UMASK_PRE_PAGE_CLOSE   0x2
+#define UMASK_PRE_RD           0x4
+#define UMASK_PRE_WR           0x8
+#define UMASK_PRE_BYP          0x16

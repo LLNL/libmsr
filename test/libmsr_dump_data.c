@@ -16,9 +16,6 @@
 #include "csr_core.h"
 #include "csr_imc.h"
 #include "libmsr_error.h"
-#ifdef MPI
-#include <mpi.h>
-#endif
 
 uint64_t pp_policy = 0x5;
 struct rapl_limit l1, l2, l3, l4;
@@ -55,115 +52,31 @@ void get_limits()
         get_pp_rapl_policies(i, &pp_result, NULL);
         fprintf(stdout, "\nPP Policy\n%ld\n", pp_result);
     }
-}
-
-void test_pkg_lower_limit(unsigned s)
-{
-    l1.watts = 95;
-    l1.seconds = 1;
-    l1.bits = 0;
-    set_pkg_rapl_limit(s, &l1, NULL);
-    get_limits();
-}
-
-void test_pkg_upper_limit(unsigned s)
-{
-    l2.watts = 120;
-    l2.seconds = 9;
-    l2.bits = 0;
-    set_pkg_rapl_limit(s, NULL, &l2);
-    get_limits();
-}
-
-void test_socket_1_limits(unsigned s)
-{
-    l1.watts = 100;
-    l1.seconds = 2;
-    l1.bits = 0;
-    l2.watts =  180;
-    l2.seconds =  3;
-    l2.bits = 0;
-    set_pkg_rapl_limit(s, &l1, &l2);
-    l3.watts = 25;
-    l3.seconds = 2;
-    l3.bits = 0;
-    set_dram_rapl_limit(s, &l3);
-    l4.watts = 115;
-    l4.seconds = 1;
-    l4.bits = 0;
-    set_pp_rapl_limit(s, &l4, NULL);
-    pp_policy = 8;
-    set_pp_rapl_policies(1, &pp_policy, NULL);
-    get_limits();
-}
-
-void test_socket_0_limits(unsigned s)
-{
-    l1.watts = 110;
-    l1.seconds = 1;
-    l1.bits = 0;
-    l2.watts =  135;
-    l2.seconds =  5;
-    l2.bits = 0;
-    set_pkg_rapl_limit(s, &l1, &l2);
-    l3.watts = 35;
-    l3.seconds = 1;
-    l3.bits = 0;
-    set_dram_rapl_limit(s, &l3);
-    l4.watts = 132;
-    l4.seconds = 2;
-    l4.bits = 0;
-    set_pp_rapl_limit(s, &l4, NULL);
-    pp_policy = 1;
-    set_pp_rapl_policies(0, &pp_policy, NULL);
-    get_limits();
-}
-
-void test_all_limits()
-{
-    static uint64_t sockets = 0;
-    int i;
-    if (!sockets)
-    {
-        core_config(NULL, NULL, &sockets, NULL);
-    }
-    l1.watts = 50;
-    l1.seconds = 1;
-    l1.bits = 0;
-    l2.watts =  180;
-    l2.seconds =  3;
-    l2.bits = 0;
-    l3.watts = 40;
-    l3.seconds = 1;
-    l3.bits = 0;
-    l4.watts = 110;
-    l4.seconds = 8;
-    l4.bits = 0;
-    pp_policy = 31;
+    fprintf(stdout, "\n* RAPL Data Terse Printout *\n");
     for (i = 0; i < sockets; i++)
     {
-        set_pkg_rapl_limit(i, &l1, &l2);
-        set_pp_rapl_limit(i, &l4, NULL);
-        set_dram_rapl_limit(i, &l3);
-        set_pp_rapl_policies(i, &pp_policy, NULL);
+        dump_rapl_data_terse_label(stdout);
+        dump_rapl_data_terse(stdout);
     }
-    get_limits();
 }
 
 // TODO: test other parts of thermal
 void thermal_test()
 {
-    //dump_thermal_verbose_label(stdout);
-    //fprintf(stdout, "\n");
-    //dump_thermal_verbose(stdout);
-    //fprintf(stdout, "\n");
     dump_therm_temp_reading(stdout);
+    fprintf(stdout, "\n* Thermal Terse Printout *\n");
+    dump_therm_data_verbose_label(stdout);
+    dump_therm_data_verbose(stdout);
 }
 
 void counters_test()
 {
     fprintf(stdout, "\n--- Fixed Performance Counters (Instr Ret, Unhalt Core Cyc, Unhalt Ref Cyc) ---\n");
     dump_fixed_counter_data_readable(stdout);
+
+    fprintf(stdout, "\n* Fixed Perf Counters Terse Printout *\n");
+    dump_fixed_counter_data_terse_label(stdout);
+    dump_fixed_counter_data_terse(stdout);
 
     set_all_pmc_ctrl(0x0, 0x67, 0x00, 0xC4, 1);
     set_all_pmc_ctrl(0x0, 0x67, 0x00, 0xC4, 2);
@@ -173,16 +86,45 @@ void counters_test()
     enable_pmc();
     fprintf(stdout, "\n--- Performance Counters ---\n");
     dump_pmc_data_readable(stdout);
+
+    enable_pcu();
+    fprintf(stdout, "\n* Uncore Perf Counters Terse Printout *\n");
+    dump_unc_counter_data_label(stdout);
+    dump_unc_counter_data(stdout);
 }
 
 // TODO: test other parts of clocks
 void clocks_test()
 {
+    uint64_t sockets = 0;
+    int i, j;
+    struct clock_mod t;
+    uint64_t coresPerSocket;
+
+    sockets = num_sockets();
+    coresPerSocket = cores_per_socket();
+
     fprintf(stdout, "\n--- Read IA32_APERF, IA32_MPERF, and IA32_TIME_STAMP_COUNTER ---\n");
     dump_clocks_data_readable(stdout);
 
+    fprintf(stdout, "\n* Clocks Terse Printout *\n");
+    dump_clocks_data_terse_label(stdout);
+    dump_clocks_data_terse(stdout);
+
     fprintf(stdout, "\n--- Reading IA32_PERF_STATUS ---\n");
     dump_p_state(stdout);
+
+    fprintf(stdout, "\n--- Reading IA32_CLOCK_MODULATION ---\n");
+    for (i = 0; i < sockets; i++)
+    {
+        for (j = 0; j < coresPerSocket; j++)
+        {
+            get_clock_mod(i, j, &t);
+            fprintf(stdout, "Socket %d, Core %2d\n", i, j);
+            dump_clock_mod(&t, stdout);
+            fprintf(stdout, "\n");
+        }
+    }
 }
 
 void misc_test()
@@ -196,25 +138,19 @@ void misc_test()
         get_misc_enable(i, &s);
         dump_misc_enable(&s);
     }
+    fprintf(stdout, "\n* Pkg C-Residency Terse Printout *\n");
+    dump_pkg_cres_label(stdout);
+    dump_pkg_cres(stdout);
+
+    fprintf(stdout, "\n* Core C-Residency Terse Printout *\n");
+    dump_core_cres_label(stdout);
+    dump_core_cres(stdout);
 }
 
 void turbo_test()
 {
     dump_turbo(stdout);
 }
-
-// NOTE: to use this, compile a NAS parallel benchmark of your choice and
-// modify the path below you will have to compile with the -D_GNU_SOURCE flag
-// for setaffinity
-
-//#define MEMTEST 1
-#ifdef MEMTEST
-char *args[] = {"mg.B.1"};
-const char path[] = "/g/g19/walker91/NPB3.3.1/NPB3.3-MPI/bin/mg.B.1";
-#endif
-
-// We use 24 for Catalyst, (2 sockets * 12 cores)
-#define NPROCS 24
 
 void rapl_r_test(struct rapl_data **rd)
 {
@@ -223,42 +159,11 @@ void rapl_r_test(struct rapl_data **rd)
     poll_rapl_data();
     //poll_rapl_data(0, NULL);
     //poll_rapl_data(1, NULL);
-    fprintf(stdout, "Sample #1:\n");
+    fprintf(stdout, "Sample #1\n");
     dump_rapl_data(stdout);
 
-#ifdef MEMTEST
-    unsigned nprocs = NPROCS;
-    pid_t pid[NPROCS];
-    int status[NPROCS];
-    cpu_set_t cpuselect;
-
-    int i;
-    for (i = 0; i < nprocs; i++)
-    {
-        CPU_ZERO(&cpuselect);
-        CPU_SET(i, &cpuselect);
-        pid[i] = fork();
-        if (pid[i] == 0)
-        {
-            // this is just testing on 1 node
-            sched_setaffinity(0, sizeof(cpu_set_t), &cpuselect);
-            fprintf(stderr, "executing stress test\n");
-            execve(path, args, NULL);
-            exit(1);
-        }
-    }
-    fprintf(stderr, "waiting for test to complete\n");
-    for (i = 0; i < nprocs; i++)
-    {
-        wait(&status[i]);
-    }
-#endif
-#ifndef MEMTEST
-    sleep(10);
-#endif
-
     poll_rapl_data();
-    fprintf(stdout, "\nSample #2:\n");
+    fprintf(stdout, "\nSample #2\n");
     dump_rapl_data(stdout);
 }
 
@@ -268,27 +173,27 @@ int repeated_poll_test()
 {
     usleep(1000);
     poll_rapl_data();
-    fprintf(stdout, "Sample #1:\n");
+    fprintf(stdout, "Sample #1\n");
     dump_rapl_data(stdout);
     usleep(PT_INC);
     poll_rapl_data();
-    fprintf(stdout, "\nSample #2:\n");
+    fprintf(stdout, "\nSample #2\n");
     dump_rapl_data(stdout);
     usleep(PT_INC);
     poll_rapl_data();
-    fprintf(stdout, "\nSample #3:\n");
+    fprintf(stdout, "\nSample #3\n");
     dump_rapl_data(stdout);
     usleep(PT_INC);
     poll_rapl_data();
-    fprintf(stdout, "\nSample #4:\n");
+    fprintf(stdout, "\nSample #4\n");
     dump_rapl_data(stdout);
     usleep(PT_INC);
     poll_rapl_data();
-    fprintf(stdout, "\nSample #5:\n");
+    fprintf(stdout, "\nSample #5\n");
     dump_rapl_data(stdout);
     usleep(PT_INC);
     poll_rapl_data();
-    fprintf(stdout, "\nSample #6:\n");
+    fprintf(stdout, "\nSample #6\n");
     dump_rapl_data(stdout);
     return 0;
 }
@@ -339,20 +244,11 @@ int main(int argc, char **argv)
     uint64_t threads = 0;
     uint64_t sockets = 0;
     int ri_stat = 0;
-    unsigned i;
 
     if (!sockets)
     {
         core_config(&cores, &threads, &sockets, NULL);
     }
-#ifdef MPI
-    MPI_Init(&argc, &argv);
-    fprintf(stdout, "===== MPI Init Done =====\n");
-#endif
-
-#ifdef SKIPMSR
-    goto csrpart;
-#endif
 
     if (init_msr())
     {
@@ -372,43 +268,8 @@ int main(int argc, char **argv)
     fprintf(stdout, "\n===== Available RAPL Registers =====\n");
     print_available_rapl();
 
-    fprintf(stdout, "\n===== Available Performance Counters =====\n");
-    print_available_counters();
-
-    fprintf(stdout, "\n===== POWER INFO =====\n");
-    dump_rapl_power_info(stdout);
-
-    fprintf(stdout, "\n===== POWER UNIT =====\n");
-    dump_rapl_power_unit(stdout);
-
-    fprintf(stdout, "\n===== Enabling Fixed-Function Performance Counters =====\n");
-    enable_fixed_counters();
-
     fprintf(stdout, "\n===== Get Initial RAPL Power Limits =====\n");
     get_limits();
-
-    for (i = 0; i < sockets; i++)
-    {
-        fprintf(stdout, "\n===== Start Socket %u RAPL Power Limit Test =====\n", i);
-        fprintf(stdout, "\n--- Testing Pkg Domain Lower Limit ---\n");
-        test_pkg_lower_limit(i);
-        fprintf(stdout, "\n--- Testing Pkg Domain Upper Limit ---\n");
-        test_pkg_upper_limit(i);
-        fprintf(stdout, "\n===== End Socket %u RAPL Power Limit Test =====\n", i);
-    }
-
-    fprintf(stdout, "\n--- Testing Socket 0 All RAPL Power Limits ---\n");
-    test_socket_0_limits(0);
-
-    fprintf(stdout, "\n--- Testing Socket 1 All RAPL Limits ---\n");
-    test_socket_1_limits(1);
-
-    fprintf(stdout, "\n===== Testing All RAPL Power Limits All Sockets =====\n");
-    test_all_limits();
-    fprintf(stdout, "===== End Testing All RAPL Power Limits All Sockets =====\n");
-
-    fprintf(stdout, "\n===== Poll RAPL Data 2X =====\n");
-    rapl_r_test(&rd);
 
     fprintf(stdout, "\n===== Thermal Test =====\n");
     thermal_test();
@@ -416,14 +277,20 @@ int main(int argc, char **argv)
     fprintf(stdout, "\n===== Clocks Test =====\n");
     clocks_test();
 
+    fprintf(stdout, "===== Read IA32_MISC_ENABLE =====\n");
+    misc_test();
+
+    fprintf(stdout, "\n===== Available Performance Counters =====\n");
+    print_available_counters();
+
+    fprintf(stdout, "\n===== Enabling Fixed-Function Performance Counters =====\n");
+    enable_fixed_counters();
+
     fprintf(stdout, "\n===== Counters Test =====\n");
     counters_test();
 
-    fprintf(stdout, "\n===== Turbo Test =====\n");
-    turbo_test();
-
-    fprintf(stdout, "\n===== Read IA32_MISC_ENABLE =====\n");
-    misc_test();
+    fprintf(stdout, "\n===== Poll RAPL Data 2X =====\n");
+    rapl_r_test(&rd);
 
     fprintf(stdout, "\n===== Repeated RAPL Polling Test =====\n");
     repeated_poll_test();
@@ -432,12 +299,7 @@ int main(int argc, char **argv)
     set_to_defaults();
 
     finalize_msr();
-    fprintf(stdout, "===== MSR Finalized =====\n");
-
-#ifdef MPI
-csrpart:
-    MPI_Finalize();
-#endif
+    fprintf(stdout, "\n===== MSR Finalized =====\n");
 
     fprintf(stdout, "\n===== Test Finished Successfully =====\n");
     if (ri_stat)

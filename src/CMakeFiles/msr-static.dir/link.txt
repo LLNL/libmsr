@@ -1,2 +1,0 @@
-/usr/bin/ar cq libmsr.a  CMakeFiles/msr-static.dir/msr_clocks.o CMakeFiles/msr-static.dir/msr_core.o CMakeFiles/msr-static.dir/msr_counters.o CMakeFiles/msr-static.dir/msr_misc.o CMakeFiles/msr-static.dir/msr_rapl.o CMakeFiles/msr-static.dir/msr_thermal.o CMakeFiles/msr-static.dir/msr_turbo.o CMakeFiles/msr-static.dir/cpuid.o CMakeFiles/msr-static.dir/profile.o CMakeFiles/msr-static.dir/signalCombined.o
-/usr/bin/ranlib libmsr.a

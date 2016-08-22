@@ -1,13 +1,12 @@
-/* rapl.h
+/* libmsr_debug.h
  *
- * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2011-2016, Lawrence Livermore National Security, LLC.
  * LLNL-CODE-645430
  *
- * Produced at Lawrence Livermore National Laboratory 
- * Written by  Barry Rountree,   rountree@llnl.gov
- *             Daniel Ellsworth, ellsworth8@llnl.gov
- *             Scott Walker,     walker91@llnl.gov
- *             Kathleen Shoga,   shoga1@llnl.gov
+ * Produced at Lawrence Livermore National Laboratory
+ * Written by  Barry Rountree, rountree@llnl.gov
+ *             Scott Walker,   walker91@llnl.gov
+ *             Kathleen Shoga, shoga1@llnl.gov
  *
  * All rights reserved.
  *
@@ -32,14 +31,16 @@
  *
  */
 
-/// @brief Initialize the library to read from the rapl MSRs.
-void read_rapl_init(void);
+#ifndef LIBMSR_DEBUG_H_INCLUDE
+#define LIBMSR_DEBUG_H_INCLUDE
 
-/// @brief Read the current consumption and allocation.
-///
-/// Variable ret must be an array of length 8.
-/// idx 0,1 report consumption in joules for sockets 0 and 1.
-/// idx 2,3 report allocation in joules for sockets 0 and 1.
-/// idx 4,5 report consumption in watts for sockets 0 and 1.
-/// idx 6,7 report allocation in joules for sockets 0 and 1.
-void read_rapl_energy_and_power(double *ret);
+//#define CPUID_DEBUG
+//#define MEMHDLR_DEBUG
+//#define LIBMSR_DEBUG 1
+//#define STORAGE_DEBUG 1
+//#define CSRDEBUG
+//#define LIBMSR_DEBUG_TAG "LIBMSR"
+//#define BATCH_DEBUG 1
+//#define THERM_DEBUG 1
+
+#endif
