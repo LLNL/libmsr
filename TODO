@@ -9,8 +9,6 @@ src/msr_rapl.c  Currently unused, but if it ever is used, we need a fix for
 Ongoing
 -------
 
-- [2016-08-08] Create patch for libmsr on Cab, which uses the msr-safeB kernel.
-
 - [2016-08-08] Finish tagging PCI configuration (CSR) files with Doxygen tags.
 
 - [2016-08-11] Check functionality of signalCombined.c once batch operation is
