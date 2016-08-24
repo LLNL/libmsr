@@ -1,6 +1,8 @@
 /* highlander.c
  *
- * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC. LLNL-CODE-645430
+ * Copyright (c) 2011-2016, Lawrence Livermore National Security, LLC.
+ * LLNL-CODE-645430
+ *
  * Produced at Lawrence Livermore National Laboratory
  * Written by  Barry Rountree,   rountree@llnl.gov
  *             Daniel Ellsworth, ellsworth8@llnl.gov

@@ -1,16 +1,22 @@
 LIBMSR {#mainpage}
 ==================
 
-Welcome to libmsr, a friendly (well, friendlier) interface to many of the
+Welcome to Libmsr, a friendly (well, friendlier) interface to many of the
 model-specific registers in Intel processors. Now with PCI configuration
 register support for some Intel hardware.
 
-version 0.2.0
+version 0.3.0
 
 
 Last Update
 -----------
-18 August 2016
+24 August 2016
+
+
+Webpages
+--------
+http://software.llnl.gov/libmsr <br>
+https://github.com/llnl/libmsr
 
 
 Overview
@@ -24,7 +30,7 @@ controlling various CPU features.
 Installation
 ------------
 
-Installation is simple. You will need [cmake](http://www.cmake.org) version 2.8
+Installation is simple. You will need [CMAKE](http://www.cmake.org) version 2.8
 or higher and GCC. The old installation method is deprecated, you MUST use the
 script. In most cases, the installation is as follows:
 
@@ -84,6 +90,9 @@ Our most up-to-date documentation for Libmsr use is generated as part of the
 install script using Doxygen. There are also some useful PDF files in the
 documentation/ directory.
 
+If you wish to use Libmsr on LLNL's Cab system, you will need to apply a patch
+to gain MSR access. At this time, the patch will need to be requested as it is
+not on Github.
 
 Contributing
 ------------
@@ -96,12 +105,11 @@ Code formatting can be automated using astyle with the following parameters:
 Contact
 -------
 
-Stephanie Labasan, Developer <labasan1@llnl.gov> <br>
-Scott Walker, Developer, <walker91@llnl.gov> <br>
+Barry Rountree, Project Lead, <rountree@llnl.gov> <br>
 Kathleen Shoga, Developer, <shoga1@llnl.gov> <br>
+Scott Walker, Developer, <walker91@llnl.gov> <br>
 Lauren Morita, Developer, <morita4@llnl.gov> <br>
-Barry Rountree, Project Lead <rountree@llnl.gov>
+Stephanie Labasan, Developer, <labasan1@llnl.gov>
 
-We are in the process of migrating our bug tracking to Github. For now, please
-feel free to contact the authors with questions, problems, bugs, and feature
+Please feel free to contact the developers with any questions or feature
 requests.

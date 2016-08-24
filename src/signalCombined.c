@@ -1,4 +1,4 @@
-/*
+/* signalCombined.c
  *
  * Copyright (c) 2011-2016, Lawrence Livermore National Security, LLC.
  * LLNL-CODE-645430

@@ -1,6 +1,6 @@
 /* msrmod.c
  *
- * Copyright (c) 2011-2015, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2011-2016, Lawrence Livermore National Security, LLC.
  * LLNL-CODE-645430
  *
  * Produced at Lawrence Livermore National Laboratory
