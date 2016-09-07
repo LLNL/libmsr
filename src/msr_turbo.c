@@ -128,6 +128,7 @@ void dump_turbo(FILE *writedest)
     }
 }
 
+#ifndef IS_ARCH_2D
 void calc_max_non_turbo(const unsigned socket, struct turbo_activation_ratio_data *info)
 {
     sockets_assert(&socket, __LINE__, __FILE__);
@@ -250,3 +251,4 @@ int get_turbo_ratio_limit(const unsigned socket, struct turbo_limit_data *info, 
     }
     return 0;
 }
+#endif

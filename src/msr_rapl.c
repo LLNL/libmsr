@@ -149,7 +149,9 @@ static int check_for_locks(void)
     static uint64_t *rapl_flags = NULL;
     static struct rapl_data *rapl = NULL;
     struct rapl_limit rl1, rl2;
+#ifndef IS_ARCH_2D
     struct turbo_activation_ratio_data tar;
+#endif
     static uint64_t sockets = 0;
     int numlocked = 0;
     unsigned i;
@@ -219,6 +221,7 @@ static int check_for_locks(void)
                 *rapl_flags &= ~PP1_POWER_LIMIT;
             }
         }
+#ifndef IS_ARCH_2D
         if (*rapl_flags & TURBO_ACTIVATION_RATIO)
         {
             get_max_turbo_activation_ratio(i, &tar);
@@ -229,6 +232,7 @@ static int check_for_locks(void)
                 *rapl_flags &= ~TURBO_ACTIVATION_RATIO;
             }
         }
+#endif
     }
     return numlocked;
 }

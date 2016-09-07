@@ -27,15 +27,18 @@ void turbo_test()
     dump_turbo(stdout);
 
     static uint64_t sockets = 0;
+#ifndef IS_ARCH_2D
     int i;
     struct turbo_activation_ratio_data tar;
     struct turbo_limit_data tl, tl2;
+#endif
 
     if (!sockets)
     {
         core_config(NULL, NULL, &sockets, NULL);
     }
 
+#ifndef IS_ARCH_2D
     fprintf(stdout, "\n--- MSR_TURBO_ACTIVATION_RATIO ---\n");
     for (i = 0; i < sockets; i++)
     {
@@ -49,6 +52,7 @@ void turbo_test()
         fprintf(stdout, "Socket %d:\n", i);
         get_turbo_ratio_limit(i, &tl, &tl2);
     }
+#endif
 
     printf("\n");
 }

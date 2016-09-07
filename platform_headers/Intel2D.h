@@ -33,6 +33,7 @@
 
 #define COMPILED_VEND 0x8086 // Intel
 #define COMPILED_ARCH 0x2D   // Sandy Bridge
+#define IS_ARCH_2D 1
 
 /**********/
 /* CLOCKS */
