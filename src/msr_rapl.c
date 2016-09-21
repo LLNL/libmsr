@@ -293,12 +293,12 @@ static int translate(const unsigned socket, uint64_t *bits, double *units, int t
 #endif
                 return 0;
             }
-        /* No break statement, if not Haswell do standard stuff. */
+            /* No break statement, if not Haswell do standard stuff. */
         case BITS_TO_JOULES:
             *units = (double)(*bits) / ru[socket].joules;
             break;
         case WATTS_TO_BITS:
-            *bits  = (uint64_t)((*units) * ru[socket].watts);
+            *bits  = (uint64_t)((*units) / ru[socket].watts);
             break;
         case JOULES_TO_BITS:
             /// @todo Currently unused, but if it ever is used, we need a fix for Haswell.
@@ -433,8 +433,8 @@ static int calc_rapl_bits(const unsigned socket, struct rapl_limit *limit, const
      */
     if (offset >= 32)
     {
-        //seconds_bits = (uint64_t)limit->seconds; // unit is milliseconds
-        translate(socket, &seconds_bits, &limit->seconds, SECONDS_TO_BITS_STD);
+        seconds_bits = (uint64_t)limit->seconds; // unit is milliseconds
+        //translate(socket, &seconds_bits, &limit->seconds, SECONDS_TO_BITS_STD);
     }
     else
     {
