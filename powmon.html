@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>powmon</title>
+
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a id="backtohome" href="index.html">libmsr</a></h1>
+
+        <b>Source Code:</b><br>
+        <a href="https://github.com/LLNL/libmsr">View the libmsr source
+        code on github here</a><br>
+        <br>
+        <b>Developer Documentation:</b><br>
+        <a href="dox/index.html">View doxygen code documentation here</a><br>
+        <br>
+        <b>User How-To Guides:</b><br>
+        <a href="documentation/Libmsr_General.pdf">General libmsr usage</a><br>
+        <a href="documentation/Libmsr_Batch.pdf">Using the batch interface</a><br>
+        <a href="documentation/Libmsr_RAPL.pdf">Using the RAPL Features</a><br>
+        <a href="documentation/Libmsr_Perf.pdf">Monitoring performance counters</a><br>
+        <a href="documentation/Libmsr_CSR.pdf">Monitoring PCI configuration
+registers</a><br>
+        <br>
+        <b>Additional Tools:</b><br>
+        <a href="powmon.html">powmon</a><br>
+        <a href="msrmod.html">msrmod</a><br>
+      </header>
+      <section>
+        <h2>Welcome to powmon</h2>
+        <P>Power monitoring utility</P>
+        <p>
+          This directory contains three libmsr based power monitors:
+          <ol>
+            <li>powmon - Samples and prints power consumption and allocation per
+            socket for systems with 2 sockets</li>
+            <li>power_wrapper_static - Samples and prints power consumption and
+            allocation per socket for systems with 2 sockets after setting a
+            power cap</li>
+            <li>power_wrapper_dynamic - Samples and prints power consumption and
+            allocation per socket for systems with 2 sockets and adjusts the cap
+            stepwise every 500 ms</li>
+          </ol>
+
+          <P>----- Building -----</P>
+          <p>
+            These tools are built using GNU autotools. You will need to use 
+            autotools to generate the configure script and the configure script
+            to generate the makefiles for your environment.
+          </p>
+
+          <p>To generate the configure script:</p>
+          <pre><code>$ autoreconf -if</code></pre>
+
+          <p>To generate the makefiles:</p>
+          <pre><code>$ ./configure --prefix=/usr/local/</code></pre>
+
+          <p>To make and install the binaries:</p>
+          <pre><code>$ make install</code></pre>
+
+          <p>
+            Each monitor includes a usage string. All three monitors are
+            wrappers around some other process that will be executing on the
+            node and include logic so that only one monitor is run per node.
+          </p>
+  </body>
+</html>
+

@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>msrmod</title>
+
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a id="backtohome" href="index.html">libmsr</a></h1>
+
+        <b>Source Code:</b><br>
+        <a href="https://github.com/LLNL/libmsr">View the libmsr source
+        code on github here</a><br>
+        <br>
+        <b>Developer Documentation:</b><br>
+        <a href="dox/index.html">View doxygen code documentation here</a><br>
+        <br>
+        <b>User How-To Guides:</b><br>
+        <a href="documentation/Libmsr_General.pdf">General libmsr usage</a><br>
+        <a href="documentation/Libmsr_Batch.pdf">Using the batch interface</a><br>
+        <a href="documentation/Libmsr_RAPL.pdf">Using the RAPL Features</a><br>
+        <a href="documentation/Libmsr_Perf.pdf">Monitoring performance counters</a><br>
+        <a href="documentation/Libmsr_CSR.pdf">Monitoring PCI configuration
+registers</a><br>
+        <br>
+        <b>Additional Tools:</b><br>
+        <a href="powmon.html">powmon</a><br>
+        <a href="msrmod.html">msrmod</a><br>
+      </header>
+
+    <div class="right">
+      <section>
+        <h2>Welcome to msrmod</h2>
+        <P>A command-line utility to access MSRs.</P>
+        <p>v0.0 alpha</p>
+        <p>
+          This tool is in alpha and has not been fully tested. Additionally,
+          updates will be sparse.
+        </p>
+        <p>
+          To compile, modify the LIBMSR_LIB and LIBMSR_INC variables in the
+          Makefile so the path links to libmsr.so (only tested on v0.1.14
+          and newer) and to the location of the libmsr header files,
+          respectively.
+        </p>
+        <pre><code>$ ./msrmod --help
+
+NAME
+  msrmod - quick access to msr functions
+
+SYNOPSIS
+   ./msrmod [--help | -h]
+      [-v] [-i] [-p data_type] [-l msr_type]
+      [-r msr_hex] [-w msr_hex] [-s set_type]
+      [-c socket_id] [-t thread_id] [-d value_hex]
+      [-a powerlim1_watts] [-b timewin1_sec] [-e powerlim2_watts] [-f timewin2_sec]
+
+OVERVIEW
+  MSRMOD is designed for quick access to common
+  libmsr functionalities, such as restoring the
+  RAPL power limits to default values and enforcing
+  a package domain RAPL power limit on a socket.
+  This tool is in alpha and is not fully tested.
+  Updates may be sparse.
+
+OPTIONS
+  --help | -h 
+      Display this help information, then exit.
+  -v
+      Verbose mode.
+  -i
+      Interactive mode currently not implemented.
+  -p data_type
+      Print data. Valid values for data_type are
+      'info' for general rapl info or 'rapl' for
+      current rapl data.
+  -l msr_type
+      List available MSRs. Valid values for msr_type
+      are 'all', 'rapl', or 'counters'.
+  -r msr_hex
+      Read the register. MSR must be given in
+      hexadecimal. Used in conjunction with the -t
+      flag.
+  -w msr_hex
+      Write the register. MSR must be given in
+      hexadecimal. Used in conjunction with the -t
+      and -d flags.
+  -s set_type
+      Set rapl MSRs. Valid values for set_type are
+      'default' or 'package' or 'memory'. Used in
+      conjunction with the -c, -a, -b, -e, and -f
+      flags.
+  -c socket_id
+      Socket ID where power limit will be enforced.
+      Default is socket 0.
+  -t thread_id
+      Thread ID where read/write MSR will be
+      performed. Default is thread 0.
+  -d value_hex
+      Value to write to MSR in hexadecimal.
+  -a powerlim1_watts
+      Power limit 1 for RAPL package domain.
+  -b timewin1_sec
+      Time window 1 for RAPL package domain.
+  -e powerlim2_watts
+      Power limit 2 for RAPL package domain.
+  -f timewin2_sec
+      Time window 2 for RAPL package domain.
+        </code></pre>
+    </div>
+  </body>
+</html>
+
