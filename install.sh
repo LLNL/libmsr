@@ -116,17 +116,6 @@ then
 	exit 9
 fi
 
-#####################################
-# Generate HTML/Latex Documentation #
-#####################################
-make doc
-make latex_doc
-
-echo -e $cyantxt"Copying latex doc into documentation directory."$endtxt
-raw_date=$(date)
-mod_date=${raw_date// /_}
-cd dox/latex && cp refman.pdf ../../documentation/doxygen_${mod_date}.pdf
-
 ############################
 # Terminate Install Script #
 ############################

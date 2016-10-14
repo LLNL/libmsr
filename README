@@ -86,13 +86,14 @@ Call `msr_init()` before using any of the APIs.
 
 For sample code, see libmsr_test.c in the test/ directory.
 
-Our most up-to-date documentation for Libmsr use is generated as part of the
-install script using Doxygen. There are also some useful PDF files in the
-documentation/ directory.
+Our most up-to-date documentation for Libmsr can be generated with `make doc`
+and `make latex_doc` for HTML and PDF versions, respectively. There are also
+some useful PDF files in the documentation/ directory.
 
 If you wish to use Libmsr on LLNL's Cab system, you will need to apply a patch
 to gain MSR access. At this time, the patch will need to be requested as it is
 not on Github.
+
 
 Contributing
 ------------
