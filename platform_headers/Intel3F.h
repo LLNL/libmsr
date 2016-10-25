@@ -363,8 +363,11 @@
 /*********/
 /* TURBO */
 /*********/
-#define IA32_MISC_ENABLE 0x1A0
-#define IA32_PERF_CTL	 0x199
+#define IA32_MISC_ENABLE           0x1A0
+#define IA32_PERF_CTL	           0x199
+#define MSR_TURBO_ACTIVATION_RATIO 0x64C
+#define MSR_TURBO_RATIO_LIMIT      0x1AD
+#define MSR_TURBO_RATIO_LIMIT1     0x1AE
 
 /***********/
 /* CSR iMC */
