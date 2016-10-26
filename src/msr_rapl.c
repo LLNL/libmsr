@@ -974,6 +974,7 @@ int set_pp_rapl_limit(const unsigned socket, struct rapl_limit *limit0, struct r
     else if (limit0 != NULL)
     {
         libmsr_error_handler("set_pp_rapl_limit(): PP0 domain RAPL limit not supported on this architecture", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
     /* Make sure the pp1 power limit register exists. */
     if ((limit1 != NULL) && (*rapl_flags & PP1_POWER_LIMIT))
@@ -988,6 +989,7 @@ int set_pp_rapl_limit(const unsigned socket, struct rapl_limit *limit0, struct r
     else if (limit1 != NULL)
     {
         libmsr_error_handler("set_pp_rapl_limit(): PP0 domain RAPL limit not supported on this architecture", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
     return 0;
 }
@@ -1064,12 +1066,14 @@ int set_pp_rapl_policies(const unsigned socket, uint64_t *pp0, uint64_t *pp1)
         if (*pp0 & 0xFFFFFFFFFFFFFFE0)
         {
             libmsr_error_handler("set_pp_rapl_policies(): PP0 domain policy is too large, valid values are 0-31", LIBMSR_ERROR_INVAL, getenv("HOSTNAME"), __FILE__, __LINE__);
+            return -1;
         }
         write_msr_by_coord(socket, 0, 0, MSR_PP0_POLICY, *pp0);
     }
     else if (pp0 != NULL)
     {
         libmsr_error_handler("set_pp_rapl_limit(): PP0 domain RAPL limit not supported on this architecture", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
     /* Make sure the pp1 policy register exists. */
     if ((pp1 != NULL) && (*rapl_flags & PP1_POLICY))
@@ -1077,12 +1081,14 @@ int set_pp_rapl_policies(const unsigned socket, uint64_t *pp0, uint64_t *pp1)
         if (*pp1 & 0xFFFFFFFFFFFFFFE0)
         {
             libmsr_error_handler("set_pp_rapl_limit(): PP1 domain policy is too large, valid values are 0-31", LIBMSR_ERROR_INVAL, getenv("HOSTNAME"), __FILE__, __LINE__);
+            return -1;
         }
         write_msr_by_coord(socket, 0, 0, MSR_PP1_POLICY, *pp1);
     }
     else if (pp1 != NULL)
     {
         libmsr_error_handler("set_pp_rapl_limit(): PP1 domain RAPL limit not supported on this architecture", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
     return 0;
 }
@@ -1108,6 +1114,7 @@ int get_pp_rapl_policies(const unsigned socket, uint64_t *pp0, uint64_t *pp1)
     else if (pp0 != NULL)
     {
         libmsr_error_handler("get_pp_rapl_policies(): PP0 domain policy not supported on this architecture", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
     /* Make sure the pp1 policy register exists. */
     if ((pp1 != NULL) && (*rapl_flags & PP1_POLICY))
@@ -1117,6 +1124,7 @@ int get_pp_rapl_policies(const unsigned socket, uint64_t *pp0, uint64_t *pp1)
     else if (pp1 != NULL)
     {
         libmsr_error_handler("get_pp_rapl_policies(): PP1 domain policy not supported on this architecture", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
     return 0;
 }
@@ -1150,6 +1158,7 @@ int get_pkg_rapl_limit(const unsigned socket, struct rapl_limit *limit1, struct 
     else
     {
         libmsr_error_handler("get_pkg_rapl_limit(): PKG domain RAPL power limit not supported on this architecture", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
     return 0;
 }
@@ -1176,6 +1185,7 @@ int get_dram_rapl_limit(const unsigned socket, struct rapl_limit *limit)
     else if (limit != NULL)
     {
         libmsr_error_handler("get_dram_rapl_limit(): DRAM domain RAPL power limit not supported on this architecture", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
     return 0;
 }
@@ -1202,6 +1212,7 @@ int get_pp_rapl_limit(const unsigned socket, struct rapl_limit *limit0, struct r
     else if (limit0 != NULL)
     {
         libmsr_error_handler("get_pp_rapl_limit(): Power plane 0 domain RAPL power limit not supported on this architecture", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
     /* Make sure the pp1 power limit register exists. */
     if ((limit1 != NULL) && (*rapl_flags & PP1_POWER_LIMIT))
@@ -1212,6 +1223,7 @@ int get_pp_rapl_limit(const unsigned socket, struct rapl_limit *limit0, struct r
     else if (limit1 != NULL)
     {
         libmsr_error_handler("get_pp_rapl_limit(): Power plane 1 domain RAPL power limit not supported on this architecture", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
     return 0;
 }

@@ -162,6 +162,7 @@ int get_max_turbo_activation_ratio(const unsigned socket, struct turbo_activatio
     else
     {
         libmsr_error_handler("get_max_turbo_activation_ratio(): MSR_TURBO_ACTIVATION_RATIO not supported", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
     return 0;
 }
@@ -237,6 +238,7 @@ int get_turbo_ratio_limit(const unsigned socket, struct turbo_limit_data *info, 
     else
     {
         libmsr_error_handler("get_turbo_ratio_limit(): MSR_TURBO_RATIO_LIMIT not supported", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
 
     /* Check if MSR_TURBO_RATIO_LIMIT1 exists on this platform. */
@@ -248,6 +250,7 @@ int get_turbo_ratio_limit(const unsigned socket, struct turbo_limit_data *info, 
     else
     {
         libmsr_error_handler("get_turbo_ratio_limit(): MSR_TURBO_RATIO_LIMIT1 not supported", LIBMSR_ERROR_PLATFORM_NOT_SUPPORTED, getenv("HOSTNAME"), __FILE__, __LINE__);
+        return -1;
     }
     return 0;
 }

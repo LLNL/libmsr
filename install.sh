@@ -32,7 +32,7 @@ echo -e $cyantxt"CMake Version: $endtxt${cmakever}"
 
 if [[ $cmakever < 2.8 ]]; then
 	echo -e $redtxt"ERROR: cmake 2.8 or newer required\n"$endtxt
-	exit 3
+	exit 1
 fi
 
 ###########################
@@ -43,27 +43,37 @@ gcc autoconf.c -o _autoconf_
 
 if [[ $? != 0 ]]; then
 	echo -e $redtxt"ERROR: could not compile autoconf file. Terminating...\n"$endtxt
-	exit 4
+	exit 1
 fi
 
 echo -e $cyantxt"Generating master header file."$endtxt
 if [ $# -eq 1 ]; then
+    echo -e "-- Auto-detecting architecture"
     ./_autoconf_
 else
-    echo $2
+    if [ $2 == "-f2D" ]; then
+        echo -e "-- Specified Archtecture: Intel Sandy Bridge"
+    elif [ $2 == "-f3E" ]; then
+        echo -e "-- Specified Archtecture: Intel Ivy Bridge"
+    elif [ $2 == "-f3F" ]; then
+        echo -e "-- Specified Archtecture: Intel Haswell"
+    else
+        echo -e $redtxt"-- Unknown specified architecture. See platform_headers/ directory for supported architectures."$endtxt
+        exit 1
+    fi
     ./_autoconf_ $2
 fi
 
 if [[ $? != 0 ]]; then
 	echo -e $redtxt"ERROR: could not generate master header file. Terminating...\n"$endtxt
-	exit 5
+	exit 1
 fi
 
 cp platform_headers/master.h include/master.h
 
 if [[ $? != 0 ]]; then
 	echo -e $redtxt"ERROR: unable to install master header file. Terminating...\n"$endtxt
-	exit 6
+	exit 1
 fi
 
 ######################################
@@ -79,7 +89,7 @@ if [ -z "$1" ]; then
             mkdir BUILD
             if [[ $? != 0 ]]; then
                 echo -e "$redtxt ERROR: could not create BUILD directory. Terminating...\n$endtxt"
-                exit 2
+                exit 1
             fi
         fi
     else
@@ -102,7 +112,7 @@ make
 if [[ $? != 0 ]]
 then
 	echo -e $redtxt"ERROR: unable to compile source code. Terminating...\n"$endtxt
-	exit 8
+	exit 1
 fi
 
 ##################
@@ -113,7 +123,7 @@ make install
 if [[ $? != 0 ]]
 then
 	echo -e $redtxt"ERROR: unable to install library. Terminating...\n"$endtxt
-	exit 9
+	exit 1
 fi
 
 ############################
