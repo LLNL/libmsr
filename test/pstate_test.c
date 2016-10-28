@@ -41,20 +41,28 @@ void get_limits()
             fprintf(stdout, "\n");
         }
         fprintf(stdout, "Socket %d:\n", i);
-        get_pkg_rapl_limit(i, &l1, &l2);
-        fprintf(stdout, "Pkg Domain Power Lim 1 (lower lim)\n");
-        dump_rapl_limit(&l1, stdout);
-        fprintf(stdout, "\n");
-        fprintf(stdout, "Pkg Domain Power Lim 2 (upper lim)\n");
-        dump_rapl_limit(&l2, stdout);
-        fprintf(stdout, "\nDRAM Domain\n");
-        get_dram_rapl_limit(i, &l3);
-        dump_rapl_limit(&l3, stdout);
-        fprintf(stdout, "\nPP Domain\n");
-        get_pp_rapl_limit(i, &l4, NULL);
-        dump_rapl_limit(&l4, stdout);
-        get_pp_rapl_policies(i, &pp_result, NULL);
-        fprintf(stdout, "\nPP Policy\n%ld\n", pp_result);
+        if (get_pkg_rapl_limit(i, &l1, &l2) == 0)
+        {
+            fprintf(stdout, "Pkg Domain Power Lim 1 (lower lim)\n");
+            dump_rapl_limit(&l1, stdout);
+            fprintf(stdout, "\n");
+            fprintf(stdout, "Pkg Domain Power Lim 2 (upper lim)\n");
+            dump_rapl_limit(&l2, stdout);
+        }
+        if (get_dram_rapl_limit(i, &l3) == 0)
+        {
+            fprintf(stdout, "\nDRAM Domain\n");
+            dump_rapl_limit(&l3, stdout);
+        }
+        if (get_pp_rapl_limit(i, &l4, NULL) == 0)
+        {
+            fprintf(stdout, "\nPP Domain\n");
+            dump_rapl_limit(&l4, stdout);
+        }
+        if (get_pp_rapl_policies(i, &pp_result, NULL) == 0)
+        {
+            fprintf(stdout, "\nPP Policy\n%ld\n", pp_result);
+        }
     }
 }
 

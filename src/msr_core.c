@@ -184,7 +184,7 @@ static int compatibility_batch(int batchnum, int type)
     struct msr_batch_array *batch = NULL;
     int i;
 
-    fprintf(stderr, "No /dev/cpu/msr_batch, using compatibility batch\n");
+    fprintf(stderr, "Warning: <libmsr> No /dev/cpu/msr_batch, using compatibility batch: compatibility_batch(): %s: %s:%s::%d\n", strerror(errno), getenv("HOSTNAME"), __FILE__, __LINE__);
     if (batch_storage(&batch, batchnum, NULL))
     {
         return -1;
