@@ -40,8 +40,8 @@
 
 static int amHighlander = -1;
 
-static sem_t *semk;
-static sem_t *seml;
+static sem_t *semk = NULL;
+static sem_t *seml = NULL;
 
 /// @brief Determines/initializes the process highlander status.
 int highlander(void)
@@ -65,6 +65,12 @@ int highlander(void)
     seml = sem_open("/power_wrapperL", O_CREAT, 0600, 0);
     amHighlander = 1;
     return 1;
+}
+
+int highlander_clean(void) {
+    // remove the named semaphores
+    sem_unlink("/power_wrapperK");
+    sem_unlink("/power_wrapperL");
 }
 
 /// @brief Causes the highlander to wait until all foes have called wait.

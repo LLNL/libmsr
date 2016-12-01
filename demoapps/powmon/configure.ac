@@ -8,6 +8,11 @@ AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_HEADERS([config.h])
 
 ###############################################################################
+# Figure out the pthread flags
+AX_PTHREAD()
+LIBS="$PTHREAD_LIBS $LIBS"
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+
 # Identify the libmsr to build against
 DE_LIBMSR_VERSION("")
 
