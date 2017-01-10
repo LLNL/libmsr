@@ -1,0 +1,26 @@
+From f9ba57ff3fd14ce0a8708e45bd0d973aedc3e4f6 Mon Sep 17 00:00:00 2001
+From: Stephanie Labasan <labasan1@llnl.gov>
+Date: Tue, 3 Jan 2017 12:08:12 -0800
+Subject: [PATCH] Manually setting threadsPerCore to 1 to bypass duplicate
+ readings across sockets in a hyperthreaded environment.
+
+Signed-off-by: Stephanie Labasan <labasan1@llnl.gov>
+---
+ src/msr_core.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/msr_core.c b/src/msr_core.c
+index 873dda9..83060d3 100644
+--- a/src/msr_core.c
++++ b/src/msr_core.c
+@@ -798,6 +798,7 @@ int load_socket_batch(off_t msr, uint64_t **val, int batchnum)
+ #endif
+     if (CPU_DEV_VER == 1)
+     {
++        threadsPerCore = 1;
+         for (dev_idx = 0, val_idx = 0; dev_idx < NUM_DEVS; dev_idx += coresPerSocket * threadsPerCore, val_idx++)
+         {
+             create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
+-- 
+2.8.3
+

@@ -42,6 +42,7 @@ include/master.h
 install_manifest.txt
 lib/
 libmsr-config.cmake
+msrmod/msrmod
 mpi_test
 pebs
 platform_headers/master.h
