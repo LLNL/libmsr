@@ -150,15 +150,15 @@ struct msr_batch_op {
     __u32 msr;
     /// @brief Stores input to or result from operation.
     __u64 msrdata;
-    /// @brief Write mask applied to wrmsr
+    /// @brief Write mask applied to wrmsr.
     __u64 wmask;
 };
 
 /// @brief Structure holding multiple read/write operations to various MSRs.
 struct msr_batch_array {
-    /// @brief: Number of operations to execute.
+    /// @brief Number of operations to execute.
     __u32 numops;
-    /// @brief: Array of length numops of operations to execute.
+    /// @brief Array of length numops of operations to execute.
     struct msr_batch_op *ops;
 };
 

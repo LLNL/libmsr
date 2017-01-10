@@ -123,9 +123,9 @@ void calc_max_non_turbo(const unsigned socket,
 /// @brief Read value of the MSR_TURBO_ACTIVATION_RATIO register and translate
 /// bit fields to human-readable values.
 ///
-/// @param[in] socket Unique socket/package identifier.
+/// @param [in] socket Unique socket/package identifier.
 ///
-/// @param[out] info Data for turbo activation ratio.
+/// @param [out] info Data for turbo activation ratio.
 ///
 /// @return 0 if successful, else -1 if rapl_storage() fails.
 int get_max_turbo_activation_ratio(const unsigned socket,
@@ -136,9 +136,9 @@ int get_max_turbo_activation_ratio(const unsigned socket,
 ///
 /// @param [in] socket Unique socket/package identifier.
 ///
-/// @param[out] info Data for turbo ratio limit.
+/// @param [out] info Data for turbo ratio limit.
 ///
-/// @param[out] info2 Data for turbo ratio limit 1 (platform dependent).
+/// @param [out] info2 Data for turbo ratio limit 1 (platform dependent).
 void calc_max_turbo_ratio(const unsigned socket,
                          struct turbo_limit_data *info,
                          struct turbo_limit_data *info2);
@@ -146,11 +146,11 @@ void calc_max_turbo_ratio(const unsigned socket,
 /// @brief Read value of the turbo ratio limit register and translate bit
 /// fields to human-readable values.
 ///
-/// @param[in] socket Unique socket/package identifier.
+/// @param [in] socket Unique socket/package identifier.
 ///
-/// @param[out] info Data for turbo ratio limit.
+/// @param [out] info Data for turbo ratio limit.
 ///
-/// @param[out] info2 Data for turbo ratio limit 1 (platform dependent).
+/// @param [out] info2 Data for turbo ratio limit 1 (platform dependent).
 ///
 /// @return 0 if successful, else -1 if rapl_storage() fails.
 int get_turbo_ratio_limit(const unsigned socket,

@@ -98,9 +98,9 @@ struct csr_batch_op {
 
 /// @brief Structure holding multiple read/write operations to various MSRs.
 struct csr_batch_array {
-    /// @brief: Number of operations to execute.
+    /// @brief Number of operations to execute.
     uint32_t numops;
-    /// @brief: Array of length numops of operations to execute.
+    /// @brief Array of length numops of operations to execute.
     struct csr_batch_op *ops;
 };
 
