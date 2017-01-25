@@ -91,39 +91,6 @@ int repeated_poll_test()
     return 0;
 }
 
-void set_to_defaults()
-{
-    int socket = 0;
-    int numsockets = num_sockets();
-    struct rapl_power_info raplinfo;
-    struct rapl_limit socketlim, socketlim2, dramlim;
-
-    for (socket = 0; socket < numsockets; socket++)
-    {
-        if (socket != 0)
-        {
-            fprintf(stdout, "\n");
-        }
-        fprintf(stdout, "Socket %d:\n", socket);
-        get_rapl_power_info(socket, &raplinfo);
-        socketlim.bits = 0;
-        socketlim.watts = raplinfo.pkg_therm_power;
-        socketlim.seconds = 1;
-        socketlim2.bits = 0;
-        socketlim2.watts = raplinfo.pkg_therm_power * 1.2;
-        socketlim2.seconds = 3;
-        dramlim.bits = 0;
-        dramlim.watts = raplinfo.dram_max_power;
-        dramlim.seconds = 1;
-        fprintf(stdout, "Pkg Domain Power Lim 1 (lower lim)\n");
-        dump_rapl_limit(&socketlim, stdout);
-        fprintf(stdout, "\n");
-        fprintf(stdout, "Pkg Domain Power Lim 2 (upper lim)\n");
-        dump_rapl_limit(&socketlim2, stdout);
-        set_pkg_rapl_limit(socket, &socketlim, &socketlim2);
-    }
-}
-
 int main(int argc, char **argv)
 {
     struct rapl_data *rd = NULL;
