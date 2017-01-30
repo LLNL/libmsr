@@ -116,7 +116,7 @@ void take_measurement(void)
     uint64_t core0 = 0;
     uint64_t core1 = 0;
     int i;
-    double rapl_data[8];
+    double rapl_data[10];
     pthread_mutex_lock(&mlock);
 
     /* RAPL reads. */
@@ -155,7 +155,7 @@ void take_measurement(void)
     {
         min_watts = rapl_data[5];
     }
-    fprintf(logfile, "time:%ld 0joules:%lf 1joules:%lf 0limwatts:%lf 1limwatts:%lf instr0:%lu instr1:%lu core0:%lu core1:%lu\n", now_ms(), rapl_data[0], rapl_data[1], rapl_data[6], rapl_data[7], instr0, instr1, core0, core1);
+    fprintf(logfile, "%ld %lf %lf %lf %lf %lf %lf %lu %lu %lu %lu\n", now_ms(), rapl_data[0], rapl_data[1], rapl_data[6], rapl_data[7], rapl_data[8], rapl_data[9], instr0, instr1, core0, core1);
     pthread_mutex_unlock(&mlock);
 }
 

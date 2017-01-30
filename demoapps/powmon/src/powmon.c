@@ -112,6 +112,7 @@ int main(int argc, char **argv)
             return 1;
         }
         logfile = fdopen(logfd, "w");
+        fprintf(logfile, "time pkg_joules0 pkg_joules1 pkg_limwatts0 pkg_limwatts1 dram_joules0 dram_joules1 instr0 instr1 core0 core1\n");
 
         /* Start power measurement thread. */
         pthread_t mthread;
@@ -140,7 +141,7 @@ int main(int argc, char **argv)
 
         /* Output summary data. */
         char *msg;
-        asprintf(&msg, "host: %s\npid: %d\ntotal: %lf\nallocated: %lf\nmax_watts: %lf\nmin_watts: %lf\nruntime ms: %lu\n,start: %lu\nend: %lu\n", hostname, app_pid, total_joules, limit_joules, max_watts, min_watts, end-start, start, end);
+        asprintf(&msg, "host: %s\npid: %d\ntotal: %lf\nallocated: %lf\nmax_watts: %lf\nmin_watts: %lf\nruntime ms: %lu\nstart: %lu\nend: %lu\n", hostname, app_pid, total_joules, limit_joules, max_watts, min_watts, end-start, start, end);
 
         fprintf(logfile, "%s", msg);
         fclose(logfile);

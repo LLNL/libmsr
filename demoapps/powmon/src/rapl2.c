@@ -48,18 +48,22 @@ void read_rapl_init(void)
     /* DRAM_PERF_STATUS not implemented yet in libmsr. */
     *rflags = *rflags & ~DRAM_PERF_STATUS;
 
-    static struct rapl_limit rlim[2];
+    static struct rapl_limit rlim[4];
     get_pkg_rapl_limit(0, &(rlim[0]), NULL);
     get_pkg_rapl_limit(1, &(rlim[1]), NULL);
+    get_dram_rapl_limit(0, &(rlim[2]));
+    get_dram_rapl_limit(1, &(rlim[3]));
 }
 
 void read_rapl_energy_and_power(double *ret)
 {
-    static struct rapl_limit rlim[2];
+    static struct rapl_limit rlim[4];
     /* RAPL reads. */
     poll_rapl_data();
     get_pkg_rapl_limit(0, &(rlim[0]), NULL);
     get_pkg_rapl_limit(1, &(rlim[1]), NULL);
+    get_dram_rapl_limit(0, &(rlim[2]));
+    get_dram_rapl_limit(1, &(rlim[3]));
 
     ret[0] = rdat->pkg_delta_joules[0];
     ret[1] = rdat->pkg_delta_joules[1];
@@ -69,6 +73,8 @@ void read_rapl_energy_and_power(double *ret)
     ret[5] = rdat->pkg_delta_joules[1] / rdat->elapsed;
     ret[6] = rlim[0].watts;
     ret[7] = rlim[1].watts;
+    ret[8] = rdat->dram_delta_joules[0];
+    ret[9] = rdat->dram_delta_joules[1];
 }
 
 void set_rapl_power(double s0bound, double s1bound)

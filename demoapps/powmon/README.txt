@@ -22,7 +22,7 @@ To generate the makefiles:
 ./configure --prefix=<install path>
 
 To make and install the binaries:
-make install
+make && make install
 
 Each monitor includes a usage string. All three monitors are wrappers around
 some other process that will be executing on the node and include logic so that
