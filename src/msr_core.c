@@ -288,6 +288,7 @@ static int find_cpu_top(void)
     char filename[FILENAME_SIZE];
     int siblings0 = 0;
     int siblings1 = 0;
+    int err;
 
     snprintf(filename, FILENAME_SIZE, "/sys/devices/system/cpu/cpu0/topology/core_siblings_list");
     cpu0top = fopen(filename, "r");
@@ -304,9 +305,11 @@ static int find_cpu_top(void)
         return -1;
     }
 
-    fscanf(cpu0top, "%d", &siblings0);
+    err = fscanf(cpu0top, "%d", &siblings0);
     //fprintf(stdout, "q1%d\n", siblings0);
-    fscanf(cpu1top, "%d", &siblings1);
+    if (!err) {
+        err = fscanf(cpu1top, "%d", &siblings1);
+    }
     //fprintf(stdout, "q1%d\n", siblings1);
     if (siblings0 == siblings1)
     {
@@ -326,7 +329,7 @@ static int find_cpu_top(void)
     {
         fclose(cpu1top);
     }
-    return 0;
+    return err;
 }
 
 uint64_t num_cores(void)
