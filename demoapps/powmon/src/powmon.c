@@ -38,6 +38,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
@@ -72,6 +73,7 @@ static struct ctr_data c0, c1, c2;
 static unsigned long start;
 static unsigned long end;
 static FILE *logfile = NULL;
+static FILE *summaryfile = NULL;
 
 static pthread_mutex_t mlock;
 static int *shmseg;
@@ -83,16 +85,47 @@ static int running = 1;
 
 int main(int argc, char **argv)
 {
+    const char *usage = "\n"
+                        "NAME\n"
+                        "  powmon - Package and DRAM power monitor\n"
+                        "SYNOPSIS\n"
+                        "  %s [--help | -h] [-c] <executable> <args> ...\n"
+                        "OVERVIEW\n"
+                        "  Powmon is a utility for sampling and printing the\n"
+                        "  power consumption (for package and DRAM) and power\n"
+                        "  limit per socket for systems with two sockets.\n"
+                        "OPTIONS\n"
+                        "  --help | -h\n"
+                        "      Display this help information, then exit.\n"
+                        "  -c\n"
+                        "      Remove stale shared memory.\n"
+                        "\n";
+    if (argc == 1 || argc > 1 && (
+                strncmp(argv[1], "--help", strlen("--help")) == 0 || 
+                strncmp(argv[1], "-h", strlen("-h")) == 0 ))
+    {
+        printf(usage, argv[0]);
+        return 0;
+    }
     if (argc < 2)
     {
-        printf("Usage: %s <executable> <args>...\n", argv[0]);
-        printf("       %s -c\n",argv[0]);
+        printf(usage, argv[0]);
         return 1;
     }
-    if (strncmp("-c", argv[1], 3) == 0)
+
+    int opt;
+    while ((opt = getopt(argc, argv, "c")) != -1)
     {
-        highlander_clean();
-        return 0;
+        switch(opt)
+        {
+            case 'c':
+                highlander_clean();
+                return 0;
+            default:
+                fprintf(stderr, "\nError: unknown paramater \"%c\"\n", opt);
+                fprintf(stderr, usage, argv[0]);
+                return -1;
+        }
     }
 
     if (highlander())
@@ -140,12 +173,22 @@ int main(int argc, char **argv)
         end = now_ms();
 
         /* Output summary data. */
-        char *msg;
-        asprintf(&msg, "host: %s\npid: %d\ntotal: %lf\nallocated: %lf\nmax_watts: %lf\nmin_watts: %lf\nruntime ms: %lu\nstart: %lu\nend: %lu\n", hostname, app_pid, total_joules, limit_joules, max_watts, min_watts, end-start, start, end);
+        asprintf(&fname, "%s.power.summary", hostname);
 
-        fprintf(logfile, "%s", msg);
-        fclose(logfile);
+        logfd = open(fname, O_WRONLY|O_CREAT|O_EXCL|O_NOATIME|O_NDELAY, S_IRUSR|S_IWUSR);
+        if (logfd < 0)
+        {
+            printf("Fatal Error: %s on %s cannot open the appropriate fd.\n", argv[0], hostname);
+            return 1;
+        }
+        summaryfile = fdopen(logfd, "w");
+        char *msg;
+        asprintf(&msg, "host: %s\npid: %d\ntotal_joules: %lf\nallocated: %lf\nmax_watts: %lf\nmin_watts: %lf\nruntime ms: %lu\nstart: %lu\nend: %lu\n", hostname, app_pid, total_joules, limit_joules, max_watts, min_watts, end-start, start, end);
+
+        fprintf(summaryfile, "%s", msg);
+        fclose(summaryfile);
         close(logfd);
+
         shmctl(shmid, IPC_RMID, NULL);
         shmdt(shmseg);
     }

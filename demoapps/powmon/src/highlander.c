@@ -37,6 +37,7 @@
 #include <fcntl.h>
 #include <semaphore.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 static int amHighlander = -1;
 
@@ -69,7 +70,9 @@ int highlander(void)
 
 int highlander_clean(void) {
     // remove the named semaphores
+    fprintf(stdout, "Removing named semaphore /power_wrapperK\n");
     sem_unlink("/power_wrapperK");
+    fprintf(stdout, "Removing named semaphore /power_wrapperL\n");
     sem_unlink("/power_wrapperL");
 }
 
