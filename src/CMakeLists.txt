@@ -14,8 +14,6 @@ set(LIBMSR_SOURCES
     msr_rapl.c
     msr_thermal.c
     msr_turbo.c
-    profile.c
-    signalCombined.c
 )
 
 #

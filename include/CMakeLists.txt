@@ -12,8 +12,6 @@ set(LIBMSR_HEADERS
     msr_rapl.h
     msr_thermal.h
     msr_turbo.h
-    profile.h
-    signalCombined.h
 )
 
 install(FILES ${LIBMSR_HEADERS} DESTINATION include)
