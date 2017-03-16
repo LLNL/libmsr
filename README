@@ -10,7 +10,7 @@ version 0.3.0
 
 Last Update
 -----------
-24 August 2016
+16 March 2017
 
 
 Webpages
@@ -34,7 +34,7 @@ Installation is simple. You will need [CMAKE](http://www.cmake.org) version 2.8
 or higher and GCC. The old installation method is deprecated, you MUST use the
 script. In most cases, the installation is as follows:
 
-	install.sh [ /path/to/install ] [ -f arch_model ]
+	$ install.sh [ /path/to/install ] [ -f arch_model ]
 
 The install script can take two (optional) arguments. The first argument is the
 install directory. If a null or empty string is specified, then a BUILD/
@@ -52,7 +52,7 @@ I have an Ivy Bridge client processor which the auto-configuration tool does not
 detect. So, I will force the auto-configuration tool to use the Ivy Bridge
 header file defined in platform_headers/.
 
-	install.sh ~/build/libmsr -f3E
+	$ install.sh ~/build/libmsr -f3E
 
 Currently supported architectures are Intel Xeon v1-3 (Sandy Bridge, Ivy
 Bridge, and Haswell server processors). The library technically supports all
@@ -84,7 +84,7 @@ request it.
 
 Call `msr_init()` before using any of the APIs.
 
-For sample code, see libmsr_test.c in the test/ directory.
+For sample code, see `libmsr_test.c` in the test/ directory.
 
 Our most up-to-date documentation for Libmsr can be generated with `make doc`
 and `make latex_doc` for HTML and PDF versions, respectively. There are also
@@ -95,25 +95,17 @@ to gain MSR access. At this time, the patch will need to be requested as it is
 not on Github.
 
 
-Contributing
-------------
-
-Code formatting can be automated using astyle with the following parameters:
-
-    astyle --style=allman --indent=spaces=4 -y -S -C -N <src_file>
-
-
 Contact
 -------
 
 Barry Rountree, Project Lead, <rountree@llnl.gov> <br>
-Kathleen Shoga, Developer, <shoga1@llnl.gov> <br>
-Scott Walker, Developer, <walker91@llnl.gov> <br>
-Lauren Morita, Developer, <morita4@llnl.gov> <br>
 Stephanie Labasan, Developer, <labasan1@llnl.gov>
 
-Please feel free to contact the developers with any questions or feature
-requests.
+Please feel free to contact the developers with any questions or feedback.
+
+We are collecting names of those who have previously contributed to libmsr over
+the years. See the current list in the `AUTHORS` file. Please contact the
+developers to have your name added to the list.
 
 
 Release
