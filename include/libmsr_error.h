@@ -43,7 +43,8 @@ extern "C" {
 #endif
 
 /// @brief Structure encompassing libmsr errors.
-enum libmsr_error_e {
+enum libmsr_error_e
+{
     /// @brief Default error if value is 0 or -1.
     LIBMSR_ERROR_RUNTIME = -1,
     /// @brief Features not supported on a given platform (i.e.,

@@ -46,7 +46,8 @@ extern "C" {
 ///
 /// The scope of this MSR is defined as unique for Sandy Bridge. In our
 /// implementation, we assume a socket-level scope.
-struct msr_temp_target {
+struct msr_temp_target
+{
     /// @brief Raw 64-bit value stored in MSR_TEMPERATURE_TARGET.
     uint64_t **raw;
     /// @brief Min temperature (in degree Celsius) at which PROCHOT will be
@@ -60,7 +61,8 @@ struct msr_temp_target {
 /// @brief Structure holding data for IA32_THERM_STATUS.
 ///
 /// The scope of this MSR is core-level for Sandy Bridge.
-struct therm_stat {
+struct therm_stat
+{
     /// @brief Raw 64-bit value stored in IA32_THERM_STATUS.
     uint64_t **raw;
     /// @brief Status (active/not active) of the digital thermal sensor
@@ -183,7 +185,8 @@ struct therm_stat {
 /// @brief Structure holding data for IA32_THERM_INTERRUPT.
 ///
 /// The scope of this MSR is core-level for Sandy Bridge.
-struct therm_interrupt {
+struct therm_interrupt
+{
     /// @brief Raw 64-bit value stored in IA32_THERM_INTERRUPT.
     uint64_t **raw;
     /// @brief Enables the BIOS to generate an interrupt when transitioning
@@ -260,7 +263,8 @@ struct therm_interrupt {
 /// @brief Structure holding data for IA32_PACKAGE_THERM_STATUS.
 ///
 /// The scope of this MSR is package-level for Sandy Bridge.
-struct pkg_therm_stat {
+struct pkg_therm_stat
+{
     /// @brief Raw 64-bit value stored in IA32_PACKAGE_THERM_STATUS.
     uint64_t **raw;
     /// @brief Status (active/not active) of the digital thermal sensor
@@ -373,7 +377,8 @@ struct pkg_therm_stat {
 /// @brief Structure holding data from IA32_PACKAGE_THERM_INTERRUPT.
 ///
 /// The scope of this MSR is package-level for Sandy Bridge.
-struct pkg_therm_interrupt {
+struct pkg_therm_interrupt
+{
     /// @brief Raw 64-bit value stored in IA32_PACKAGE_THERM_INTERRUPT.
     uint64_t **raw;
     /// @brief Enables the BIOS to generate an interrupt when transitioning

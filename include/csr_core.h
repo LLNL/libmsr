@@ -49,7 +49,8 @@
 
 /// @brief Enum encompassing type of data being read to/written from uncore
 /// registers.
-enum csr_data_type_e {
+enum csr_data_type_e
+{
     /// @brief Integrated memory controller counter measurements.
     CSR_IMC_CTRS,
     /// @brief Integrated memory controller performance event measurements.
@@ -69,7 +70,8 @@ enum csr_data_type_e {
 
 /// @brief Structure holding information for a single read/write operation to
 /// an uncore register.
-struct csr_batch_op {
+struct csr_batch_op
+{
     /// @brief Bus identifier where read/write of uncore register will be
     /// executed.
     uint8_t bus;
@@ -97,7 +99,8 @@ struct csr_batch_op {
 };
 
 /// @brief Structure holding multiple read/write operations to various MSRs.
-struct csr_batch_array {
+struct csr_batch_array
+{
     /// @brief Number of operations to execute.
     uint32_t numops;
     /// @brief Array of length numops of operations to execute.

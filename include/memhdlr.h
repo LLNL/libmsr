@@ -47,7 +47,8 @@ extern "C" {
 #endif
 
 /// @brief Enum encompassing types of libmsr memory management.
-enum libmsr_mem_mgmt_e {
+enum libmsr_mem_mgmt_e
+{
     LIBMSR_FREE,
     LIBMSR_MALLOC,
     LIBMSR_CALLOC,

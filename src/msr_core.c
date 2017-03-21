@@ -307,7 +307,8 @@ static int find_cpu_top(void)
 
     err = fscanf(cpu0top, "%d", &siblings0);
     //fprintf(stdout, "q1%d\n", siblings0);
-    if (!err) {
+    if (!err)
+    {
         err = fscanf(cpu1top, "%d", &siblings1);
     }
     //fprintf(stdout, "q1%d\n", siblings1);

@@ -49,7 +49,8 @@ extern "C" {
 /// granularity of clock modulation duty cycle is increased to 6.25% as opposed
 /// to 12.5%. To enable this, must have CPUID.06H:EAX[Bit 5] = 1. I am not sure
 /// how to check that because otherwise bit 0 is reserved.
-struct clock_mod {
+struct clock_mod
+{
     /// @brief Raw 64-bit value stored in IA32_CLOCK_MODULATION.
     uint64_t raw;
     /// @brief Enable/disable on-demand software-controlled clock modulation.
@@ -69,7 +70,8 @@ struct clock_mod {
 
 /// @brief Structure containing data for IA32_APERF, IA32_MPERF, and
 /// IA32_TIME_STAMP_COUNTER.
-struct clocks_data {
+struct clocks_data
+{
     /// @brief Raw 64-bit value stored in IA32_APERF.
     uint64_t **aperf;
     /// @brief Raw 64-bit value stored in IA32_MPERF.
@@ -79,7 +81,8 @@ struct clocks_data {
 };
 
 /// @brief Structure containing data for IA32_PERF_STATUS and IA32_PERF_CTL.
-struct perf_data {
+struct perf_data
+{
     /// @brief Raw 64-bit value stored in IA32_PERF_STATUS.
     uint64_t **perf_status;
     /// @brief Raw 64-bit value stored in IA32_PERF_CTL.

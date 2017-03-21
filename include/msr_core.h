@@ -49,7 +49,8 @@ extern "C" {
 //#define USE_NO_BATCH 1
 
 /// @brief Enum encompassing type of data being read to/written from MSRs.
-enum libmsr_data_type_e {
+enum libmsr_data_type_e
+{
     /// @brief Energy, time, and power measurements of various RAPL power
     /// domains.
     RAPL_DATA,
@@ -118,7 +119,8 @@ enum libmsr_data_type_e {
 };
 
 /// @brief Enum encompassing batch operations.
-enum libmsr_batch_op_type_e {
+enum libmsr_batch_op_type_e
+{
     /// @brief Load batch operation.
     BATCH_LOAD,
     /// @brief Write batch operation.
@@ -139,7 +141,8 @@ enum libmsr_batch_op_type_e {
 
 /// @brief Structure holding information for a single read/write operation to
 /// an MSR.
-struct msr_batch_op {
+struct msr_batch_op
+{
     /// @brief CPU where rdmsr/wrmsr will be executed.
     __u16 cpu;
     /// @brief Identify if operation is rdmsr (non-zero) or wrmsr (0).
@@ -155,7 +158,8 @@ struct msr_batch_op {
 };
 
 /// @brief Structure holding multiple read/write operations to various MSRs.
-struct msr_batch_array {
+struct msr_batch_array
+{
     /// @brief Number of operations to execute.
     __u32 numops;
     /// @brief Array of length numops of operations to execute.

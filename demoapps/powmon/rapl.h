@@ -3,7 +3,7 @@
  * Copyright (c) 2011-2016, Lawrence Livermore National Security, LLC.
  * LLNL-CODE-645430
  *
- * Produced at Lawrence Livermore National Laboratory 
+ * Produced at Lawrence Livermore National Laboratory
  * Written by  Barry Rountree,   rountree@llnl.gov
  *             Daniel Ellsworth, ellsworth8@llnl.gov
  *             Scott Walker,     walker91@llnl.gov

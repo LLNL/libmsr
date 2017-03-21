@@ -43,7 +43,8 @@ extern "C" {
 #endif
 
 /// @brief Structure containing data for MSR_TURBO_ACTIVATION_RATIO.
-struct turbo_activation_ratio_data {
+struct turbo_activation_ratio_data
+{
     /// @brief Raw 64-bit value stored in MSR_TURBO_ACTIVATION RATIO.
     uint64_t bits;
     /// @brief Max non-turbo ratio bit-field (bits [7:0]) converted to a
@@ -56,7 +57,8 @@ struct turbo_activation_ratio_data {
 /// Structure can hold data from MSR_TURBO_RATIO_LIMIT and
 /// MSR_TURBO_RATIO_LIMIT1, the latter will exist depending on the number
 /// of physical cores in the platform (i.e., server products).
-struct turbo_limit_data {
+struct turbo_limit_data
+{
     /// @brief Raw 64-bit value stored in turbo ratio limit register.
     uint64_t bits;
     /// @brief Max turbo ratio (in MHz) when 1 core (or 9 cores) is/are active.
@@ -140,8 +142,8 @@ int get_max_turbo_activation_ratio(const unsigned socket,
 ///
 /// @param [out] info2 Data for turbo ratio limit 1 (platform dependent).
 void calc_max_turbo_ratio(const unsigned socket,
-                         struct turbo_limit_data *info,
-                         struct turbo_limit_data *info2);
+                          struct turbo_limit_data *info,
+                          struct turbo_limit_data *info2);
 
 /// @brief Read value of the turbo ratio limit register and translate bit
 /// fields to human-readable values.

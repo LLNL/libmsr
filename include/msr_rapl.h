@@ -119,7 +119,8 @@ extern "C" {
 #define STD_ENERGY_UNIT 65536.0
 
 /// @brief Enum encompassing unit conversion types.
-enum libmsr_unit_conversions_e {
+enum libmsr_unit_conversions_e
+{
     /// @brief Decode raw bits into Watts.
     BITS_TO_WATTS,
     /// @brief Encode Watt value to raw bits.
@@ -143,7 +144,8 @@ enum libmsr_unit_conversions_e {
 
 /// @brief Structure containing units for energy, time, and power across all
 /// RAPL power domains.
-struct rapl_units {
+struct rapl_units
+{
     /// @brief Raw 64-bit value stored in MSR_RAPL_POWER_UNIT.
     uint64_t msr_rapl_power_unit;
     /// @brief Energy status units (ESU) based on the multiplier 1/(2^ESU) (in
@@ -159,7 +161,8 @@ struct rapl_units {
 
 /// @brief Structure containing data from energy, time, and power measurements
 /// of various RAPL power domains.
-struct rapl_data {
+struct rapl_data
+{
     /**********/
     /* Timers */
     /**********/
@@ -262,7 +265,8 @@ struct rapl_data {
 };
 
 /// @brief Structure containing power limit data for a given RAPL power domain.
-struct rapl_limit {
+struct rapl_limit
+{
     /// @brief Raw 64-bit value stored in the power limit register.
     uint64_t bits;
     /// @brief Power limit in Watts.
@@ -273,7 +277,8 @@ struct rapl_limit {
 
 /// @brief Structure containing power range info for RAPL usage for various
 /// RAPL power domains.
-struct rapl_power_info {
+struct rapl_power_info
+{
     /**************************/
     /* RAPL Power Domain: PKG */
     /**************************/

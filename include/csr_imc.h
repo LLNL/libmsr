@@ -43,7 +43,8 @@
 #define NUMCTRS 8
 
 /// @brief Structure containing data of per-component performance counters.
-struct pmonctrs_data {
+struct pmonctrs_data
+{
     uint64_t **ctr0;
     uint64_t **ctr1;
     uint64_t **ctr2;
@@ -58,14 +59,16 @@ struct pmonctrs_data {
 };
 
 /// @todo Document fixed_perfmon_data struct.
-struct fixed_perfmon_data {
+struct fixed_perfmon_data
+{
     uint64_t **fctr;
     // config
     uint64_t **fctrcfg;
 };
 
 /// @todo Document pmonctr_global struct.
-struct pmonctr_global {
+struct pmonctr_global
+{
     uint64_t **unitctrl;
     uint64_t **unitstatus;
 };

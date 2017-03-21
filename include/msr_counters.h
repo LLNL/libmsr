@@ -51,7 +51,8 @@ extern "C" {
 /// @brief Structure containing configuration data for each fixed-function
 /// performance counter as encoded in IA32_PERF_GLOBAL_CTL and
 /// IA32_FIXED_CTR_CTL.
-struct fixed_counter {
+struct fixed_counter
+{
     /// @brief Raw value stored in enable bit field of IA32_PERF_GLOBAL_CTL,
     /// indicating availability of fixed-function performance counter.
     uint64_t *enable;
@@ -74,7 +75,8 @@ struct fixed_counter {
 
 /// @brief Structure containing general information about the fixed-function
 /// performance counters on the platform.
-struct fixed_counter_config {
+struct fixed_counter_config
+{
     /// @brief Number of fixed-function performance counters available per core
     /// (e.g., IA32_FIXED_CTR0, IA32_FIXED_CTR1, IA32_FIXED_CTR2).
     int num_counters;
@@ -83,7 +85,8 @@ struct fixed_counter_config {
 };
 
 /// @brief Structure containing data of performance event select counters.
-struct perfevtsel {
+struct perfevtsel
+{
     /// @brief Raw 64-bit value stored in IA32_PERFEVTSEL0.
     uint64_t **perf_evtsel0;
     /// @brief Raw 64-bit value stored in IA32_PERFEVTSEL1.
@@ -103,7 +106,8 @@ struct perfevtsel {
 };
 
 /// @brief Structure containing data of general-purpose performance counters.
-struct pmc {
+struct pmc
+{
     /// @brief Raw 64-bit value stored in IA32_PMC0.
     uint64_t **pmc0;
     /// @brief Raw 64-bit value stored in IA32_PMC1.
@@ -124,7 +128,8 @@ struct pmc {
 
 /// @brief Structure containing data of uncore performance event select
 /// counters.
-struct unc_perfevtsel {
+struct unc_perfevtsel
+{
     /// @brief Raw 64-bit value stored in MSR_UNCORE_PERFEVTSEL0.
     uint64_t **c0;
     /// @brief Raw 64-bit value stored in MSR_UNCORE_PERFEVTSEL1.
@@ -137,7 +142,8 @@ struct unc_perfevtsel {
 
 /// @brief Structure containing data of uncore general-purpose performance
 /// counters.
-struct unc_counters {
+struct unc_counters
+{
     /// @brief Raw 64-bit value stored in MSR_UNCORE_PMC0.
     uint64_t **c0;
     /// @brief Raw 64-bit value stored in MSR_UNCORE_PMC1.

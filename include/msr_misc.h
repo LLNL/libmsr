@@ -46,7 +46,8 @@ extern "C" {
 
 /// @brief Structure containing enabled/disabled platform-specific features as
 /// encoded in IA32_MISC_ENABLE.
-struct misc_enable {
+struct misc_enable
+{
     /// @brief Raw 64-bit value stored in IA32_MISC_ENABLE.
     uint64_t raw;
     /// @brief Enable/disable fast string operations.
@@ -155,7 +156,8 @@ struct misc_enable {
 /// C-states (other than C0) indicate that the CPU is idle and not executing
 /// any instructions. The higher the value, the deeper the CPU is in sleep
 /// state.
-struct pkg_cres {
+struct pkg_cres
+{
     /// @brief Raw 64-bit value stored in MSR_PKG_C2_RESIDENCY, indicating
     /// time spent by the package in C-state C2.
     uint64_t **pkg_c2;
@@ -187,7 +189,8 @@ struct pkg_cres {
 /// C-states (other than C0) indicate that the CPU is idle and not executing
 /// any instructions. The higher the value, the deeper the CPU is in sleep
 /// state.
-struct core_cres {
+struct core_cres
+{
     /// @brief Raw 64-bit value stored in MSR_CORE_C1_RESIDENCY, indicating
     /// time spent by the core in C-state C1.
     uint64_t **core_c1;

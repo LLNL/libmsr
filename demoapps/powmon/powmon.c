@@ -94,8 +94,8 @@ int main(int argc, char **argv)
                         "      Remove stale shared memory.\n"
                         "\n";
     if (argc == 1 || (argc > 1 && (
-                strncmp(argv[1], "--help", strlen("--help")) == 0 || 
-                strncmp(argv[1], "-h", strlen("-h")) == 0 )))
+                          strncmp(argv[1], "--help", strlen("--help")) == 0 ||
+                          strncmp(argv[1], "-h", strlen("-h")) == 0 )))
     {
         printf(usage, argv[0]);
         return 0;
