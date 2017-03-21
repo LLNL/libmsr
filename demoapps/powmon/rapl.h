@@ -43,3 +43,6 @@ void read_rapl_init(void);
 /// idx 4,5 report consumption in watts for sockets 0 and 1.
 /// idx 6,7 report allocation in joules for sockets 0 and 1.
 void read_rapl_energy_and_power(double *ret);
+
+void set_rapl_power(double s0bound, double s1bound);
+

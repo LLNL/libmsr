@@ -74,6 +74,7 @@ int highlander_clean(void) {
     sem_unlink("/power_wrapperK");
     fprintf(stdout, "Removing named semaphore /power_wrapperL\n");
     sem_unlink("/power_wrapperL");
+    return 1;
 }
 
 /// @brief Causes the highlander to wait until all foes have called wait.

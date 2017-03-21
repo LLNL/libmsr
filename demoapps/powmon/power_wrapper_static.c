@@ -60,13 +60,6 @@ static double min_watts = 1024.0;
 /*************************/
 /* HW Counter Structures */
 /*************************/
-#ifdef HAVE_LIBMSR1
-static uint64_t last_inst[NUM_THREADS];
-static uint64_t last_core[NUM_THREADS];
-static uint64_t last_ref[NUM_THREADS];
-static struct ctr_data c0, c1, c2;
-#endif
-
 static unsigned long start;
 static unsigned long end;
 static FILE *logfile = NULL;

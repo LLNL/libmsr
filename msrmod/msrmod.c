@@ -149,8 +149,7 @@ int set_functions(char *type, int socket, double watts1, double seconds1, double
     }
     else if (strncmp(type, "package", strlen("package")) == 0)
     {
-        struct rapl_power_info raplinfo;
-        struct rapl_limit socketlim, socketlim2, dramlim;
+        struct rapl_limit socketlim, socketlim2;
 
         socketlim.bits = 0;
         socketlim.watts = 0;
@@ -254,8 +253,6 @@ int printing_functions(char *type)
 
 int main(int argc, char **argv)
 {
-    short israpl = 0;
-    int i, opt;
     const char *usage = "\n"
                         "NAME\n"
                         "  msrmod - quick access to msr functions\n"
@@ -320,9 +317,9 @@ int main(int argc, char **argv)
                         "      Time window 2 for RAPL package domain.\n"
                         "\n";
 
-    if (argc == 1 || argc > 1 && (
+    if (argc == 1 || (argc > 1 && (
                 strncmp(argv[1], "--help" , strlen("--help")) == 0 ||
-                strncmp(argv[1], "-h" , strlen("-h")) == 0 ))
+                strncmp(argv[1], "-h" , strlen("-h")) == 0 )))
     {
         printf(usage, argv[0]);
         return 0;
@@ -332,12 +329,9 @@ int main(int argc, char **argv)
     char *print_data_type = '\0';
     char *print_events = '\0';
     char *set_msr_type= '\0';
-    uint64_t msr_data, msr;
+    uint64_t msr_data = 0;
+    uint64_t msr = 0;
     int set_msr_data = 0;
-    int set_power_lim1 = 0;
-    int set_power_lim2 = 0;
-    int set_time_lim1 = 0;
-    int set_time_lim2 = 0;
     unsigned thread = 0;
     unsigned socket = 0;
     int isread = 0;
@@ -347,6 +341,7 @@ int main(int argc, char **argv)
     int power_lim2 = 0;
     int time_lim1 = 0;
     int time_lim2 = 0;
+    int opt;
 
     while ((opt = getopt(argc, argv, "vip:l:r:w:s:c:t:d:a:b:e:f:")) != -1)
     {
@@ -400,22 +395,18 @@ int main(int argc, char **argv)
                 break;
             case 'a':
                 /* Power (in Watts) for RAPL limit 1. */
-                set_power_lim1 = 1;
                 power_lim1 = atof(optarg);
                 break;
             case 'b':
                 /* Time (in seconds) for RAPL limit 1. */
-                set_time_lim1 = 1;
                 time_lim1 = atof(optarg);
                 break;
             case 'e':
                 /* Power (in Watts) for RAPL limit 2. */
-                set_power_lim2 = 1;
                 power_lim2 = atof(optarg);
                 break;
             case 'f':
                 /* Time (in seconds) for RAPL limit 2. */
-                set_time_lim2 = 1;
                 time_lim2 = atof(optarg);
                 break;
             default:

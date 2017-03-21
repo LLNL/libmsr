@@ -2,13 +2,21 @@ project(libmsr C)
 cmake_minimum_required(VERSION 2.8)
 
 # Add -Wall if it is not there already.
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -O3")
 
 # Force default build type to be RelWithDebInfo
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING
     "Choose the type of build, options are: Debug Release RelWithDebInfo." FORCE)
 endif()
+
+# Build and run autoconf utility
+set(LIBMSR_AUTOCONF ./._autoconf_)
+execute_process(COMMAND gcc -o ._autoconf_ autoconf.c)
+execute_process(COMMAND ${LIBMSR_AUTOCONF})
+# Uncomment for force configuring for a particular architecture
+#set(LIBMSR_TARGET_ARCH 3F)
+#execute_process(COMMAND ${LIBMSR_AUTOCONF} -f ${LIBMSR_TARGET_ARCH})
 
 # Headers are in top level include directory
 include_directories(${PROJECT_SOURCE_DIR}/include)
@@ -39,28 +47,19 @@ if (DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 add_subdirectory(test)
+add_subdirectory(msrmod)
+add_subdirectory(demoapps/powmon)
 
 add_custom_target(distclean
+    rm -f ._autoconf_
     rm -f CMakeCache.txt
     rm -f Makefile
-    rm -f _autoconf_
     rm -f cmake_install.cmake
-    rm -f demoapps/powmon/Makefile.in
-    rm -f demoapps/powmon/aclocal.m4
-    rm -f demoapps/powmon/config.h
-    rm -f demoapps/powmon/config.h.in
-    rm -f demoapps/powmon/config.log
-    rm -f demoapps/powmon/config.status
-    rm -f demoapps/powmon/configure
-    rm -f demoapps/powmon/depcomp
-    rm -f demoapps/powmon/install-sh
-    rm -f demoapps/powmon/missing
-    rm -f demoapps/powmon/src/Makefile.in
-    rm -f demoapps/powmon/src/Makefile
-    rm -f demoapps/powmon/src/power_wrapper_dynamic
-    rm -f demoapps/powmon/src/power_wrapper_static
-    rm -f demoapps/powmon/src/powmon
-    rm -f demoapps/powmon/stamp-h1
+    rm -f demoapps/powmon/cmake_install.cmake
+    rm -f demoapps/powmon/Makefile
+    rm -f demoapps/powmon/power_wrapper_dynamic
+    rm -f demoapps/powmon/power_wrapper_static
+    rm -f demoapps/powmon/powmon
     rm -f dox/CMakeCache.txt
     rm -f dox/Makefile
     rm -f dox/cmake_install.cmake
@@ -69,6 +68,8 @@ add_custom_target(distclean
     rm -f include/master.h
     rm -f install_manifest.txt
     rm -f libmsr-config.cmake
+    rm -f msrmod/cmake_install.cmake
+    rm -f msrmod/Makefile
     rm -f msrmod/msrmod
     rm -f platform_headers/master.h
     rm -f src/Makefile
@@ -83,17 +84,17 @@ add_custom_target(distclean
     rm -f test/translate
     rm -f test/turbo-test
     rm -f test/unit-test
-    rm -rf BUILD/
     rm -rf CMakeFiles/
-    rm -rf demoapps/powmon/autom4te.cache/
-    rm -rf demoapps/powmon/src/.deps/
+    rm -rf demoapps/powmon/CMakeFiles
     rm -rf dox/CMakeFiles/
     rm -rf dox/html/
     rm -rf dox/latex/
     rm -rf include/CMakeFiles/
     rm -rf lib/
+    rm -rf msrmod/CMakeFiles
     rm -rf src/CMakeFiles/
     rm -rf test/CMakeFiles/
     rm -rf wrap/CMakeFiles/
+    rm -rf ${CMAKE_INSTALL_PREFIX}
     COMMENT "Cleaning up unwanted files" VERBATIM
 )

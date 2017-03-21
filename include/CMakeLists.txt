@@ -14,4 +14,6 @@ set(LIBMSR_HEADERS
     msr_turbo.h
 )
 
-install(FILES ${LIBMSR_HEADERS} DESTINATION include)
+install(FILES ${LIBMSR_HEADERS} DESTINATION
+    "${CMAKE_INSTALL_PREFIX}/include"
+)

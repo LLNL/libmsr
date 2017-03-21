@@ -35,9 +35,11 @@
 // architecture.
 
 #include <ctype.h>
+#include <getopt.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define FNAME_SIZE  128
 #define BUFFER_SIZE 512
@@ -76,7 +78,7 @@ FILE *open_header(char *a)
             fprintf(stderr, "Model %s may not be supported. No matching header files found in platform_headers/.\n", a);
         }
         else {
-            fprintf(stderr, "Model %lx may not be supported. Use -f[arch_num] to force.\n", arch);
+            fprintf(stderr, "Model %lx may not be supported. Use -f to force.\n", arch);
         }
         exit(-1);
     }
@@ -85,10 +87,10 @@ FILE *open_header(char *a)
 
 FILE *open_master(void)
 {
-    FILE *master = fopen("platform_headers/master.h", "w");
+    FILE *master = fopen("include/master.h", "w");
 
     if (master == NULL) {
-        fprintf(stderr, "ERROR: unable to open file platform_headers/master.h\n");
+        fprintf(stderr, "ERROR: unable to open file include/master.h\n");
         exit(-2);
     }
     return master;
@@ -123,17 +125,47 @@ int copy(char *arch)
 
 int main(int argc, char **argv)
 {
-    char arch[3];
-
-    /* Auto detect architecture model. */
-    if (argc < 2 || argv[1][0] != '-' || argv[1][1] != 'f') {
-        copy(NULL);
-        return 0;
+    const char *usage = "\n"
+                        "NAME\n"
+                        "  autoconf - Detect architecture model for MSR definitions\n"
+                        "SYNOPSIS\n"
+                        "  %s [--help | -h] [-f]\n"
+                        "OVERVIEW\n"
+                        "  Autoconf was built to determine the architecture model for\n"
+                        "  which libmsr is being built on. The architecture determines\n"
+                        "  the offsets for several MSRs, which may be architecture-specific.\n"
+                        "OPTIONS\n"
+                        "  --help | -h\n"
+                        "      Display this help information, then exit.\n"
+                        "  -f\n"
+                        "      Target architecture model.\n"
+                        "\n";
+    if (argc > 1 && (strncmp(argv[1], "--help", strlen("--help")) == 0 ||
+                     strncmp(argv[1], "-h", strlen("-h")) == 0 )) {
+        printf(usage, argv[0]);
+        return EXIT_SUCCESS;
     }
-    /* User-supplied architecture model. */
-    arch[0] = toupper(argv[1][2]);
-    arch[1] = toupper(argv[1][3]);
-    arch[2] = '\0';
-    copy(arch);
-    return 0;
+    if (argc > 3) {
+        printf(usage, argv[0]);
+        return EXIT_FAILURE;
+    }
+    /* Auto-detect architecture model. */
+    if (argc == 1) {
+        copy(NULL);
+        return EXIT_SUCCESS;
+    }
+
+    int opt;
+    while ((opt = getopt(argc, argv, "f:")) != -1) {
+        switch(opt) {
+            case 'f':
+                copy(optarg);
+                break;
+            default:
+                fprintf(stderr, "\nError: unknown parameter \"%c\"\n", opt);
+                fprintf(stderr, usage, argv[0]);
+                return EXIT_FAILURE;
+        }
+    }
+    return EXIT_SUCCESS;
 }

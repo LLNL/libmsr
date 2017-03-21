@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 2.8.11.2)
+cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_C_COMPILER "/usr/bin/gcc")
-set(CMAKE_CXX_COMPILER "/usr/bin/g++")
+set(CMAKE_C_COMPILER "/usr/tce/bin/gcc")
+set(CMAKE_CXX_COMPILER "/usr/tce/bin/g++")
 
-include_directories($HOME/build_pub/libmsr/include)
+include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_executable (unit-test power_unit_test.c)
 set_target_properties(${execname} PROPERTIES COMPILE_FLAGS "-g -Wall -D_GNU_SOURCE")

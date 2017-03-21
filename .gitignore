@@ -8,7 +8,7 @@ BUILD/
 CMakeCache.txt
 CMakeFiles/
 Makefile
-_autoconf_
+._autoconf_
 app
 cab*
 cmake_install.cmake
