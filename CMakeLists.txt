@@ -1,6 +1,9 @@
 project(libmsr C)
 cmake_minimum_required(VERSION 2.8)
 
+set(CMAKE_C_COMPILER "gcc")
+set(CMAKE_CXX_COMPILER "g++")
+
 # Add -Wall if it is not there already.
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -O3")
 
@@ -71,12 +74,11 @@ add_custom_target(distclean
     rm -f msrmod/cmake_install.cmake
     rm -f msrmod/Makefile
     rm -f msrmod/msrmod
-    rm -f platform_headers/master.h
-    rm -f src/Makefile
     rm -f src/cmake_install.cmake
+    rm -f src/Makefile
     rm -f test/CMakeCache.txt
-    rm -f test/Makefile
     rm -f test/cmake_install.cmake
+    rm -f test/Makefile
     rm -f test/dump-data
     rm -f test/libmsr-test
     rm -f test/pstate-test

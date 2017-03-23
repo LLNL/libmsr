@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_C_COMPILER "/usr/tce/bin/gcc")
-set(CMAKE_CXX_COMPILER "/usr/tce/bin/g++")
-
 set(CMAKE_C_FLAGS "-pthread")
 set(CMAKE_CXX_FLAGS "-pthread")
 
@@ -29,12 +26,12 @@ target_link_libraries (powmon msr)
 target_link_libraries (power_wrapper_static msr)
 target_link_libraries (power_wrapper_dynamic msr)
 
-install(TARGETS powmon EXPORT libmsr-libs DESTINATION 
+install(TARGETS powmon EXPORT libmsr-libs DESTINATION
     "${CMAKE_INSTALL_PREFIX}/bin"
 )
-install(TARGETS power_wrapper_static EXPORT libmsr-libs DESTINATION 
+install(TARGETS power_wrapper_static EXPORT libmsr-libs DESTINATION
     "${CMAKE_INSTALL_PREFIX}/bin"
 )
-install(TARGETS power_wrapper_dynamic EXPORT libmsr-libs DESTINATION 
+install(TARGETS power_wrapper_dynamic EXPORT libmsr-libs DESTINATION
     "${CMAKE_INSTALL_PREFIX}/bin"
 )

@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_C_COMPILER "/usr/tce/bin/gcc")
-set(CMAKE_CXX_COMPILER "/usr/tce/bin/g++")
-
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_executable (unit-test power_unit_test.c)
