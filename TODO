@@ -11,12 +11,6 @@ Ongoing
 
 - [2016-08-08] Finish tagging PCI configuration (CSR) files with Doxygen tags.
 
-- [2016-08-11] Check functionality of signalCombined.c once batch operation is
-  fixed. There may be some changes.
-
-- [2016-08-11] Check functionality of powmon with current libmsr status. Remove
-  check for older version of libmsr.
-
 - [2016-08-11] Add member variables for converted bit fields (i.e.,
   human-readable values) in performance counter structs. Current implementation
   only stores raw values of bit fields.

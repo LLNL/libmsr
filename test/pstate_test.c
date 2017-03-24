@@ -12,7 +12,6 @@
 #include "msr_thermal.h"
 #include "msr_counters.h"
 #include "msr_clocks.h"
-#include "profile.h"
 #include "msr_misc.h"
 #include "msr_turbo.h"
 #include "csr_core.h"

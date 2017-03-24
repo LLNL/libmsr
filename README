@@ -33,7 +33,9 @@ Installation
 Installation is simple. You will need [CMAKE](http://www.cmake.org) version 2.8
 or higher and GCC. In most cases, the installation is as follows:
 
-	$ cmake . -DCMAKE_PREFIX_INSTALL=build/
+    $ cmake . -DCMAKE_INSTALL_PREFIX=${HOME}/build/libmsr
+    $ make
+    $ make install
 
 The installation depends on a `master.h` file, which defines the offsets for
 several MSRs given a particular architecture (e.g., Sandy Bridge, Ivy Bridge,
