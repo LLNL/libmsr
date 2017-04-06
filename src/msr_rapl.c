@@ -384,16 +384,7 @@ static int calc_rapl_from_bits(const unsigned socket, struct rapl_limit *limit, 
     // We have been given the bits to be written to the msr.
     // For sake of completeness, translate these into watts and seconds.
     ret = translate(socket, &watts_bits, &limit->watts, BITS_TO_WATTS);
-    // If the offset is > 31 (we are writing the upper PKG limit), then no
-    // translation needed
-    if (offset < 32)
-    {
-        ret += translate(socket, &seconds_bits, &limit->seconds, BITS_TO_SECONDS_STD);
-    }
-    else
-    {
-        limit->seconds = seconds_bits;
-    }
+    ret += translate(socket, &seconds_bits, &limit->seconds, BITS_TO_SECONDS_STD);
     if (ret < 0)
     {
         libmsr_error_handler("calc_rapl_from_bits(): Translation from bits to values failed", LIBMSR_ERROR_RAPL_INIT, getenv("HOSTNAME"), __FILE__, __LINE__);
@@ -428,18 +419,8 @@ static int calc_rapl_bits(const unsigned socket, struct rapl_limit *limit, const
     /*
      * We have been given watts and seconds and need to translate these into
      * bit values.
-     * If offset is >= 32 (we are setting the 2nd pkg limit), we don't need time
-     * conversion.
      */
-    if (offset >= 32)
-    {
-        seconds_bits = (uint64_t)limit->seconds; // unit is milliseconds
-        //translate(socket, &seconds_bits, &limit->seconds, SECONDS_TO_BITS_STD);
-    }
-    else
-    {
-        translate(socket, &seconds_bits, &limit->seconds, SECONDS_TO_BITS_STD);
-    }
+    translate(socket, &seconds_bits, &limit->seconds, SECONDS_TO_BITS_STD);
     /* There is only 1 translation for watts (so far). */
     translate(socket, &watts_bits, &limit->watts, WATTS_TO_BITS);
 #ifdef LIBMSR_DEBUG
