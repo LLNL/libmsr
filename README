@@ -41,8 +41,8 @@ The installation depends on a `master.h` file, which defines the offsets for
 several MSRs given a particular architecture (e.g., Sandy Bridge, Ivy Bridge,
 Haswell, etc.). The auto-configuration tool can be forced to use the header
 file of a specific architecture or can auto-detect the architecture. To specify
-a particular architecture, modify the top-level CMakeLists.txt to enable
-`LIBMSR_TARGET_ARCH`, where the argument is in hexadecimal. In the future, we
+a particular architecture, run `cmake` with the option
+`-DLIBMSR_TARGET_ARCH=ARG` where `ARG` is in hexadecimal. In the future, we
 plan to have a set of architecture-specific configuration files that can be
 pre-loaded to CMake to populate the cache.
 
