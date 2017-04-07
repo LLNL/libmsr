@@ -97,6 +97,5 @@ add_custom_target(distclean
     rm -rf src/CMakeFiles/
     rm -rf test/CMakeFiles/
     rm -rf wrap/CMakeFiles/
-    rm -rf ${CMAKE_INSTALL_PREFIX}
     COMMENT "Cleaning up unwanted files" VERBATIM
 )
