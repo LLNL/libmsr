@@ -150,12 +150,12 @@ int main(int argc, char **argv)
         new_p_states_ghz[0] = 1.8;
         new_p_states_ghz[1] = 1.2;
     }
-    else if (argc > sockets)
+    else if (argc-1 > sockets)
     {
         fprintf(stderr, "ERROR: Too many p-states (in GHz) specified.\n");
         return -1;
     }
-    else if (argc == sockets+1)
+    else if (argc-1 == sockets)
     {
         new_p_states_ghz[0] = atof(argv[1]);
         new_p_states_ghz[1] = atof(argv[2]);
