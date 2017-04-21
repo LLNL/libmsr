@@ -1,4 +1,30 @@
 #
+# Discover the target architecture and create the master header file
+#
+set(LIBMSR_TARGET_ARCH "" CACHE STRING "Force configuring for a particular architecture")
+if (NOT LIBMSR_TARGET_ARCH)
+    try_run(X86_ARCH_RUN_RESULT X86_ARCH_COMPILE_RESULT
+            ${CMAKE_BINARY_DIR}/x86_arch ${CMAKE_SOURCE_DIR}/x86_arch.c
+            COMPILE_OUTPUT_VARIABLE X86_ARCH_COMPILE_OUTPUT
+            RUN_OUTPUT_VARIABLE LIBMSR_TARGET_ARCH)
+    if(NOT X86_ARCH_COMPILE_RESULT)
+        message(FATAL_ERROR "Failed to compile ${CMAKE_SOURCE_DIR}/x86_arch.c:\n${X86_ARCH_COMPILE_OUTPUT}")
+    endif()
+    if(NOT X86_ARCH_RUN_RESULT EQUAL 0)
+        message(FATAL_ERROR "Bad return code running ${CMAKE_SOURCE_DIR}/x86_arch.c: ${X86_ARCH_RUN_RESULT}")
+    endif()
+endif()
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/platform_headers/Intel${LIBMSR_TARGET_ARCH}.h)
+    message(FATAL_ERROR
+            "Unsupported model (no matching header found in platform_headers): ${LIBMSR_TARGET_ARCH}\n"
+            "Set LIBMSR_TARGET_ARCH to a valid value to force a particular architecture.")
+endif()
+add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/include/master.h
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/platform_headers/Intel${LIBMSR_TARGET_ARCH}.h ${CMAKE_SOURCE_DIR}/include/master.h
+    DEPENDS ${CMAKE_SOURCE_DIR}/platform_headers/Intel${LIBMSR_TARGET_ARCH}.h
+)
+
+#
 # Static and dynamic libs have the same sources, so make a variable.
 #
 set(LIBMSR_SOURCES
@@ -14,6 +40,8 @@ set(LIBMSR_SOURCES
     msr_rapl.c
     msr_thermal.c
     msr_turbo.c
+    # We specify this header so CMake will force its creation (see custom command above)
+    ${CMAKE_SOURCE_DIR}/include/master.h
 )
 
 #

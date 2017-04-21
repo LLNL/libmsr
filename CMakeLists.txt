@@ -1,25 +1,12 @@
 project(libmsr C)
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_C_COMPILER "gcc")
-set(CMAKE_CXX_COMPILER "g++")
-
 # Add -Wall if it is not there already.
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -O3")
 
 # Force default build type to be RelWithDebInfo
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo." FORCE)
-endif()
-
-# Build and run autoconf utility
-set(LIBMSR_AUTOCONF ${CMAKE_BINARY_DIR}/._autoconf_)
-execute_process(COMMAND gcc -o ${LIBMSR_AUTOCONF} ${CMAKE_SOURCE_DIR}/autoconf.c)
-set(LIBMSR_TARGET_ARCH "" CACHE STRING "Force configuring for a particular architecture")
-if (LIBMSR_TARGET_ARCH)
-    execute_process(COMMAND ${LIBMSR_AUTOCONF} -f ${LIBMSR_TARGET_ARCH} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-else()
-    execute_process(COMMAND ${LIBMSR_AUTOCONF} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif()
 
 # Headers are in top level include directory
