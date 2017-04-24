@@ -44,11 +44,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
 add_subdirectory(src)
 add_subdirectory(include)
-
-find_package(Doxygen)
-if (DOXYGEN_FOUND)
-    add_subdirectory(dox)
-endif(DOXYGEN_FOUND)
+add_subdirectory(dox)
 
 add_subdirectory(test)
 add_subdirectory(msrmod)
