@@ -191,14 +191,6 @@
 #define MSR_PKG_POWER_LIMIT    0x610 // rw
 #define MSR_PKG_ENERGY_STATUS  0x611 // ro sic
 #define MSR_PKG_POWER_INFO     0x614 // rw text states ro
-#define MSR_PP0_POWER_LIMIT    0x638 // rw
-#define MSR_PP0_ENERGY_STATUS  0x639 // ro
-#define MSR_PP0_POLICY         0x63A // rw
-#define MSR_PP0_PERF_STATUS    0x63B // ro
-
-#define MSR_PP1_POWER_LIMIT    0x640 // rw
-#define MSR_PP1_ENERGY_STATUS  0x641 // ro. sic
-#define MSR_PP1_POLICY         0x642 // rw
 
 #define MSR_PKG_PERF_STATUS    0x613 // ro
 #define MSR_DRAM_POWER_LIMIT   0x618 // rw

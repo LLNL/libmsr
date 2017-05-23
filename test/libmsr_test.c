@@ -19,13 +19,11 @@
 #include <mpi.h>
 #endif
 
-uint64_t pp_policy = 0x5;
 struct rapl_limit l1, l2, l3, l4;
 
 void get_limits()
 {
     int i;
-    uint64_t pp_result;
     static uint64_t sockets = 0;
 
     if (!sockets)
@@ -51,15 +49,6 @@ void get_limits()
         {
             fprintf(stdout, "\nDRAM Domain\n");
             dump_rapl_limit(&l3, stdout);
-        }
-        if (get_pp_rapl_limit(i, &l4, NULL) == 0)
-        {
-            fprintf(stdout, "\nPP Domain\n");
-            dump_rapl_limit(&l4, stdout);
-        }
-        if (get_pp_rapl_policies(i, &pp_result, NULL) == 0)
-        {
-            fprintf(stdout, "\nPP Policy\n%ld\n", pp_result);
         }
     }
 }
@@ -95,12 +84,6 @@ void test_socket_1_limits(unsigned s)
     l3.seconds = 2;
     l3.bits = 0;
     set_dram_rapl_limit(s, &l3);
-    l4.watts = 115;
-    l4.seconds = 1;
-    l4.bits = 0;
-    set_pp_rapl_limit(s, &l4, NULL);
-    pp_policy = 8;
-    set_pp_rapl_policies(1, &pp_policy, NULL);
     get_limits();
 }
 
@@ -117,12 +100,6 @@ void test_socket_0_limits(unsigned s)
     l3.seconds = 1;
     l3.bits = 0;
     set_dram_rapl_limit(s, &l3);
-    l4.watts = 132;
-    l4.seconds = 2;
-    l4.bits = 0;
-    set_pp_rapl_limit(s, &l4, NULL);
-    pp_policy = 1;
-    set_pp_rapl_policies(0, &pp_policy, NULL);
     get_limits();
 }
 
@@ -143,16 +120,10 @@ void test_all_limits()
     l3.watts = 40;
     l3.seconds = 1;
     l3.bits = 0;
-    l4.watts = 110;
-    l4.seconds = 8;
-    l4.bits = 0;
-    pp_policy = 31;
     for (i = 0; i < sockets; i++)
     {
         set_pkg_rapl_limit(i, &l1, &l2);
-        set_pp_rapl_limit(i, &l4, NULL);
         set_dram_rapl_limit(i, &l3);
-        set_pp_rapl_policies(i, &pp_policy, NULL);
     }
     get_limits();
 }

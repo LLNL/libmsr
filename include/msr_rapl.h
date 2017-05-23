@@ -54,42 +54,35 @@ extern "C" {
 //  4: 614h, MSR_PKG_POWER_INFO
 //  5: 618h, MSR_DRAM_POWER_LIMIT
 //  6: 619h, MSR_DRAM_ENERGY_STATUS
-//  7: 61Bi, MSR_DRAM_PERF_STATUS
+//  7: 61Bh, MSR_DRAM_PERF_STATUS
 //  8: 61Ch, MSR_DRAM_POWER_INFO
-//  9: 638h, MSR_PP0_POWER_LIMIT
-// 10: 639h, MSR_PP0_ENERGY_STATUS
-// 11: 63Ah, MSR_PP0_POLICY
-// 12: 63Bh, MSR_PP0_PERF_STATUS
-// 13: 640h, MSR_PP1_POWER_LIMIT
-// 14: 641h, MSR_PP1_ENERGY_STATUS
-// 15: 642h, MSR_PP1_POLICY
-// 16: 64Ch, MSR_TURBO_ACTIVATION_RATIO
-// 17: 66Eh, MSR_PKG_POWER_INFO
-// 18: 690h, MSR_CORE_PERF_LIMIT_REASONS
-// 19: 6B0h, MSR_GRAPHICS_PERF_LIMIT_REASONS
-// 20: 6B1h, MSR_RING_PERF_LIMIT_REASONS
-// 21: 1ADh, MSR_TURBO_RATIO_LIMIT
-// 22: 1AEh, MSR_TURBO_RATIO_LIMIT1
-#define MF_06_37 (0x407)
-#define MF_06_4A (0x407)
-#define MF_06_5A (0x407)
-#define MF_06_4D (0x20003)
-#define MF_06_4C (0x607)
-#define MF_06_2A (0xFE17)   // Sandy Bridge
-#define MF_06_2D (0x7FF)    // Sandy Bridge
-#define MF_06_3A (0xFE17)
-#define MF_06_3E (0x6007F7) // Ivy Bridge
-#define MF_06_3C (0x1CEE17) // disabled pp0_perf_status, not on this architecture
-#define MF_06_45 (0x1CFE17)
-#define MF_06_46 (0x1CFE17)
-#define MF_06_3F (0x1C01FF) // disabled PP registers, not on this architecture
-#define MF_06_3D (0x1CFE17)
-#define MF_06_47 (0x1CFE17)
-#define MF_06_4F (0x1CFE17)
-#define MF_06_56 (0x1CFE17)
-#define MF_06_4E (0x1EFE17)
-#define MF_06_5E (0x1EFE17)
-#define MF_06_57 (0x507FF)
+//  9: 64Ch, MSR_TURBO_ACTIVATION_RATIO
+// 10: 66Eh, MSR_PKG_POWER_INFO
+// 11: 690h, MSR_CORE_PERF_LIMIT_REASONS
+// 12: 6B0h, MSR_GRAPHICS_PERF_LIMIT_REASONS
+// 13: 6B1h, MSR_RING_PERF_LIMIT_REASONS
+// 14: 1ADh, MSR_TURBO_RATIO_LIMIT
+// 15: 1AEh, MSR_TURBO_RATIO_LIMIT1
+#define MF_06_37 (0x7)
+#define MF_06_4A (0x7)
+#define MF_06_5A (0x7)
+#define MF_06_4D (0x403)
+#define MF_06_4C (0x7)
+#define MF_06_2A (0x17)   // Sandy Bridge
+#define MF_06_2D (0x1FF)    // Sandy Bridge
+#define MF_06_3A (0x17)
+#define MF_06_3E (0xC1F7) // Ivy Bridge
+#define MF_06_3C (0x3817) // disabled pp0_perf_status, not on this architecture
+#define MF_06_45 (0x3817)
+#define MF_06_46 (0x3817)
+#define MF_06_3F (0x39FF) // disabled PP registers, not on this architecture
+#define MF_06_3D (0x3817)
+#define MF_06_47 (0x3817)
+#define MF_06_4F (0x3817)
+#define MF_06_56 (0x3817)
+#define MF_06_4E (0x3E17)
+#define MF_06_5E (0x3E17)
+#define MF_06_57 (0xBFF)
 
 // Register flags
 // These are used to check against the rapl flags (see above) to see if a
@@ -103,16 +96,9 @@ extern "C" {
 #define DRAM_ENERGY_STATUS     (0x40L)
 #define DRAM_PERF_STATUS       (0x80L)
 #define DRAM_POWER_INFO        (0x100L)
-#define PP0_POWER_LIMIT        (0x200L)
-#define PP0_ENERGY_STATUS      (0x400L)
-#define PP0_POLICY             (0x800L)
-#define PP0_PERF_STATUS        (0x1000L)
-#define PP1_POWER_LIMIT        (0x2000L)
-#define PP1_ENERGY_STATUS      (0x4000L)
-#define PP1_POLICY             (0x8000L)
-#define TURBO_ACTIVATION_RATIO (0x10000L)
-#define TURBO_RATIO_LIMIT      (0x200000L)
-#define TURBO_RATIO_LIMIT1     (0x400000L)
+#define TURBO_ACTIVATION_RATIO (0x200L)
+#define TURBO_RATIO_LIMIT      (0x4000L)
+#define TURBO_RATIO_LIMIT1     (0x8000L)
 
 
 #define UINT_MAX 4294967295U // taken from limits.h
@@ -216,52 +202,6 @@ struct rapl_data
     /// how many times DRAM performance was capped due to underlying hardware
     /// constraints.
     uint64_t **dram_perf_count;
-
-    /************************************/
-    /* RAPL Power Domain: Power Plane 0 */
-    /* (PP0, IA Processor Cores)        */
-    /************************************/
-    /// @brief Raw 64-bit value stored in MSR_PP0_ENERGY_STATUS.
-    uint64_t **pp0_bits;
-    /// @brief Raw 64-bit value previously stored in MSR_PP0_ENERGY_STATUS.
-    uint64_t *old_pp0_bits;
-    /// @brief Current PP0 energy usage (in Joules).
-    double *pp0_joules;
-    /// @brief Previous PP0 energy usage (in Joules).
-    double *old_pp0_joules;
-    /// @brief Difference in PP0 energy usage between two data measurements.
-    double *pp0_delta_joules;
-    /// @brief PP0 power consumption (in Watts) derived by dividing difference
-    /// in PP0 energy usage by time elapsed between data measurements.
-    double *pp0_watts;
-    /// @brief Raw 64-bit value stored in MSR_PP0_PERF_STATUS, which reports
-    /// cumulative time that the PP0 domain has throttled due to RAPL power
-    /// limits.
-    uint64_t **pp0_perf_count;
-    /// @brief Raw 64-bit value stored in MSR_PP0_Policy indicating the desired
-    /// priority level (with respect to power allocation) to the PCU.
-    uint64_t **pp0_policy;
-
-    /************************************/
-    /* RAPL Power Domain: Power Plane 1 */
-    /* (PP1, Uncore Graphic Device)     */
-    /************************************/
-    /// @brief Raw 64-bit value stored in MSR_PP1_ENERGY_STATUS.
-    uint64_t **pp1_bits;
-    /// @brief Raw 64-bit value previously stored in MSR_PP1_ENERGY_STATUS.
-    uint64_t *old_pp1_bits;
-    /// @brief Current PP1 energy usage (in Joules).
-    double  *pp1_joules;
-    /// @brief Previous PP1 energy usage (in Joules).
-    double *old_pp1_joules;
-    /// @brief Difference in PP1 energy usage between two data measurements.
-    double *pp1_delta_joules;
-    /// @brief PP1 power consumption (in Watts) derived by dividing difference
-    /// in PP1 energy usage by time elapsed between data measurements.
-    double *pp1_watts;
-    /// @brief Raw 64-bit value stored in MSR_PP1_Policy indicating the desired
-    /// priority level (with respect to power allocation) to the PCU
-    uint64_t **pp1_policy;
 };
 
 /// @brief Structure containing power limit data for a given RAPL power domain.
@@ -385,26 +325,6 @@ int set_pkg_rapl_limit(const unsigned socket,
 int set_dram_rapl_limit(const unsigned socket,
                         struct rapl_limit *limit);
 
-/// @brief Determine the steps necessary to set the user-supplied power plane
-/// limit.
-///
-/// If a pointer is null, do nothing. If the bit vector is nonzero, translate
-/// the bit vector to watts and seconds and write the bit vector to the msr. If
-/// the bit vector is zero, translate the watts and seconds to the appropriate
-/// bit vector and write the bit vector to the msr.
-///
-/// @param [in] socket Unique socket/package identifier.
-///
-/// @param [in] limit0 Data for PP0 power limit.
-///
-/// @param [in] limit1 Data for PP1 power limit.
-///
-/// @return 0 if successful, else -1 if rapl_storage() or calc_std_rapl_limit()
-/// fails.
-int set_pp_rapl_limit(const unsigned socket,
-                      struct rapl_limit *limit0,
-                      struct rapl_limit *limit1);
-
 /// @brief Get power info data for all RAPL power domains.
 ///
 ///	If a pointer is null, do nothing. If the bit vector is nonzero, translate
@@ -418,38 +338,6 @@ int set_pp_rapl_limit(const unsigned socket,
 /// @return 0 if successful, else -1 if rapl_storage() fails.
 int get_rapl_power_info(const unsigned socket,
                         struct rapl_power_info *info);
-
-/// @brief Determine the steps necessary to set the user-supplied power plane
-/// policy.
-///
-/// If a pointer is null, do nothing. If the bit vector is nonzero, translate
-/// the bit vector to watts and seconds and write the bit vector to the msr. If
-/// the bit vector is zero, translate the watts and seconds to the appropriate
-/// bit vector and write the bit vector to the msr.
-///
-/// @param [in] socket Unique socket/package identifier.
-///
-/// @param [in] pp0 Raw 64-bit value specifying desired policy for PP0.
-///
-/// @param [in] pp1 Raw 64-bit value specifying desired policy for PP1.
-///
-/// @return 0 if successful, else -1 if rapl_storage() fails.
-int set_pp_rapl_policies(const unsigned socket,
-                         uint64_t *pp0,
-                         uint64_t *pp1);
-
-/// @brief Get RAPL policies for the power plane domains.
-///
-/// @param [in] socket Unique socket/package identifier.
-///
-/// @param [out] pp0 Raw 64-bit value stored in MSR_PP0_POLICY.
-///
-/// @param [out] pp1 Raw 64-bit value stored in MSR_PP1_POLICY.
-///
-/// @result 0 if successful, else -1 if rapl_storage() fails.
-int get_pp_rapl_policies(const unsigned socket,
-                         uint64_t *pp0,
-                         uint64_t *pp1);
 
 /// @brief Get RAPL power limit for the package domain.
 ///
@@ -481,23 +369,6 @@ int get_pkg_rapl_limit(const unsigned socket,
 /// @return 0 if successful, else -1 if rapl_storage() fails.
 int get_dram_rapl_limit(const unsigned socket,
                         struct rapl_limit *limit);
-
-/// @brief Get RAPL power limit for the power plane domains.
-///
-///	If a pointer is null, do nothing. If the bit vector is nonzero, translate
-/// the bit vector to watts and seconds. If the bit vector is zero, read the
-/// msr value into the bit vector and translate into watts and seconds.
-///
-/// @param [in] socket Identifier of socket to read
-///
-/// @param [out] limit0 Data for PP0 domain RAPL power limit.
-///
-/// @param [out] limit1 Data for PP1 domain RAPL power limit.
-///
-/// @return 0 if successful, else -1 if rapl_storage() fails.
-int get_pp_rapl_limit(const unsigned socket,
-                      struct rapl_limit *limit0,
-                      struct rapl_limit *limit1);
 
 /// @brief Print out RAPL power limit.
 ///

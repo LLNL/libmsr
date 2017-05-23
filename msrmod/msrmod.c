@@ -185,7 +185,7 @@ int set_functions(char *type, int socket, double watts1, double seconds1, double
 
 void get_rapl_stuff(void)
 {
-    struct rapl_limit l1, l2, l3, l4;
+    struct rapl_limit l1, l2, l3;
 
     get_pkg_rapl_limit(0, &l1, &l2);
     fprintf(stdout, "=== Pkg Domain ===\n");
@@ -206,14 +206,6 @@ void get_rapl_stuff(void)
     fprintf(stdout, "- Socket 1 -\n");
     get_dram_rapl_limit(1, &l3);
     dump_rapl_limit(&l3, stdout);
-
-    fprintf(stdout, "\n=== PP0 Domain ===\n");
-    fprintf(stdout, "- Socket 0 -\n");
-    get_pp_rapl_limit(0, &l4, NULL);
-    dump_rapl_limit(&l4, stdout);
-    fprintf(stdout, "- Socket 1 -\n");
-    get_pp_rapl_limit(1, &l4, NULL);
-    dump_rapl_limit(&l4, stdout);
 }
 
 

@@ -21,12 +21,11 @@
 #include <mpi.h>
 #endif
 
-struct rapl_limit l1, l2, l3, l4;
+struct rapl_limit l1, l2, l3;
 
 void get_limits()
 {
     int i;
-    uint64_t pp_result;
     static uint64_t sockets = 0;
 
     if (!sockets)
@@ -52,15 +51,6 @@ void get_limits()
         {
             fprintf(stdout, "\nDRAM Domain\n");
             dump_rapl_limit(&l3, stdout);
-        }
-        if (get_pp_rapl_limit(i, &l4, NULL) == 0)
-        {
-            fprintf(stdout, "\nPP Domain\n");
-            dump_rapl_limit(&l4, stdout);
-        }
-        if (get_pp_rapl_policies(i, &pp_result, NULL) == 0)
-        {
-            fprintf(stdout, "\nPP Policy\n%ld\n", pp_result);
         }
     }
 }

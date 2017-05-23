@@ -16,8 +16,7 @@
 #include "csr_imc.h"
 #include "libmsr_error.h"
 
-uint64_t pp_policy = 0x5;
-struct rapl_limit l1, l2, l3, l4;
+struct rapl_limit l1, l2, l3;
 
 void get_limits()
 {
@@ -77,12 +76,6 @@ void test_socket_1_limits(unsigned s)
     l3.seconds = 2;
     l3.bits = 0;
     set_dram_rapl_limit(s, &l3);
-    l4.watts = 115;
-    l4.seconds = 1;
-    l4.bits = 0;
-    set_pp_rapl_limit(s, &l4, NULL);
-    pp_policy = 8;
-    set_pp_rapl_policies(1, &pp_policy, NULL);
     get_limits();
 }
 
@@ -99,12 +92,6 @@ void test_socket_0_limits(unsigned s)
     l3.seconds = 1;
     l3.bits = 0;
     set_dram_rapl_limit(s, &l3);
-    l4.watts = 132;
-    l4.seconds = 2;
-    l4.bits = 0;
-    set_pp_rapl_limit(s, &l4, NULL);
-    pp_policy = 1;
-    set_pp_rapl_policies(0, &pp_policy, NULL);
     get_limits();
 }
 
