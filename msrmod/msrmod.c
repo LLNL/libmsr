@@ -159,7 +159,7 @@ int set_functions(char *type, int socket, double watts1, double seconds1, double
         socketlim2.seconds = 0;
 
         socketlim.watts = watts1;
-        socketlim.seconds = seconds2;
+        socketlim.seconds = seconds1;
         if (ISVERBOSE)
         {
             fprintf(stdout, "\n=== Socket %d ===\n", socket);
@@ -434,7 +434,7 @@ int main(int argc, char **argv)
             return -1;
         }
         write_msr_by_idx(thread, msr, msr_data);
-        fprintf(stdout, "Writing %lx to MSR 0x%lx on CPU %d\n", msr_data, msr, thread);
+        fprintf(stdout, "Writing 0x%lx to MSR 0x%lx on CPU %d\n", msr_data, msr, thread);
     }
     else if (iswrite && !set_msr_data)
     {
