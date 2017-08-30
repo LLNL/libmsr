@@ -56,33 +56,40 @@ extern "C" {
 //  6: 619h, MSR_DRAM_ENERGY_STATUS
 //  7: 61Bh, MSR_DRAM_PERF_STATUS
 //  8: 61Ch, MSR_DRAM_POWER_INFO
-//  9: 64Ch, MSR_TURBO_ACTIVATION_RATIO
-// 10: 66Eh, MSR_PKG_POWER_INFO
-// 11: 690h, MSR_CORE_PERF_LIMIT_REASONS
-// 12: 6B0h, MSR_GRAPHICS_PERF_LIMIT_REASONS
-// 13: 6B1h, MSR_RING_PERF_LIMIT_REASONS
-// 14: 1ADh, MSR_TURBO_RATIO_LIMIT
-// 15: 1AEh, MSR_TURBO_RATIO_LIMIT1
-#define MF_06_37 (0x7)
-#define MF_06_4A (0x7)
-#define MF_06_5A (0x7)
-#define MF_06_4D (0x403)
-#define MF_06_4C (0x7)
-#define MF_06_2A (0x17)   // Sandy Bridge
-#define MF_06_2D (0x1FF)    // Sandy Bridge
-#define MF_06_3A (0x17)
-#define MF_06_3E (0xC1F7) // Ivy Bridge
-#define MF_06_3C (0x3817) // disabled pp0_perf_status, not on this architecture
-#define MF_06_45 (0x3817)
-#define MF_06_46 (0x3817)
-#define MF_06_3F (0x39FF) // disabled PP registers, not on this architecture
-#define MF_06_3D (0x3817)
-#define MF_06_47 (0x3817)
-#define MF_06_4F (0x3817)
-#define MF_06_56 (0x3817)
-#define MF_06_4E (0x3E17)
-#define MF_06_5E (0x3E17)
-#define MF_06_57 (0xBFF)
+//  9: 638h, MSR_PP0_POWER_LIMIT
+// 10: 639h, MSR_PP0_ENERGY_STATUS
+// 11: 63Ah, MSR_PP0_POLICY
+// 12: 63Bh, MSR_PP0_PERF_STATUS
+// 13: 640h, MSR_PP1_POWER_LIMIT
+// 14: 641h, MSR_PP1_ENERGY_STATUS
+// 15: 642h, MSR_PP1_POLICY
+// 16: 64Ch, MSR_TURBO_ACTIVATION_RATIO
+// 17: 66Eh, MSR_PKG_POWER_INFO
+// 18: 690h, MSR_CORE_PERF_LIMIT_REASONS
+// 19: 6B0h, MSR_GRAPHICS_PERF_LIMIT_REASONS
+// 20: 6B1h, MSR_RING_PERF_LIMIT_REASONS
+// 21: 1ADh, MSR_TURBO_RATIO_LIMIT
+// 22: 1AEh, MSR_TURBO_RATIO_LIMIT1
+#define MF_06_37 (0x407)
+#define MF_06_4A (0x407)
+#define MF_06_5A (0x407)
+#define MF_06_4D (0x20003)
+#define MF_06_4C (0x607)
+#define MF_06_2A (0xFE17)   // Sandy Bridge
+#define MF_06_2D (0x7FF)    // Sandy Bridge
+#define MF_06_3A (0xFE17)
+#define MF_06_3E (0x6007F7) // Ivy Bridge
+#define MF_06_3C (0x1CEE17) // disabled pp0_perf_status, not on this architecture
+#define MF_06_45 (0x1CFE17)
+#define MF_06_46 (0x1CFE17)
+#define MF_06_3F (0x1C01FF) // disabled PP registers, not on this architecture
+#define MF_06_3D (0x1CFE17)
+#define MF_06_47 (0x1CFE17)
+#define MF_06_4F (0x177)     // Debug MSRs on quartz
+#define MF_06_56 (0x1CFE17)
+#define MF_06_4E (0x1EFE17)
+#define MF_06_5E (0x1EFE17)
+#define MF_06_57 (0x507FF)
 
 // Register flags
 // These are used to check against the rapl flags (see above) to see if a
@@ -99,7 +106,6 @@ extern "C" {
 #define TURBO_ACTIVATION_RATIO (0x200L)
 #define TURBO_RATIO_LIMIT      (0x4000L)
 #define TURBO_RATIO_LIMIT1     (0x8000L)
-
 
 #define UINT_MAX 4294967295U // taken from limits.h
 #define STD_ENERGY_UNIT 65536.0

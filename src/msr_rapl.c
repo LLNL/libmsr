@@ -265,7 +265,7 @@ static int translate(const unsigned socket, uint64_t *bits, double *units, int t
             *units = (double)(*bits) * ru[socket].watts;
             break;
         case BITS_TO_JOULES_DRAM:
-            if (model == 0x3F)
+            if (model == 0x3F || model == 0x4F)
             {
                 *units = (double)(*bits) / STD_ENERGY_UNIT;
 #ifdef LIBMSR_DEBUG
@@ -1331,6 +1331,8 @@ int read_rapl_data(void)
         {
             rapl->pkg_joules[s] = 0;
             rapl->old_pkg_joules[s] = 0;
+            rapl->dram_joules[s] = 0;
+            rapl->old_dram_joules[s] = 0;
         }
     }
     //p = &rapl[socket];
