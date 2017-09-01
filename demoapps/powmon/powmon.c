@@ -129,7 +129,12 @@ int main(int argc, char **argv)
         gethostname(hostname,64);
 
         char *fname;
-        asprintf(&fname, "%s.power.dat", hostname);
+        int ret = asprintf(&fname, "%s.power.dat", hostname);
+        if (ret < 0)
+        {
+            printf("Fatal Error: Cannot allocate memory for fname.\n");
+            return 1; 
+        }
 
         logfd = open(fname, O_WRONLY|O_CREAT|O_EXCL|O_NOATIME|O_NDELAY, S_IRUSR|S_IWUSR);
         if (logfd < 0)
@@ -166,7 +171,12 @@ int main(int argc, char **argv)
         end = now_ms();
 
         /* Output summary data. */
-        asprintf(&fname, "%s.power.summary", hostname);
+        ret = asprintf(&fname, "%s.power.summary", hostname);
+        if (ret < 0)
+        {
+            printf("Fatal Error: Cannot allocate memory for fname.\n");
+            return 1;
+        }
 
         logfd = open(fname, O_WRONLY|O_CREAT|O_EXCL|O_NOATIME|O_NDELAY, S_IRUSR|S_IWUSR);
         if (logfd < 0)
@@ -176,7 +186,12 @@ int main(int argc, char **argv)
         }
         summaryfile = fdopen(logfd, "w");
         char *msg;
-        asprintf(&msg, "host: %s\npid: %d\ntotal_joules: %lf\nallocated: %lf\nmax_watts: %lf\nmin_watts: %lf\nruntime ms: %lu\nstart: %lu\nend: %lu\n", hostname, app_pid, total_joules, limit_joules, max_watts, min_watts, end-start, start, end);
+        ret = asprintf(&msg, "host: %s\npid: %d\ntotal_joules: %lf\nallocated: %lf\nmax_watts: %lf\nmin_watts: %lf\nruntime ms: %lu\nstart: %lu\nend: %lu\n", hostname, app_pid, total_joules, limit_joules, max_watts, min_watts, end-start, start, end);
+        if (ret < 0)
+        {
+            printf("Fatal Error: Cannot allocate memory for msg.\n");
+            return 1;
+        }
 
         fprintf(summaryfile, "%s", msg);
         fclose(summaryfile);

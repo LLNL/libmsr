@@ -261,12 +261,10 @@ static int do_batch_op(int batchnum, int type)
         libmsr_error_handler("do_batch_op(): IOctl failed, does /dev/cpu/msr_batch exist?", LIBMSR_ERROR_MSR_BATCH, getenv("HOSTNAME"), __FILE__, __LINE__);
         for (i = 0; i < batch->numops; i++)
         {
-#if 0 /* Temporarily removed because err has garbage in it. */
             if (batch->ops[i].err)
             {
-                fprintf(stderr, "CPU %d, RDMSR %x, ERR (%s)\n", batch->ops[i].cpu, batch->ops[i].msr, strerror(batch->ops[i].err));
+                fprintf(stderr, "Operation failed on CPU %d, MSR 0x%x, ERR (%s)\n", batch->ops[i].cpu, batch->ops[i].msr, strerror(batch->ops[i].err));
             }
-#endif
         }
     }
 #ifdef BATCH_DEBUG

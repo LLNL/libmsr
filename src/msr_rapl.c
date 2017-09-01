@@ -1011,6 +1011,7 @@ int dump_rapl_data_terse(FILE *writedest)
     fprintf(writedest, "%s %s::%d Writing terse label\n", getenv("HOSTNAME"), __FILE__, __LINE__);
 #endif
     read_rapl_data();
+    delta_rapl_data();
 
     for (socket = 0; socket < sockets; socket++)
     {

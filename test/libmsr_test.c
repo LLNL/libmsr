@@ -143,12 +143,6 @@ void counters_test()
     fprintf(stdout, "\n--- Fixed Performance Counters (Instr Ret, Unhalt Core Cyc, Unhalt Ref Cyc) ---\n");
     dump_fixed_counter_data_readable(stdout);
 
-    set_all_pmc_ctrl(0x0, 0x67, 0x00, 0xC4, 1);
-    set_all_pmc_ctrl(0x0, 0x67, 0x00, 0xC4, 2);
-    //set_all_pmc_ctrl(0x0, 0x67, 0x00, 0x3C, 3);
-    //set_all_pmc_ctrl(0x0, 0x41, 0x01, 0x3C, 4);
-    //set_all_pmc_ctrl(0x0, 0x41, 0x01, 0xC0, 5);
-    enable_pmc();
     fprintf(stdout, "\n--- Performance Counters ---\n");
     dump_pmc_data_readable(stdout);
 }
@@ -358,9 +352,6 @@ int main(int argc, char **argv)
 
     fprintf(stdout, "\n===== POWER UNIT =====\n");
     dump_rapl_power_unit(stdout);
-
-    fprintf(stdout, "\n===== Enabling Fixed-Function Performance Counters =====\n");
-    enable_fixed_counters();
 
     fprintf(stdout, "\n===== Get Initial RAPL Power Limits =====\n");
     get_limits();

@@ -49,11 +49,9 @@ void get_limits()
         }
     }
     fprintf(stdout, "\n* RAPL Data Terse Printout *\n");
-    for (i = 0; i < sockets; i++)
-    {
-        dump_rapl_data_terse_label(stdout);
-        dump_rapl_data_terse(stdout);
-    }
+    dump_rapl_data_terse_label(stdout);
+    dump_rapl_data_terse(stdout);
+    fprintf(stdout, "\n");
 }
 
 // TODO: test other parts of thermal
@@ -63,6 +61,7 @@ void thermal_test()
     fprintf(stdout, "\n* Thermal Terse Printout *\n");
     dump_therm_data_verbose_label(stdout);
     dump_therm_data_verbose(stdout);
+    fprintf(stdout, "\n");
 }
 
 void counters_test()
@@ -73,20 +72,10 @@ void counters_test()
     fprintf(stdout, "\n* Fixed Perf Counters Terse Printout *\n");
     dump_fixed_counter_data_terse_label(stdout);
     dump_fixed_counter_data_terse(stdout);
+    fprintf(stdout, "\n");
 
-    set_all_pmc_ctrl(0x0, 0x67, 0x00, 0xC4, 1);
-    set_all_pmc_ctrl(0x0, 0x67, 0x00, 0xC4, 2);
-    //set_all_pmc_ctrl(0x0, 0x67, 0x00, 0x3C, 3);
-    //set_all_pmc_ctrl(0x0, 0x41, 0x01, 0x3C, 4);
-    //set_all_pmc_ctrl(0x0, 0x41, 0x01, 0xC0, 5);
-    enable_pmc();
     fprintf(stdout, "\n--- Performance Counters ---\n");
     dump_pmc_data_readable(stdout);
-
-    enable_pcu();
-    fprintf(stdout, "\n* Uncore Perf Counters Terse Printout *\n");
-    dump_unc_counter_data_label(stdout);
-    dump_unc_counter_data(stdout);
 }
 
 // TODO: test other parts of clocks
@@ -106,6 +95,7 @@ void clocks_test()
     fprintf(stdout, "\n* Clocks Terse Printout *\n");
     dump_clocks_data_terse_label(stdout);
     dump_clocks_data_terse(stdout);
+    fprintf(stdout, "\n");
 
     fprintf(stdout, "\n--- Reading IA32_PERF_STATUS ---\n");
     dump_p_state(stdout);
@@ -134,13 +124,6 @@ void misc_test()
         get_misc_enable(i, &s);
         dump_misc_enable(&s);
     }
-    fprintf(stdout, "\n* Pkg C-Residency Terse Printout *\n");
-    dump_pkg_cres_label(stdout);
-    dump_pkg_cres(stdout);
-
-    fprintf(stdout, "\n* Core C-Residency Terse Printout *\n");
-    dump_core_cres_label(stdout);
-    dump_core_cres(stdout);
 }
 
 void turbo_test()
@@ -278,9 +261,6 @@ int main(int argc, char **argv)
 
     fprintf(stdout, "\n===== Available Performance Counters =====\n");
     print_available_counters();
-
-    fprintf(stdout, "\n===== Enabling Fixed-Function Performance Counters =====\n");
-    enable_fixed_counters();
 
     fprintf(stdout, "\n===== Counters Test =====\n");
     counters_test();
