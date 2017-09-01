@@ -47,6 +47,12 @@ void get_limits()
 
 void test_pkg_lower_limit(unsigned s)
 {
+    struct rapl_power_info raplinfo;
+    double power_cap_percentage = 0.7;
+    get_rapl_power_info(s, &raplinfo);
+    
+    double power_cap = raplinfo.pkg_therm_power * power_cap_percentage;
+    printf("Setting socket %d PL1 to %.1fW (%.0f%%)\n", s, power_cap, power_cap_percentage*100);
     l1.watts = 95;
     l1.seconds = 1;
     l1.bits = 0;
@@ -56,42 +62,16 @@ void test_pkg_lower_limit(unsigned s)
 
 void test_pkg_upper_limit(unsigned s)
 {
-    l2.watts = 120;
+    struct rapl_power_info raplinfo;
+    double power_cap_percentage = 0.9;
+    get_rapl_power_info(s, &raplinfo);
+
+    double power_cap = raplinfo.pkg_therm_power * power_cap_percentage;
+    printf("Setting socket %d PL2 to %.1fW (%.0f%%)\n", s, power_cap, power_cap_percentage*100);
+    l2.watts = power_cap;
     l2.seconds = 9;
     l2.bits = 0;
     set_pkg_rapl_limit(s, NULL, &l2);
-    get_limits();
-}
-
-void test_socket_1_limits(unsigned s)
-{
-    l1.watts = 100;
-    l1.seconds = 2;
-    l1.bits = 0;
-    l2.watts =  180;
-    l2.seconds =  3;
-    l2.bits = 0;
-    set_pkg_rapl_limit(s, &l1, &l2);
-    l3.watts = 25;
-    l3.seconds = 2;
-    l3.bits = 0;
-    set_dram_rapl_limit(s, &l3);
-    get_limits();
-}
-
-void test_socket_0_limits(unsigned s)
-{
-    l1.watts = 110;
-    l1.seconds = 1;
-    l1.bits = 0;
-    l2.watts =  135;
-    l2.seconds =  5;
-    l2.bits = 0;
-    set_pkg_rapl_limit(s, &l1, &l2);
-    l3.watts = 35;
-    l3.seconds = 1;
-    l3.bits = 0;
-    set_dram_rapl_limit(s, &l3);
     get_limits();
 }
 
@@ -167,12 +147,6 @@ int main(int argc, char **argv)
         test_pkg_upper_limit(i);
         fprintf(stdout, "\n===== End Socket %u RAPL Power Limit Test =====\n", i);
     }
-
-    fprintf(stdout, "\n--- Testing Socket 0 All RAPL Power Limits ---\n");
-    test_socket_0_limits(0);
-
-    fprintf(stdout, "\n--- Testing Socket 1 All RAPL Power Limits ---\n");
-    test_socket_1_limits(1);
 
     fprintf(stdout, "\n===== Setting Defaults =====\n");
     set_to_defaults();

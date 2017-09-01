@@ -48,10 +48,6 @@ void get_limits()
             dump_rapl_limit(&l3, stdout);
         }
     }
-    fprintf(stdout, "\n* RAPL Data Terse Printout *\n");
-    dump_rapl_data_terse_label(stdout);
-    dump_rapl_data_terse(stdout);
-    fprintf(stdout, "\n");
 }
 
 // TODO: test other parts of thermal
@@ -131,6 +127,8 @@ void turbo_test()
     dump_turbo(stdout);
 }
 
+#define PT_INC 100000
+
 void rapl_r_test(struct rapl_data **rd)
 {
     //r1 = &((*rd)[0]);
@@ -141,16 +139,16 @@ void rapl_r_test(struct rapl_data **rd)
     fprintf(stdout, "Sample #1\n");
     dump_rapl_data(stdout);
 
+    usleep(PT_INC);
+
     poll_rapl_data();
     fprintf(stdout, "\nSample #2\n");
     dump_rapl_data(stdout);
 }
 
-#define PT_INC 1500
-
 int repeated_poll_test()
 {
-    usleep(1000);
+    usleep(PT_INC);
     poll_rapl_data();
     fprintf(stdout, "Sample #1\n");
     dump_rapl_data(stdout);

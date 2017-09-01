@@ -59,11 +59,11 @@ void rapl_r_test(struct rapl_data **rd)
     dump_rapl_data(stdout);
 }
 
-#define PT_INC 1500
+#define PT_INC 100000
 
 int repeated_poll_test()
 {
-    usleep(1000);
+    usleep(PT_INC);
     poll_rapl_data();
     fprintf(stdout, "Sample #1:\n");
     dump_rapl_data(stdout);
