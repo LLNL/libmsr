@@ -38,24 +38,24 @@
 /**********/
 /* CLOCKS */
 /**********/
-#define IA32_MPERF 			    0xE7
-#define IA32_APERF 			    0xE8
+#define IA32_MPERF              0xE7
+#define IA32_APERF              0xE8
 #define IA32_TIME_STAMP_COUNTER 0x10
-#define IA32_CLOCK_MODULATION	0x19A
-#define IA32_PERF_STATUS		0x198
-#define IA32_PERF_CTL			0x199
+#define IA32_CLOCK_MODULATION   0x19A
+#define IA32_PERF_STATUS        0x198
+#define IA32_PERF_CTL           0x199
 
 /************/
 /* COUNTERS */
 /************/
-#define IA32_FIXED_CTR_CTRL			0x38D // Controls for fixed ctr0, 1, and 2
-#define IA32_PERF_GLOBAL_CTRL		0x38F // Enables for fixed ctr0,1,and2 here
-#define IA32_PERF_GLOBAL_STATUS		0x38E // Overflow condition can be found
-                                          // here
-#define IA32_PERF_GLOBAL_OVF_CTRL	0x390 // Can clear the overflow here
-#define IA32_FIXED_CTR0				0x309 // (R/W) Counts Instr_Retired.Any
-#define IA32_FIXED_CTR1				0x30A // (R/W) Counts CPU_CLK_Unhalted.Core
-#define IA32_FIXED_CTR2				0x30B // (R/W) Counts CPU_CLK_Unhalted.Ref
+#define IA32_FIXED_CTR_CTRL       0x38D // Controls for fixed ctr0, 1, and 2
+#define IA32_PERF_GLOBAL_CTRL     0x38F // Enables for fixed ctr0,1,and2 here
+#define IA32_PERF_GLOBAL_STATUS   0x38E // Overflow condition can be found
+                                        // here
+#define IA32_PERF_GLOBAL_OVF_CTRL 0x390 // Can clear the overflow here
+#define IA32_FIXED_CTR0           0x309 // (R/W) Counts Instr_Retired.Any
+#define IA32_FIXED_CTR1           0x30A // (R/W) Counts CPU_CLK_Unhalted.Core
+#define IA32_FIXED_CTR2           0x30B // (R/W) Counts CPU_CLK_Unhalted.Ref
 
 #define IA32_PMC0 0xC1
 #define IA32_PMC1 0xC2
@@ -75,102 +75,102 @@
 #define IA32_PERFEVTSEL6 0x18C
 #define IA32_PERFEVTSEL7 0x18D
 
-#define MSR_PCU_PMON_EVNTSEL0   0xC30
-#define MSR_PCU_PMON_EVNTSEL1   0xC31
-#define MSR_PCU_PMON_EVNTSEL2   0xC32
-#define MSR_PCU_PMON_EVNTSEL3   0xC33
-#define MSR_PCU_PMON_CTR0   0xC36
-#define MSR_PCU_PMON_CTR1   0xC37
-#define MSR_PCU_PMON_CTR2   0xC38
-#define MSR_PCU_PMON_CTR3   0xC39
+#define MSR_PCU_PMON_EVNTSEL0 0xC30
+#define MSR_PCU_PMON_EVNTSEL1 0xC31
+#define MSR_PCU_PMON_EVNTSEL2 0xC32
+#define MSR_PCU_PMON_EVNTSEL3 0xC33
+#define MSR_PCU_PMON_CTR0     0xC36
+#define MSR_PCU_PMON_CTR1     0xC37
+#define MSR_PCU_PMON_CTR2     0xC38
+#define MSR_PCU_PMON_CTR3     0xC39
 
-#define MSR_C0_PMON_BOX_CTL		0xD04
-#define MSR_C0_PMON_EVNTSEL0	0xD10
-#define MSR_C0_PMON_EVNTSEL1	0xD11
-#define MSR_C0_PMON_EVNTSEL2	0xD12
-#define MSR_C0_PMON_EVNTSEL3	0xD13
-#define MSR_C0_BOX_FILTER		0xD14
-#define MSR_C0_PMON_CTR0		0xD16
-#define MSR_C0_PMON_CTR1		0xD17
-#define MSR_C0_PMON_CTR2		0xD18
-#define MSR_C0_PMON_CTR3		0xD19
+#define MSR_C0_PMON_BOX_CTL  0xD04
+#define MSR_C0_PMON_EVNTSEL0 0xD10
+#define MSR_C0_PMON_EVNTSEL1 0xD11
+#define MSR_C0_PMON_EVNTSEL2 0xD12
+#define MSR_C0_PMON_EVNTSEL3 0xD13
+#define MSR_C0_BOX_FILTER    0xD14
+#define MSR_C0_PMON_CTR0     0xD16
+#define MSR_C0_PMON_CTR1     0xD17
+#define MSR_C0_PMON_CTR2     0xD18
+#define MSR_C0_PMON_CTR3     0xD19
 
-#define MSR_C1_PMON_BOX_CTL		0xD24
-#define MSR_C1_PMON_EVNTSEL0	0xD30
-#define MSR_C1_PMON_EVNTSEL1	0xD31
-#define MSR_C1_PMON_EVNTSEL2	0xD32
-#define MSR_C1_PMON_EVNTSEL3	0xD33
-#define MSR_C1_BOX_FILTER		0xD34
-#define MSR_C1_PMON_CTR0		0xD36
-#define MSR_C1_PMON_CTR1		0xD37
-#define MSR_C1_PMON_CTR2		0xD38
-#define MSR_C1_PMON_CTR3		0xD39
+#define MSR_C1_PMON_BOX_CTL  0xD24
+#define MSR_C1_PMON_EVNTSEL0 0xD30
+#define MSR_C1_PMON_EVNTSEL1 0xD31
+#define MSR_C1_PMON_EVNTSEL2 0xD32
+#define MSR_C1_PMON_EVNTSEL3 0xD33
+#define MSR_C1_BOX_FILTER    0xD34
+#define MSR_C1_PMON_CTR0     0xD36
+#define MSR_C1_PMON_CTR1     0xD37
+#define MSR_C1_PMON_CTR2     0xD38
+#define MSR_C1_PMON_CTR3     0xD39
 
-#define MSR_C2_PMON_BOX_CTL		0xD44
-#define MSR_C2_PMON_EVNTSEL0	0xD50
-#define MSR_C2_PMON_EVNTSEL1	0xD51
-#define MSR_C2_PMON_EVNTSEL2	0xD52
-#define MSR_C2_PMON_EVNTSEL3	0xD53
-#define MSR_C2_BOX_FILTER		0xD54
-#define MSR_C2_PMON_CTR0		0xD56
-#define MSR_C2_PMON_CTR1		0xD57
-#define MSR_C2_PMON_CTR2		0xD58
-#define MSR_C2_PMON_CTR3		0xD59
+#define MSR_C2_PMON_BOX_CTL  0xD44
+#define MSR_C2_PMON_EVNTSEL0 0xD50
+#define MSR_C2_PMON_EVNTSEL1 0xD51
+#define MSR_C2_PMON_EVNTSEL2 0xD52
+#define MSR_C2_PMON_EVNTSEL3 0xD53
+#define MSR_C2_BOX_FILTER    0xD54
+#define MSR_C2_PMON_CTR0     0xD56
+#define MSR_C2_PMON_CTR1     0xD57
+#define MSR_C2_PMON_CTR2     0xD58
+#define MSR_C2_PMON_CTR3     0xD59
 
-#define MSR_C3_PMON_BOX_CTL		0xD64
-#define MSR_C3_PMON_EVNTSEL0	0xD70
-#define MSR_C3_PMON_EVNTSEL1	0xD71
-#define MSR_C3_PMON_EVNTSEL2	0xD72
-#define MSR_C3_PMON_EVNTSEL3	0xD73
-#define MSR_C3_BOX_FILTER		0xD74
-#define MSR_C3_PMON_CTR0		0xD76
-#define MSR_C3_PMON_CTR1		0xD77
-#define MSR_C3_PMON_CTR2		0xD78
-#define MSR_C3_PMON_CTR3		0xD79
+#define MSR_C3_PMON_BOX_CTL  0xD64
+#define MSR_C3_PMON_EVNTSEL0 0xD70
+#define MSR_C3_PMON_EVNTSEL1 0xD71
+#define MSR_C3_PMON_EVNTSEL2 0xD72
+#define MSR_C3_PMON_EVNTSEL3 0xD73
+#define MSR_C3_BOX_FILTER    0xD74
+#define MSR_C3_PMON_CTR0     0xD76
+#define MSR_C3_PMON_CTR1     0xD77
+#define MSR_C3_PMON_CTR2     0xD78
+#define MSR_C3_PMON_CTR3     0xD79
 
-#define MSR_C4_PMON_BOX_CTL		0xD84
-#define MSR_C4_PMON_EVNTSEL0	0xD90
-#define MSR_C4_PMON_EVNTSEL1	0xD91
-#define MSR_C4_PMON_EVNTSEL2	0xD92
-#define MSR_C4_PMON_EVNTSEL3	0xD93
-#define MSR_C4_BOX_FILTER		0xD94
-#define MSR_C4_PMON_CTR0		0xD96
-#define MSR_C4_PMON_CTR1		0xD97
-#define MSR_C4_PMON_CTR2		0xD98
-#define MSR_C4_PMON_CTR3		0xD99
+#define MSR_C4_PMON_BOX_CTL  0xD84
+#define MSR_C4_PMON_EVNTSEL0 0xD90
+#define MSR_C4_PMON_EVNTSEL1 0xD91
+#define MSR_C4_PMON_EVNTSEL2 0xD92
+#define MSR_C4_PMON_EVNTSEL3 0xD93
+#define MSR_C4_BOX_FILTER    0xD94
+#define MSR_C4_PMON_CTR0     0xD96
+#define MSR_C4_PMON_CTR1     0xD97
+#define MSR_C4_PMON_CTR2     0xD98
+#define MSR_C4_PMON_CTR3     0xD99
 
-#define MSR_C5_PMON_BOX_CTL		0xDA4
-#define MSR_C5_PMON_EVNTSEL0	0xDB0
-#define MSR_C5_PMON_EVNTSEL1	0xDB1
-#define MSR_C5_PMON_EVNTSEL2	0xDB2
-#define MSR_C5_PMON_EVNTSEL3	0xDB3
-#define MSR_C5_BOX_FILTER		0xDB4
-#define MSR_C5_PMON_CTR0		0xDB6
-#define MSR_C5_PMON_CTR1		0xDB7
-#define MSR_C5_PMON_CTR2		0xDB8
-#define MSR_C5_PMON_CTR3		0xDB9
+#define MSR_C5_PMON_BOX_CTL  0xDA4
+#define MSR_C5_PMON_EVNTSEL0 0xDB0
+#define MSR_C5_PMON_EVNTSEL1 0xDB1
+#define MSR_C5_PMON_EVNTSEL2 0xDB2
+#define MSR_C5_PMON_EVNTSEL3 0xDB3
+#define MSR_C5_BOX_FILTER    0xDB4
+#define MSR_C5_PMON_CTR0     0xDB6
+#define MSR_C5_PMON_CTR1     0xDB7
+#define MSR_C5_PMON_CTR2     0xDB8
+#define MSR_C5_PMON_CTR3     0xDB9
 
-#define MSR_C6_PMON_BOX_CTL		0xDC4
-#define MSR_C6_PMON_EVNTSEL0	0xDD0
-#define MSR_C6_PMON_EVNTSEL1	0xDD1
-#define MSR_C6_PMON_EVNTSEL2	0xDD2
-#define MSR_C6_PMON_EVNTSEL3	0xDD3
-#define MSR_C6_BOX_FILTER		0xDD4
-#define MSR_C6_PMON_CTR0		0xDD6
-#define MSR_C6_PMON_CTR1		0xDD7
-#define MSR_C6_PMON_CTR2		0xDD8
-#define MSR_C6_PMON_CTR3		0xDD9
+#define MSR_C6_PMON_BOX_CTL  0xDC4
+#define MSR_C6_PMON_EVNTSEL0 0xDD0
+#define MSR_C6_PMON_EVNTSEL1 0xDD1
+#define MSR_C6_PMON_EVNTSEL2 0xDD2
+#define MSR_C6_PMON_EVNTSEL3 0xDD3
+#define MSR_C6_BOX_FILTER    0xDD4
+#define MSR_C6_PMON_CTR0     0xDD6
+#define MSR_C6_PMON_CTR1     0xDD7
+#define MSR_C6_PMON_CTR2     0xDD8
+#define MSR_C6_PMON_CTR3     0xDD9
 
-#define MSR_C7_PMON_BOX_CTL		0xDE4
-#define MSR_C7_PMON_EVNTSEL0	0xDF0
-#define MSR_C7_PMON_EVNTSEL1	0xDF1
-#define MSR_C7_PMON_EVNTSEL2	0xDF2
-#define MSR_C7_PMON_EVNTSEL3	0xDF3
-#define MSR_C7_BOX_FILTER		0xDF4
-#define MSR_C7_PMON_CTR0		0xDF6
-#define MSR_C7_PMON_CTR1		0xDF7
-#define MSR_C7_PMON_CTR2		0xDF8
-#define MSR_C7_PMON_CTR3		0xDF9
+#define MSR_C7_PMON_BOX_CTL  0xDE4
+#define MSR_C7_PMON_EVNTSEL0 0xDF0
+#define MSR_C7_PMON_EVNTSEL1 0xDF1
+#define MSR_C7_PMON_EVNTSEL2 0xDF2
+#define MSR_C7_PMON_EVNTSEL3 0xDF3
+#define MSR_C7_BOX_FILTER    0xDF4
+#define MSR_C7_PMON_CTR0     0xDF6
+#define MSR_C7_PMON_CTR1     0xDF7
+#define MSR_C7_PMON_CTR2     0xDF8
+#define MSR_C7_PMON_CTR3     0xDF9
 
 /********/
 /* MISC */
@@ -212,7 +212,7 @@
 /* TURBO */
 /*********/
 #define IA32_MISC_ENABLE 0x1A0
-#define IA32_PERF_CTL	 0x199
+#define IA32_PERF_CTL    0x199
 
 /***********/
 /* CSR iMC */
@@ -264,13 +264,13 @@
 #define EVT_POWER_CHANNEL_PD               0x85
 #define EVT_POWER_CRITICAL_THROTTLE_CYCLES 0x86
 
-#define UMASK_CAS_RD_REG 0x1
+#define UMASK_CAS_RD_REG       0x1
 #define UMASK_CAS_RD_UNDERFILL 0x2
-#define UMASK_CAS_RD 0x3
-#define UMASK_CAS_WR_WMM 0x4
-#define UMASK_CAS_WR_RMM 0x8
-#define UMASK_CAS_WR 0xC
-#define UMASK_CAS_ALL 0xF
+#define UMASK_CAS_RD           0x3
+#define UMASK_CAS_WR_WMM       0x4
+#define UMASK_CAS_WR_RMM       0x8
+#define UMASK_CAS_WR           0xC
+#define UMASK_CAS_ALL          0xF
 
 /*******************************/
 /* Missing from documentation? */
