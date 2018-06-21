@@ -1229,7 +1229,7 @@ int delta_rapl_data(void)
         {
             return -1;
         }
-        for (s = 0; s < sockets; s++);
+        for (s = 0; s < sockets; s++)
         {
             if (*rapl_flags & PKG_ENERGY_STATUS)
             {
