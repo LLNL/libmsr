@@ -57,6 +57,7 @@ Supported Architectures:
 	3E (Ivy Bridge)
 	3F (Haswell)
 	4F (Broadwell)
+	57 (Knights Landing) 
 	55 (Skylake)* 
 
 If you are unsure of your architecture number, check the "model" field in `lscpu`
