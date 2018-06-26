@@ -10,7 +10,7 @@ version 0.3.1
 
 Last Update
 -----------
-7 April 2017
+5 Jul 2018
 
 
 Webpages
@@ -53,7 +53,7 @@ client products. Using the wrong header file is likely to cause problems.
 
 Supported Architectures:
 
-	2D (Sandy Bridge)
+	2D (Sandy Bridge)       57 (Knights Landing)
 	3E (Ivy Bridge)
 	3F (Haswell)
 	4F (Broadwell)
