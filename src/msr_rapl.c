@@ -119,6 +119,9 @@ static int setflags(uint64_t *rapl_flags)
         case 0x5E:
             *rapl_flags = MF_06_5E;
             break;
+        case 0x55:
+            *rapl_flags = MF_06_55;
+            break;
         case 0x57:
             *rapl_flags = MF_06_57;
             break;
