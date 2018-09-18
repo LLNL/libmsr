@@ -36,6 +36,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <hwloc.h>
 #include <linux/ioctl.h>
 #include <linux/types.h>
 #include <stdint.h>
@@ -54,7 +55,7 @@
 #include "libmsr_error.h"
 #include "libmsr_debug.h"
 
-static int CPU_DEV_VER = 1;
+static struct topo g_topo_list;
 
 /// @brief Retrieve unique index of a logical processor.
 ///
@@ -72,16 +73,18 @@ static int CPU_DEV_VER = 1;
 /// @return Number of logical processors, else -1.
 static uint64_t devidx(int socket, int core, int thread)
 {
-    uint64_t sockets, cores, threads;
+    uint64_t num_sockets, num_cores_per_socket, num_threads_per_core;
 
-    core_config(&cores, &threads, &sockets, NULL);
-    if (CPU_DEV_VER)
+    core_config(&num_cores_per_socket, &num_threads_per_core, &num_sockets, NULL);
+    if (!g_topo_list.discontinuous_mapping)
     {
-        return (thread * sockets * cores) + (socket * cores) + core;
+        // continuous mapping
+        return (thread * num_sockets * num_cores_per_socket) + (socket * num_cores_per_socket) + core;
     }
     else
     {
-        return (core * sockets + socket + (cores * thread));
+        // discontinuous mapping
+        return (thread * num_sockets * num_cores_per_socket) + (core * num_sockets) + socket;
     }
     return -1;
 }
@@ -216,7 +219,8 @@ static int do_batch_op(int batchnum, int type)
 {
     static int batchfd = 0;
     struct msr_batch_array *batch = NULL;
-    int res, i, j;
+    int res = 0;
+    int i, j;
 
     if (batchfd == 0)
     {
@@ -274,61 +278,62 @@ static int do_batch_op(int batchnum, int type)
         fprintf(stderr, "BATCH %d: msr 0x%x cpu %u data 0x%lx (at %p)\n", batchnum, batch->ops[k].msr, batch->ops[k].cpu, (uint64_t)batch->ops[k].msrdata, &batch->ops[k].msrdata);
     }
 #endif
-    return 0;
+    return res;
 }
 
 /// @brief Retrieve mapping of CPU hardware threads in a single socket.
 ///
-/// @return 0 if successful, else -1 if can't open core_sibling_list file.
-static int find_cpu_top(void)
+/// @return 1 upon success.
+int find_cpu_top(void)
 {
-    FILE *cpu0top, *cpu1top;
-    char filename[FILENAME_SIZE];
-    int siblings0 = 0;
-    int siblings1 = 0;
-    int err;
+    uint64_t cores_per_socket, nsockets, threads_per_core;
+    int nthreads;
+    int i;
+    hwloc_topology_t topology;
+    hwloc_obj_t pu_obj, core_obj, socket_obj;
+    unsigned int core_depth, socket_depth;
 
-    snprintf(filename, FILENAME_SIZE, "/sys/devices/system/cpu/cpu0/topology/core_siblings_list");
-    cpu0top = fopen(filename, "r");
-    if (cpu0top == NULL)
+    hwloc_topology_init(&topology);
+    hwloc_topology_load(topology);
+
+    core_depth = hwloc_get_type_depth(topology, HWLOC_OBJ_CORE);
+    socket_depth = hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET);
+
+    core_config(&cores_per_socket, &threads_per_core, &nsockets, NULL);
+
+    nthreads = cores_per_socket * threads_per_core * nsockets;
+    g_topo_list.thread_map = (struct hwthread*) malloc(nthreads * sizeof(struct hwthread));
+
+    for (i = 0; i < nthreads; i++)
     {
-        libmsr_error_handler("find_cpu_top(): Could not open file", LIBMSR_ERROR_PLATFORM_ENV, getenv("HOSTNAME"), __FILE__, __LINE__);
-        return -1;
-    }
-    snprintf(filename, FILENAME_SIZE, "/sys/devices/system/cpu/cpu1/topology/core_siblings_list");
-    cpu1top = fopen(filename, "r");
-    if (cpu1top == NULL)
-    {
-        libmsr_error_handler("find_cpu_top(): Could not open file", LIBMSR_ERROR_PLATFORM_ENV, getenv("HOSTNAME"), __FILE__, __LINE__);
-        return -1;
+        pu_obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_PU, i);
+        core_obj = hwloc_get_ancestor_obj_by_depth(topology, core_depth, pu_obj);
+        socket_obj = hwloc_get_ancestor_obj_by_depth(topology, socket_depth, pu_obj);
+
+#ifdef TOPOLOGY_DEBUUG
+        printf("i=%2d pu_obj->os_index=%2d core_id=%2d socket_id=%2d\n", i, pu_obj->os_index, core_obj->logical_index, socket_obj->logical_index);
+#endif
+        g_topo_list.thread_map[pu_obj->os_index].apic_id= i;
+        g_topo_list.thread_map[pu_obj->os_index].thread_id = pu_obj->os_index;
+        g_topo_list.thread_map[pu_obj->os_index].core_id = core_obj->logical_index;
+        g_topo_list.thread_map[pu_obj->os_index].socket_id = socket_obj->logical_index;
+        g_topo_list.thread_map[pu_obj->os_index].sibling = pu_obj->sibling_rank;
+
+        // check for continuous or discontinuous CPU ordering scheme
+        if (i == 1)
+        {
+            if (pu_obj->os_index != g_topo_list.thread_map[pu_obj->os_index].core_id)
+            {
+                g_topo_list.discontinuous_mapping = 1;
+            }
+        }
     }
 
-    err = fscanf(cpu0top, "%d", &siblings0);
-    //fprintf(stdout, "q1%d\n", siblings0);
-    if (!err)
-    {
-        err = fscanf(cpu1top, "%d", &siblings1);
-    }
-    //fprintf(stdout, "q1%d\n", siblings1);
-    if (siblings0 == siblings1)
-    {
-        /* Uses default cpu ordering scheme. */
-        CPU_DEV_VER = 1;
-    }
-    else
-    {
-        /* Uses even-odd cpu ordering scheme. */
-        CPU_DEV_VER = 0;
-    }
-    if (cpu0top != NULL)
-    {
-        fclose(cpu0top);
-    }
-    if (cpu1top != NULL)
-    {
-        fclose(cpu1top);
-    }
-    return err;
+#ifdef TOPOLOGY_DEBUUG
+    printf("discontinuous mapping = %d\n", g_topo_list.discontinuous_mapping);
+#endif
+
+    return 1;
 }
 
 uint64_t num_cores(void)
@@ -473,9 +478,10 @@ int create_batch_op(off_t msr, uint64_t cpu, uint64_t **dest, const int batchnum
 void core_config(uint64_t *coresPerSocket, uint64_t *threadsPerCore, uint64_t *sysSockets, int *HTenabled)
 {
     static int init = 0;
-    static uint64_t cores = 0;
-    static uint64_t threads = 0;
-    static uint64_t sockets = 0;
+    hwloc_topology_t topology;
+    static int ncores = 0;
+    static int nthreads = 0;
+    static int nsockets = 0;
     static int hyperthreading = 0;
 
     if (!init)
@@ -483,19 +489,29 @@ void core_config(uint64_t *coresPerSocket, uint64_t *threadsPerCore, uint64_t *s
 #ifdef LIBMSR_DEBUG
         fprintf(stderr, "DEBUG: detecting core configuration\n");
 #endif
-        init = 1;
-        cpuid_detect_core_conf(&cores, &threads, &sockets, &hyperthreading);
+        hwloc_topology_init(&topology);
+        hwloc_topology_load(topology);
+
+        nsockets = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_SOCKET);
+        ncores = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
+        nthreads = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU);
+
+        if ((nthreads/ncores) > 1)
+        {
+            hyperthreading = 1;
+        }
 #ifdef LIBMSR_DEBUG
         fprintf(stderr, "DEBUG: core config complete. cores per socket is %lu, threads per core is %lu, sockets is %lu, htenabled is %d\n", cores, threads, sockets, hyperthreading);
 #endif
+        init = 1;
     }
     if (coresPerSocket != NULL)
     {
-        *coresPerSocket = cores;
+        *coresPerSocket = ncores/nsockets;
     }
     if (sysSockets != NULL)
     {
-        *sysSockets = sockets;
+        *sysSockets = nsockets;
     }
     if (HTenabled != NULL)
     {
@@ -503,8 +519,7 @@ void core_config(uint64_t *coresPerSocket, uint64_t *threadsPerCore, uint64_t *s
     }
     if (threadsPerCore != NULL)
     {
-        /* Use number of threads actually available. */
-        *threadsPerCore = 1 + hyperthreading;
+        *threadsPerCore = nthreads/ncores;
     }
 }
 
@@ -798,18 +813,18 @@ int load_socket_batch(off_t msr, uint64_t **val, int batchnum)
     fprintf(stderr, "%s %s %s::%d (read_all_sockets) msr=%lu (0x%lx)\n", getenv("HOSTNAME"), LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
     fprintf(stderr, "sockets %lu, cores %lu, threads %lu\n", sockets, coresPerSocket, threadsPerCore);
 #endif
-    if (CPU_DEV_VER == 1)
+    for (val_idx = 0; val_idx < sockets; val_idx++)
     {
-        for (dev_idx = 0, val_idx = 0; dev_idx < NUM_DEVS; dev_idx += coresPerSocket * threadsPerCore, val_idx++)
+        for (dev_idx = 0; dev_idx < NUM_DEVS; dev_idx++)
         {
-            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
-        }
-    }
-    else
-    {
-        for (dev_idx = 0, val_idx = 0; dev_idx < sockets; dev_idx++, val_idx++)
-        {
-            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
+            if (g_topo_list.thread_map[dev_idx].socket_id == val_idx)
+            {
+#ifdef TOPOLOGY_DEBUG
+                printf("Creating socket batch on CPU %d at index %d\n", dev_idx, val_idx);
+#endif
+                create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
+                break;
+            }
         }
     }
     return 0;
@@ -837,26 +852,18 @@ int load_core_batch(off_t msr, uint64_t **val, int batchnum)
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s %s::%d (read_all_cores) msr=%lu (0x%lx)\n", getenv("HOSTNAME"), LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
-    if (CPU_DEV_VER == 1)
+    for (val_idx = 0; val_idx < coretotal; val_idx++)
     {
-        /// @todo dev_idx++?
-        for (dev_idx = 0, val_idx = 0; dev_idx < coretotal; dev_idx++, val_idx++)
+        for (dev_idx = 0; dev_idx < NUM_DEVS; dev_idx++)
         {
-            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
-        }
-    }
-    else
-    {
-        /* Load socket 0. */
-        for (dev_idx = 0, val_idx = 0; dev_idx < coretotal; dev_idx += sockets, val_idx++)
-        {
-            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
-        }
-        /* Load socket 1. */
-        for (dev_idx = 1; dev_idx < coretotal; dev_idx += sockets)
-        {
-            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
-            val_idx++;
+            if (g_topo_list.thread_map[dev_idx].core_id == val_idx)
+            {
+#ifdef TOPOLOGY_DEBUG
+                printf("Creating core batch on CPU %d at index %d\n", dev_idx, val_idx);
+#endif
+                create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
+                break;
+            }
         }
     }
     return 0;
@@ -881,26 +888,12 @@ int load_thread_batch(off_t msr, uint64_t **val, int batchnum)
 #ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s %s::%d (read_all_threads) msr=%lu (0x%lx)\n", getenv("HOSTNAME"), LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
 #endif
-    if (CPU_DEV_VER == 1)
+    for (dev_idx = 0, val_idx = 0; dev_idx < NUM_DEVS; dev_idx++, val_idx++)
     {
-        for (dev_idx = 0, val_idx = 0; dev_idx < NUM_DEVS; dev_idx++, val_idx++)
-        {
-            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
-        }
-    }
-    else
-    {
-        /* Load socket 0. */
-        for (dev_idx = 0, val_idx = 0; dev_idx < NUM_DEVS; dev_idx += sockets, val_idx++)
-        {
-            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
-        }
-        /* Load socket 1. */
-        for (dev_idx = 1; dev_idx < NUM_DEVS; dev_idx += sockets)
-        {
-            create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
-            val_idx++;
-        }
+#ifdef TOPOLOGY_DEBUG
+        printf("Creating thread batch on CPU %d at index %d\n", dev_idx, val_idx);
+#endif
+        create_batch_op(msr, dev_idx, &val[val_idx], batchnum);
     }
     return 0;
 }

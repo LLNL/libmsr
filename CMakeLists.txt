@@ -4,8 +4,6 @@ cmake_minimum_required(VERSION 2.8)
 set(CMAKE_C_COMPILER "gcc")
 set(CMAKE_CXX_COMPILER "g++")
 
-set(HWLOC_DIR "" CACHE FILEPATH "path to hwloc installation")
-
 # Add -Wall if it is not there already.
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -O3")
 

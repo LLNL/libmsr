@@ -41,4 +41,5 @@ install(TARGETS msr msr-static DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" EXPORT 
 #
 # Headers are in ../include
 #
-include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/include
+                    ${HWLOC_INCLUDE_DIRS})

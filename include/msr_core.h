@@ -129,6 +129,21 @@ enum libmsr_batch_op_type_e
     BATCH_READ,
 };
 
+struct topo
+{
+    struct hwthread *thread_map;
+    int discontinuous_mapping;
+};
+
+struct hwthread
+{
+    int apic_id;
+    int thread_id;
+    int core_id;
+    int socket_id;
+    int sibling;
+};
+
 // Depending on their scope, MSRs can be written to or read from at either the
 // socket (aka package/cpu) or core level, and possibly the hardware thread
 // level.
