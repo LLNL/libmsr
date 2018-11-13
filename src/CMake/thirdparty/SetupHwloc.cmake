@@ -33,11 +33,9 @@ endif()
 # If HWLOC is still not found, then download and build HWLOC from source
 if(NOT HWLOC_INCLUDE_DIRS AND NOT HWLOC_LIBRARY)
     MESSAGE(STATUS "Downloading and building Hwloc from source")
-
-    ### Necessary for ExternalProject_Add
-    include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
     include(CMake/SetupExternalProjects.cmake)
-    message(STATUS "ExternalDownload Hwloc")
+
+    message(STATUS "ExternalProject Hwloc")
     message(STATUS "  HWLOC_INCLUDE_DIRS = ${HWLOC_INCLUDE_DIRS}")
     message(STATUS "  HWLOC_LIBRARY = ${HWLOC_LIBRARY}")
     set(HWLOC_FOUND TRUE)
