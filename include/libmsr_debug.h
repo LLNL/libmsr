@@ -39,7 +39,7 @@
 //#define LIBMSR_DEBUG 1
 //#define STORAGE_DEBUG 1
 //#define CSRDEBUG
-//#define LIBMSR_DEBUG_TAG "LIBMSR"
+#define LIBMSR_DEBUG_TAG "LIBMSR"
 //#define BATCH_DEBUG 1
 //#define THERM_DEBUG 1
 

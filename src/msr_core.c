@@ -310,7 +310,7 @@ int find_cpu_top(void)
         core_obj = hwloc_get_ancestor_obj_by_depth(topology, core_depth, pu_obj);
         socket_obj = hwloc_get_ancestor_obj_by_depth(topology, socket_depth, pu_obj);
 
-#ifdef TOPOLOGY_DEBUUG
+#ifdef TOPOLOGY_DEBUG
         printf("i=%2d pu_obj->os_index=%2d core_id=%2d socket_id=%2d\n", i, pu_obj->os_index, core_obj->logical_index, socket_obj->logical_index);
 #endif
         g_topo_list.thread_map[pu_obj->os_index].apic_id= i;
@@ -320,7 +320,7 @@ int find_cpu_top(void)
         g_topo_list.thread_map[pu_obj->os_index].sibling = pu_obj->sibling_rank;
 
         // check for continuous or discontinuous CPU ordering scheme
-        if (i == 1)
+        if (pu_obj->os_index == 1)
         {
             if (pu_obj->os_index != g_topo_list.thread_map[pu_obj->os_index].core_id)
             {
@@ -329,7 +329,7 @@ int find_cpu_top(void)
         }
     }
 
-#ifdef TOPOLOGY_DEBUUG
+#ifdef TOPOLOGY_DEBUG
     printf("discontinuous mapping = %d\n", g_topo_list.discontinuous_mapping);
 #endif
 
@@ -732,7 +732,7 @@ int write_msr_by_coord(unsigned socket, unsigned core, unsigned thread, off_t ms
         core_config(&coresPerSocket, &threadsPerCore, NULL, NULL);
     }
 #ifdef LIBMSR_DEBUG
-    fprintf(stderr, "%s %s %s::%d (write_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx) val=%lu\n", getenv("HOSTNAME"), LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr, val);
+    fprintf(stderr, "%s %s %s::%d (write_msr_by_coord) socket=%d core=%d thread=%d msr=%lu (0x%lx) val=%lu devidx=%lu\n", getenv("HOSTNAME"), LIBMSR_DEBUG_TAG, __FILE__, __LINE__, socket, core, thread, msr, msr, val, devidx(socket, core, thread));
     return write_msr_by_idx_and_verify(devidx(socket, core, thread), msr, val);
 #endif
     return write_msr_by_idx(devidx(socket, core, thread), msr, val);
@@ -930,9 +930,9 @@ int write_msr_by_idx(int dev_idx, off_t msr, uint64_t val)
     {
         return -1;
     }
-#ifdef LIBMSR_DEBUG
+//#ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s %s::%d (write_msr_by_idx) msr=%lu (0x%lx)\n", getenv("HOSTNAME"), LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
-#endif
+//#endif
     rc = pwrite(*fileDescriptor, &val, (size_t)sizeof(uint64_t), msr);
     if (rc != sizeof(uint64_t))
     {
