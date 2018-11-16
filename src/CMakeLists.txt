@@ -24,6 +24,9 @@ set(LIBMSR_SOURCES
 add_library(msr SHARED ${LIBMSR_SOURCES})
 target_link_libraries(msr ${HWLOC_LIBRARY})
 target_link_libraries(msr m)
+if(HWLOC_EXT)
+    add_dependencies(msr libhwloc)
+endif()
 
 #
 # Add static library with same base name as the dynamic lib.
@@ -32,6 +35,9 @@ add_library(msr-static STATIC ${LIBMSR_SOURCES})
 target_link_libraries(msr-static ${HWLOC_LIBRARY})
 target_link_libraries(msr-static m)
 set_target_properties(msr-static PROPERTIES OUTPUT_NAME "msr")
+if(HWLOC_EXT)
+    add_dependencies(msr-static libhwloc)
+endif()
 
 #
 # Install target should install the two library targets above.

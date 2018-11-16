@@ -35,6 +35,8 @@ if(NOT HWLOC_INCLUDE_DIRS AND NOT HWLOC_LIBRARY)
     MESSAGE(STATUS "Downloading and building Hwloc from source")
     include(CMake/SetupExternalProjects.cmake)
 
+    set(HWLOC_EXT TRUE)
+
     message(STATUS "ExternalProject Hwloc")
     message(STATUS "  HWLOC_INCLUDE_DIRS = ${HWLOC_INCLUDE_DIRS}")
     message(STATUS "  HWLOC_LIBRARY = ${HWLOC_LIBRARY}")
