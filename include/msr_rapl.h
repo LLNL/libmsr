@@ -34,6 +34,7 @@
 #ifndef MSR_RAPL_H_INCLUDE
 #define MSR_RAPL_H_INCLUDE
 
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/time.h>
@@ -107,7 +108,6 @@ extern "C" {
 #define TURBO_RATIO_LIMIT      (0x4000L)
 #define TURBO_RATIO_LIMIT1     (0x8000L)
 
-#define UINT_MAX 4294967295U // taken from limits.h
 #define STD_ENERGY_UNIT 65536.0
 
 /// @brief Enum encompassing unit conversion types.
