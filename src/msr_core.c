@@ -930,9 +930,9 @@ int write_msr_by_idx(int dev_idx, off_t msr, uint64_t val)
     {
         return -1;
     }
-//#ifdef LIBMSR_DEBUG
+#ifdef LIBMSR_DEBUG
     fprintf(stderr, "%s %s %s::%d (write_msr_by_idx) msr=%lu (0x%lx)\n", getenv("HOSTNAME"), LIBMSR_DEBUG_TAG, __FILE__, __LINE__, msr, msr);
-//#endif
+#endif
     rc = pwrite(*fileDescriptor, &val, (size_t)sizeof(uint64_t), msr);
     if (rc != sizeof(uint64_t))
     {
