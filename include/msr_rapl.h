@@ -90,6 +90,7 @@ extern "C" {
 #define MF_06_56 (0x1CFE17)
 #define MF_06_4E (0x1EFE17)
 #define MF_06_5E (0x1EFE17)
+#define MF_06_55 (0x177)
 #define MF_06_57 (0x507FF)
 
 // Register flags
