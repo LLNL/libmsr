@@ -429,19 +429,22 @@ static int calc_rapl_bits(const unsigned socket, struct rapl_limit *limit, const
     fprintf(stderr, "Converted %lf watts into %lx bits.\n", limit->watts, watts_bits);
     fprintf(stderr, "Converted %lf seconds into %lx bits.\n", limit->seconds, seconds_bits);
 #endif
-    /* Check to make sure the watts value does not overflow the bit field. */
-    if (watts_bits & 0xFFFFFFFFFFFF8000)
+    /* Check to make sure the specified watts is not larger
+     * than allowed (15 bits). */
+    if ((double)watts_bits > (pow(2,15))-1)
     {
-        libmsr_error_handler("calc_rapl_bits(): Translation from bits to values failed", LIBMSR_ERROR_INVAL, getenv("HOSTNAME"), __FILE__, __LINE__);
+        libmsr_error_handler("calc_rapl_bits(): Power limit is too large", LIBMSR_ERROR_INVAL, getenv("HOSTNAME"), __FILE__, __LINE__);
         return -1;
     }
     watts_bits <<= 0 + offset;
-    /* Check to make sure the seconds value does not overflow the bit field. */
-    if (seconds_bits & 0xFFFFFFFFFFFFFF80)
-    {
-        libmsr_error_handler("calc_rapl_bits(): Seconds value is too large", LIBMSR_ERROR_INVAL, getenv("HOSTNAME"), __FILE__, __LINE__);
-        return -1;
-    }
+    // @todo Bounds check for time window still needs work.
+    ///* Check to make sure the specified time window is not larger
+    // * than allowed (7 bits). */
+    //if ((double)seconds_bits > (pow(2,7)-1))
+    //{
+    //    libmsr_error_handler("calc_rapl_bits(): Time window value is too large", LIBMSR_ERROR_INVAL, getenv("HOSTNAME"), __FILE__, __LINE__);
+    //    return -1;
+    //}
     seconds_bits <<= 17 + offset;
     limit->bits |= watts_bits;
     limit->bits |= seconds_bits;
@@ -592,6 +595,7 @@ static void create_rapl_data_batch(uint64_t *rapl_flags, struct rapl_data *rapl)
         rapl->old_pkg_bits = (uint64_t *) libmsr_calloc(sockets, sizeof(uint64_t));
         rapl->old_pkg_joules = (double *) libmsr_calloc(sockets, sizeof(double));
         rapl->pkg_delta_joules = (double *) libmsr_calloc(sockets, sizeof(double));
+        rapl->pkg_delta_bits = (uint64_t *) libmsr_calloc(sockets, sizeof(uint64_t));
         rapl->pkg_watts = (double *) libmsr_calloc(sockets, sizeof(double));
         load_socket_batch(MSR_PKG_ENERGY_STATUS, rapl->pkg_bits, RAPL_DATA);
     }
@@ -1215,7 +1219,7 @@ int poll_rapl_data(void)
 int delta_rapl_data(void)
 {
     /* The energy status register holds 32 bits, this is max unsigned int. */
-    static double max_joules = UINT_MAX / 65536; // This fixed wraparound problem
+    static double max_joules = UINT_MAX;
     static int init = 0;
     static uint64_t sockets = 0;
     static uint64_t *rapl_flags;
@@ -1257,16 +1261,25 @@ int delta_rapl_data(void)
         if (*rapl_flags & PKG_ENERGY_STATUS)
         {
             /* Check to see if there was wraparound and use corresponding translation. */
-            if (rapl->pkg_joules[s] - rapl->old_pkg_joules[s] < 0)
+            if ((double)*rapl->pkg_bits[s] - (double)rapl->old_pkg_bits[s] < 0)
             {
-                //fprintf(stderr, "DEBUG: pkg wrap\n");
-                //fprintf(stderr, "DEBUG: pkg_joules[%d] %lf, old_pkg_joules[%d] %lf, max_joules %lf\n", s, rapl->pkg_joules[s], s, rapl->old_pkg_joules[s], max_joules);
-                rapl->pkg_delta_joules[s] = (rapl->pkg_joules[s] + max_joules) - rapl->old_pkg_joules[s];
+                rapl->pkg_delta_bits[s] = (uint64_t)((*rapl->pkg_bits[s] + (uint64_t)max_joules) - rapl->old_pkg_bits[s]);
+                translate(s, &rapl->pkg_delta_bits[s], &rapl->pkg_delta_joules[s], BITS_TO_JOULES);
+#ifdef LIBMSR_DEBUG
+                fprintf(stderr, "OVF pkg%d new=0x%lx old=0x%lx -> %lf\n", s, *rapl->pkg_bits[s], rapl->old_pkg_bits[s], rapl->pkg_delta_joules[s]);
+#endif
             }
             else
             {
-                //fprintf(stderr, "DEBUG: pkg_joules[%d] %lf, old_pkg_joules[%d] %lf\n", s, rapl->pkg_joules[s], s, rapl->old_pkg_joules[s]);
                 rapl->pkg_delta_joules[s] = rapl->pkg_joules[s] - rapl->old_pkg_joules[s];
+#ifdef LIBMSR_DEBUG
+                fprintf(stderr, "pkg%d pkg_joules[%d] = %lf, old_pkg_joules[%d] = %lf, pkg_delta_joules[%d] = %lf\n", s, s, rapl->pkg_joules[s], s, rapl->old_pkg_joules[s], s, rapl->pkg_delta_joules[s]);
+#endif
+            }
+            /* This case should not happen. */
+            if (rapl->pkg_delta_joules[s] < 0)
+            {
+                libmsr_error_handler("delta_rapl_data(): Energy used since last same is negative", LIBMSR_ERROR_INVAL, getenv("HOSTNAME"), __FILE__, __LINE__);
             }
         }
         /* Make sure the dram energy status register exists. */
@@ -1352,6 +1365,12 @@ int read_rapl_data(void)
     {
         rapl->elapsed = (rapl->now.tv_sec - rapl->old_now.tv_sec) +
                         (rapl->now.tv_usec - rapl->old_now.tv_usec)/1000000.0;
+        /* This case should not happen. */
+        if (rapl->elapsed < 0)
+        {
+            libmsr_error_handler("read_rapl_data(): Elapsed time since last sample is negative", LIBMSR_ERROR_INVAL, getenv("HOSTNAME"), __FILE__, __LINE__);
+        }
+
         for (s = 0; s < sockets; s++)
         {
             /* Make sure the pkg energy status register exists. */

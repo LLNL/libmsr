@@ -180,6 +180,7 @@ struct rapl_data
     /// @brief Difference in package-level energy usage between two data
     /// measurements.
     double *pkg_delta_joules;
+    uint64_t *pkg_delta_bits;
     /// @brief Package-level power consumption (in Watts) derived by dividing
     /// difference in package-level energy usage by time elapsed between data
     /// measurements.

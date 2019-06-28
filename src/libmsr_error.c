@@ -79,7 +79,7 @@ void libmsr_error_message(int err, char *msg, size_t size)
             strncpy(msg, "<libmsr> Could not initialize MSR", size);
             break;
         case LIBMSR_ERROR_INVAL:
-            strncpy(msg, "<libmsr> Invalid bit field values", size);
+            strncpy(msg, "<libmsr> Invalid value", size);
             break;
         case LIBMSR_ERROR_NOT_IMPLEMENTED_YET:
             strncpy(msg, "<libmsr> This has not yet been implemented by libmsr", size);

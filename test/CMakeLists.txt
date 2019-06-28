@@ -8,7 +8,7 @@ set(LIBMSR_TESTS
     translate_pkg_rapl_limit
     turbo_test
     libmsr_dump_data
-    power_cap_test    
+    power_cap_test
 )
 
 foreach(TEST ${LIBMSR_TESTS})
