@@ -1,6 +1,8 @@
 LIBMSR
 ======
 
+[![Read the Docs](http://readthedocs.org/projects/hatchet/badge/?version=latest)](http://hatchet.readthedocs.io)
+
 Welcome to Libmsr, a friendly (well, friendlier) interface to many of the
 model-specific registers in Intel processors. Now with PCI configuration
 register support for some Intel hardware.
