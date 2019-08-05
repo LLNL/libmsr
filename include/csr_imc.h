@@ -1,34 +1,31 @@
-/* csr_imc.h
+/*
+ * Copyright (c) 2013-2017, Lawrence Livermore National Security, LLC.
  *
- * Copyright (c) 2011-2016, Lawrence Livermore National Security, LLC.
+ * Produced at the Lawrence Livermore National Laboratory. Written by:
+ *     Barry Rountree <rountree@llnl.gov>,
+ *     Scott Walker <walker91@llnl.gov>, and
+ *     Kathleen Shoga <shoga1@llnl.gov>.
+ *
  * LLNL-CODE-645430
- *
- * Produced at Lawrence Livermore National Laboratory
- * Written by  Barry Rountree, rountree@llnl.gov
- *             Scott Walker,   walker91@llnl.gov
- *             Kathleen Shoga, shoga1@llnl.gov
  *
  * All rights reserved.
  *
- * This file is part of libmsr.
+ * This file is part of libmsr. For details, see https://github.com/LLNL/libmsr.git.
+ *
+ * Please also read libmsr/LICENSE for our notice and the LGPL.
  *
  * libmsr is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option)
- * any later version.
+ * terms of the GNU Lesser General Public License (as published by the Free
+ * Software Foundation) version 2.1 dated February 1999.
  *
  * libmsr is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * WARRANTY; without even the IMPLIED WARRANTY OF MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the terms and conditions of the GNU Lesser
+ * General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with libmsr. If not, see <http://www.gnu.org/licenses/>.
- *
- * This material is based upon work supported by the U.S. Department of
- * Energy's Lawrence Livermore National Laboratory. Office of Science, under
- * Award number DE-AC52-07NA27344.
- *
+ * along with libmsr; if not, write to the Free Software Foundation, Inc., 59
+ * Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
 #ifndef CSR_IMC_H_INCLUDE

@@ -12,7 +12,7 @@ version 0.3.1
 
 Last Update
 -----------
-21 May 2019
+2 August 2019
 
 
 Webpages
@@ -108,7 +108,7 @@ developers to have your name added to the list.
 Release
 -------
 
-libmsr is released under the GPLv3 license. For more details, see the
+libmsr is released under the GPLv2.1 license. For more details, see the
 [LICENSE](https://github.com/LLNL/libmsr/blob/master/LICENSE) file.
 
     LLNL-CODE-645430
