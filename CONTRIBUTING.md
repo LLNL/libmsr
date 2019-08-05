@@ -23,7 +23,7 @@ The easiest way to contribute a change request is to make all of your changes on
 a new branch in a fork of libmsr. Make sure your `master` is up-to-date and
 create a new branch off of it:
 
-    $ git checkout master 
+    $ git checkout master
     $ git pull
     $ git branch <descriptive_branch_name>
     $ git checkout <descriptive_branch_name>
