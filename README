@@ -12,7 +12,7 @@ version 0.3.1
 
 Last Update
 -----------
-2 August 2019
+11 December 2019
 
 
 Webpages
@@ -69,11 +69,11 @@ or `/proc/cpuinfo` (note that it will not be in hexadecimal).
 Notes
 -----
 
-This software depends on the files `/dev/cpu/*/msr` being present with R/W
-permissions. Recent kernels require additional capabilities. We have found it
-easier to use our own [MSR-SAFE](https://github.com/LLNL/msr-safe) kernel
-module, but running as root (or going through the bother of adding the
-capabilities to the binaries) is another option.
+This software depends on the files `/dev/cpu/*/msr` being present. Recent
+kernels require additional capabilities. We have found it easier to use our own
+[MSR-SAFE](https://github.com/LLNL/msr-safe) kernel
+module with R/W permissions, but running as root (or going through the bother
+of adding the capabilities to the binaries) is another option.
 
 If you need PCI configuration register (CSR) support in Libmsr, you MUST have
 CSR-SAFE installed. This code is not currently on Github -- you will need to
@@ -86,10 +86,6 @@ For sample code, see `libmsr_test.c` in the `test/` directory.
 Our most up-to-date documentation for Libmsr can be generated with `make doc`
 and `make latex_doc` for HTML and PDF versions, respectively. There are also
 some useful PDF files in the `documentation/` directory.
-
-If you wish to use Libmsr on LLNL's Cab system, you will need to apply a patch
-to gain MSR access. At this time, the patch will need to be requested as it is
-not on Github.
 
 
 Contact
