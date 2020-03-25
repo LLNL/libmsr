@@ -9,10 +9,18 @@ register support for some Intel hardware.
 
 version 0.3.1
 
+**Important**
+
+Libmsr is no longer being actively developed. Variorum
+https://variorum.readthedocs.io/ is an evolution of and a successor to
+libmsr. Variorum can be found on github:
+
+https://github.com/llnl/variorum
+
 
 Last Update
 -----------
-11 December 2019
+24 March 2020
 
 
 Webpages
